@@ -1,0 +1,10 @@
+.widgets{
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-evenly;
+    margin-top: 30px;
+}
+.titleText{
+    text-align: center;
+    font-size: 50px;
+}

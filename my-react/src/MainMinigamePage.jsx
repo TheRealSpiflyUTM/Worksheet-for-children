@@ -4,7 +4,7 @@ function MainMinigamePage(){
 
   return(<>
     <main className="main-minigame-page">
-      <ColorMinigame/>
+      <ColorMinigame letter="u"/>
     </main>
   </>);
 }

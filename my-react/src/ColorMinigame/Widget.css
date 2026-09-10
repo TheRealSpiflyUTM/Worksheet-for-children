@@ -1,6 +1,44 @@
-.buble{
+.widget{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    align-content: center ;
+}
+.widget img {
+    display: block;
+    width: 100%;
+    max-width: 250px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    object-position: center;
+
+    border-radius: 3rem;
+    box-shadow: 0 5px 10px black;
+}
+.bubles{
+    margin-top: 10px;
+    display: flex;
+    gap: 5px;   
+}
+.animalName{
+    font-weight: 600;
+    font-size: 30px;
+    margin-top: 10px;
+}
+.buble, .bubleActive{
     height: 50px;
     width: 50px;
     border-radius: 50%;
     border: 2px solid black;
+    cursor: pointer;
+}
+.buble{
+    transition: transform 0.3s;
+}
+.buble:hover{
+    transform: translateY(-3px);
+}
+.bubleActive{
+    background-color: rgb(43, 218, 43);
 }
