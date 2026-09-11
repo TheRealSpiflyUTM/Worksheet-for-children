@@ -9,3 +9,26 @@ body{
     width: 60%;
     margin: 0 auto;
 }
+.main-minigame-page .addMinigameWindow{
+    position: fixed;
+    /* inset: 0; */
+    z-index: 1000;
+}
+.addMinigameWindow .overlay{
+    /* inset: 0; */
+    background-color: rgb(0 0 0 / 50%);
+}
+.addMinigameWindow .games{
+    padding: 5px;
+    background-color: rgb(197, 3, 3);
+    width: 50vw;
+    height: 30vh;
+}
+.addMinigameWindow .game{
+    cursor: pointer;
+}
+.addMinigameWindow .closeButton{
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}

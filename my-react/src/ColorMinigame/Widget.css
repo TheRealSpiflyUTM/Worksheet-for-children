@@ -32,6 +32,7 @@
     border-radius: 50%;
     border: 2px solid black;
     cursor: pointer;
+    user-select: none;
 }
 .buble{
     transition: transform 0.3s;
