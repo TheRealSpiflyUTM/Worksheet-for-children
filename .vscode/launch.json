@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-WorksheetApplication<worksheet>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.worksheet.WorksheetApplication",
+            "projectName": "worksheet",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

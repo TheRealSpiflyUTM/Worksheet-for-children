@@ -1,0 +1,139 @@
+{
+  "tool": "Built-in image_gen",
+  "outputSize": "1024x1024",
+  "animals": [
+    {
+      "animal": "Dog",
+      "bodyParts": [
+        "Ureche",
+        "Ochi",
+        "Nas",
+        "Gură",
+        "Corp",
+        "Coadă",
+        "Labă"
+      ],
+      "file": "dog.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Dog. Standing side view facing left, floppy ear, raised tail, separated paws. SELECTED PARTS (exactly 7 circles): Ear, Eye, Nose, Mouth, Body, Tail, Paw. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Cat",
+      "bodyParts": [
+        "Ureche",
+        "Ochi",
+        "Nas",
+        "Mustăți",
+        "Corp",
+        "Coadă",
+        "Labă"
+      ],
+      "file": "cat.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Cat. Standing three-quarter view facing left, pointed ears, clearly visible whiskers, raised curved tail, separated paws. SELECTED PARTS (exactly 7 circles): Ear, Eye, Nose, Whiskers, Body, Tail, Paw. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Fish",
+      "bodyParts": [
+        "Ochi",
+        "Gură",
+        "Branhie",
+        "Înotătoare",
+        "Coadă"
+      ],
+      "file": "fish.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Fish. Side view facing left, a single simple curved gill line behind eye, obvious dorsal fin and distinct tail fin. No scales. SELECTED PARTS (exactly 5 circles): Eye, Mouth, Gill, Fin, Tail. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Duck",
+      "bodyParts": [
+        "Ochi",
+        "Cioc",
+        "Aripă",
+        "Corp",
+        "Coadă",
+        "Labă palmată"
+      ],
+      "file": "duck.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Duck. Standing side view facing left, clear broad bill, outlined wing, short tail, two separated webbed feet. SELECTED PARTS (exactly 6 circles): Eye, Beak, Wing, Body, Tail, Webbed foot. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Cow",
+      "bodyParts": [
+        "Corn",
+        "Ureche",
+        "Ochi",
+        "Bot",
+        "Coadă",
+        "Uger",
+        "Copită"
+      ],
+      "file": "cow.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Cow. Standing side view facing left with face slightly turned toward viewer; gentle horns, broad muzzle, visible udder between legs, raised tail. No patches or texture. SELECTED PARTS (exactly 7 circles): Horn, Ear, Eye, Muzzle, Tail, Udder, Hoof. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Horse",
+      "bodyParts": [
+        "Ureche",
+        "Ochi",
+        "Bot",
+        "Coamă",
+        "Coadă",
+        "Copită"
+      ],
+      "file": "horse.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Horse. Standing side view facing left, clear mane along neck, long tail separated from hind legs, recognizable hooves. SELECTED PARTS (exactly 6 circles): Ear, Eye, Muzzle, Mane, Tail, Hoof. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Rabbit",
+      "bodyParts": [
+        "Ureche",
+        "Ochi",
+        "Nas",
+        "Mustăți",
+        "Coadă",
+        "Labă din spate"
+      ],
+      "file": "rabbit.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Rabbit. Crouched side view facing left, very long ears, visible whiskers, small round tail exposed to right, large hind paw. SELECTED PARTS (exactly 6 circles): Ear, Eye, Nose, Whiskers, Tail, Hind paw. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Pig",
+      "bodyParts": [
+        "Ureche",
+        "Ochi",
+        "Rât",
+        "Corp",
+        "Coadă",
+        "Copită"
+      ],
+      "file": "pig.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Pig. Standing three-quarter side view facing left, clear round snout with two nostrils, curly tail visible outside rump, cloven hooves. SELECTED PARTS (exactly 6 circles): Ear, Eye, Snout, Body, Tail, Hoof. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Sheep",
+      "bodyParts": [
+        "Ureche",
+        "Ochi",
+        "Bot",
+        "Lână",
+        "Coadă",
+        "Copită"
+      ],
+      "file": "sheep.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Sheep. Standing side view facing left, no horns; wool indicated ONLY by simple rounded scalloped body silhouette, absolutely no interior wool texture, short exposed tail and visible hooves. SELECTED PARTS (exactly 6 circles): Ear, Eye, Muzzle, Wool, Tail, Hoof. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    },
+    {
+      "animal": "Frog",
+      "bodyParts": [
+        "Ochi",
+        "Gură",
+        "Burtă",
+        "Picior din față",
+        "Picior din spate",
+        "Degete"
+      ],
+      "file": "frog.png",
+      "prompt": "Use case: scientific-educational. Generate one professionally designed preschool animal body-part matching worksheet, exactly 1024 x 1024 pixels. Single cute animal with rounded simplified proportions, simple readable silhouette and separated body parts. Bold smooth black outlines, only a few clean interior contour lines. Black and white only on pure white empty canvas; no scenery, background objects, shading, gradients, hatching, texture or realism. Surround animal with approximately equal-sized COMPLETELY EMPTY circles, all outside its silhouette with generous whitespace; each circle connected by exactly one thin clean pointer line to exactly one selected anatomical part, endpoint at that actual part. No extra circles or extra pointers. Arrange circles dynamically to avoid crossing lines, unrelated body parts, or overlapping animal/circles. All selected parts must each have exactly one circle and pointer; other visible anatomy must not have pointers. No text, numbers, letters, labels, captions, instructions, tables or watermark anywhere; circles remain blank. Animal: Frog. Seated three-quarter view, bulging eyes, simple curved mouth, clear smooth belly, slim separated front legs, large folded hind legs, clearly spread toes. No spots. SELECTED PARTS (exactly 6 circles): Eye, Mouth, Belly, Front leg, Hind leg, Toes. Carefully place pointer endpoints on these precise features, with eye and ear pointers distinct."
+    }
+  ],
+  "dogCorrection": "Moved eye and mouth pointer endpoints to the visible eye and mouth opening during review."
+}
