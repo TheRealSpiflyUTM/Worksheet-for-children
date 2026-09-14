@@ -1,4 +1,3 @@
-import ColorMinigameKidsVersion from "./ElevPerspective/ColorMinigame/ColorMinigame.jsx";
 function AddMinigameWindow(params) {
   
   if(!params.open) return;

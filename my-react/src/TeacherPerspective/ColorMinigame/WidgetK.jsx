@@ -1,5 +1,5 @@
 import React, {useState, useRef} from 'react';
-import "./Widget.css"
+import "./WidgetK.css"
 function Widget (params){
 
   // Values

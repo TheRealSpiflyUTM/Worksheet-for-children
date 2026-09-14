@@ -1,5 +1,6 @@
 import React, {useState, useRef} from 'react';
-import "./Widget.css"
+import { animals } from "../../data/animals.js";
+import "./WidgetT.css"
 function Widget (params){
 
   // Values
@@ -12,11 +13,13 @@ function Widget (params){
     const sound = new Audio("/sounds/check-mark.mp3");
     sound.play();
   }
+
   function bubleVerification(index) {
+    console.log(params.name[index]);
     if(bubles[index]) return;
 
     const currentLetter = params.name[index];
-    const isMatch = currentLetter.toLowerCase() === params.letter; // letter comes lowercase
+    const isMatch = currentLetter.toLowerCase() === params.letter.toLowerCase();
     
     if(isMatch){
       playCorrectSFX();
@@ -32,7 +35,14 @@ function Widget (params){
   return(<>
     <div className="widget">
       <img src={params.img} alt="animal Image" />
-      <h4 className='animalName'>{params.name}</h4>
+      <input type='text' className='animalName' value={params.name} 
+        onChange={(event) =>{
+          const newName = event.target.value;
+          params.onNameChange(newName);
+          setBuble(Array.from(newName, () => false));
+        }}
+        ></input>
+      
       <div className='bubles'>
         {bubles.map((buble, index)=> (
           <button 
@@ -40,7 +50,6 @@ function Widget (params){
             className={buble ? "bubleActive" : "buble"} 
             onClick={() => bubleVerification(index)}
           />
-
         ))}
       </div>
     </div>

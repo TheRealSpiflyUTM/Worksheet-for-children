@@ -2,24 +2,24 @@
 // T is for teacher
 // We will use this to swich between teacher and student Version 
 
-import ColorMinigameK from "./ElevPerspective/ColorMinigame/ColorMinigame.jsx";
 import ColorMinigameT from "./TeacherPerspective/ColorMinigame/ColorMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import React, {useState, useRef} from 'react';
 
 import "./MainMinigamePage.css"; 
 
-function MainMinigamePage(){
-  const avaliableMinigames = [
-    {name: "Color Game",  minigame: <ColorMinigameT letter="u"/>, img:"/img/ColorGame.png"},
+function MainMinigamePage(params){
 
+  const avaliableMinigames = [
+    {id: "color-game", name: "Color Game", img:"/img/ColorGame.png"},
   ];
+  
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
   const [addedMinigames, setAddeMinigames] = useState([]);
 
 
   const addMinigameFunction = (game) =>{
-    setAddeMinigames([...addedMinigames, game]);
+    setAddeMinigames((currentGame) => [...currentGame, game]);
     setIsAddMinigameOpen(false);
   };
 
@@ -30,14 +30,15 @@ function MainMinigamePage(){
       :
       <div className="addedGames">
         {addedMinigames.map((game , index) =>(
-          <div key= {index}>
-            {game.minigame}
+          <div key= {`${game.id}-${index}`}>
+            {game.id === "color-game" && (
+              <ColorMinigameT isTeacher={params.isTeacher} />
+            )}
           </div>
         ))}
         <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
       </div>
     }
-
 
 
     {/* Nu atinge ea isi da load cand apesi butonul de addMinigame */}
