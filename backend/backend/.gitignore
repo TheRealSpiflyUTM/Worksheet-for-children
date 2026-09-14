@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Runtime data ###
+data/database/*
+data/uploads/*
+!data/database/.gitkeep
+!data/uploads/.gitkeep
