@@ -5,11 +5,10 @@ function AddMinigameWindow(params) {
   
   return(<>
     <div className="addMinigameWindow">
-    <div className="overlay"></div>
       <div className="games">
 
         {params.games.map((game, index) => (
-          <div key={index} className="game addBorder" onClick={params.addMinigame}>
+          <div key={index} className="game addBorder" onClick={() => params.addMinigame(game)}>
             <h2>{game.name}</h2>
             <img src={game.img} alt="Game Image" />
           </div>

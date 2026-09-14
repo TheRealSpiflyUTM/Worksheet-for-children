@@ -1,22 +1,17 @@
-import ColorMinigameKidsVersion from "./ElevPerspective/ColorMinigame/ColorMinigame.jsx";
+// K is for kids 
+// T is for teacher
+// We will use this to swich between teacher and student Version 
+
+import ColorMinigameK from "./ElevPerspective/ColorMinigame/ColorMinigame.jsx";
+import ColorMinigameT from "./TeacherPerspective/ColorMinigame/ColorMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import React, {useState, useRef} from 'react';
 
-import "./MainMinigamePage.css";
+import "./MainMinigamePage.css"; 
 
 function MainMinigamePage(){
   const avaliableMinigames = [
-    {name: "Color Game", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game1", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game2", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game3", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game4", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game5", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game6", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game7", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game8", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game9", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game0", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
+    {name: "Color Game",  minigame: <ColorMinigameT letter="u"/>, img:"/img/ColorGame.png"},
 
   ];
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
@@ -50,6 +45,7 @@ function MainMinigamePage(){
       open = {isAddMinigameOpen} 
       closeFuntion={() => setIsAddMinigameOpen(false)}
       games = {avaliableMinigames}
+      addMinigame= {addMinigameFunction}
       />
 
     </main>
