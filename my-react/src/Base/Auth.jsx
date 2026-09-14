@@ -23,12 +23,7 @@ return ( <div className="auth-container"> <div className="auth-form">
         className="password-input"
       />
 
-      <Button
-        className="show-button"
-        onClick={() => setPasswordVisible((prevState) => !prevState)}
-      >
-        {passwordVisible ? 'Hide' : 'Show'}
-      </Button>
+      
     </div>
 
     <Button type="primary" className="enter-button">
