@@ -19,6 +19,7 @@ body{
     background-color: rgb(0 0 0 / 50%);
 }
 .addMinigameWindow .games{
+    display: flex;
     padding: 5px;
     background-color: rgb(197, 3, 3);
     width: 50vw;
@@ -31,4 +32,7 @@ body{
     position: absolute;
     right: 0;
     bottom: 0;
+}
+.AddGamesFromGameWindow{
+    display: flex;
 }

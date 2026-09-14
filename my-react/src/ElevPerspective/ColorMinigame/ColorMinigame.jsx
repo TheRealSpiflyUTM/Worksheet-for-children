@@ -3,9 +3,9 @@ import Widget from "./Widget.jsx";
 import './ColorMinigame.css';
 function ColorMinigame(params){
   const [animals, changeAnimals] = useState([
-    {name: "Urs" ,    img: "/img/BearImg.webp"}, 
-    {name:"Vulpe" ,   img: "/img/FoxImg.webp"},
-    {name:"Lup",      img: "/img/WolfImg.webp",},
+    {name: "Urs" ,     img: "/img/BearImg.webp"}, 
+    {name: "Vulpe" ,   img: "/img/FoxImg.webp"},
+    {name: "Lup",      img: "/img/WolfImg.webp",},
   ]);
 
   return(
