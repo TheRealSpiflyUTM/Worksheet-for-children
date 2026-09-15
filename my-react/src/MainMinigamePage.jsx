@@ -2,7 +2,7 @@
 // T is for teacher
 // We will use this to swich between teacher and student Version 
 
-import ColorMinigameT from "./TeacherPerspective/ColorMinigame/ColorMinigame.jsx";
+import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import React, {useState, useRef} from 'react';
 
@@ -32,7 +32,7 @@ function MainMinigamePage(params){
         {addedMinigames.map((game , index) =>(
           <div key= {`${game.id}-${index}`}>
             {game.id === "color-game" && (
-              <ColorMinigameT isTeacher={params.isTeacher} />
+              <ColorMinigame isTeacher={params.isTeacher} />
             )}
           </div>
         ))}

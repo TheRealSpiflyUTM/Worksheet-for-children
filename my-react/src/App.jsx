@@ -1,19 +1,41 @@
 import { useState } from "react";
+import {Navigate , Route , Routes} from "react-router-dom"
 import MainMinigamePage from "./MainMinigamePage.jsx";
-import ButtonKT from "./Buttons/Buttons.jsx";
+import PerspectiveNavigation from "./Buttons/Buttons.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 
 function App() {
-  const [isTeacher , setIsTeacher] = useState(true);
   return(
-    <>
-      <LeftSidebar/>
-      <MainMinigamePage isTeacher= {isTeacher}/>
-      <ButtonKT isTeacher= {isTeacher} setIsTeacher= {setIsTeacher}/>
+    <div>
       
-    </>
+      <PerspectiveNavigation/>
+      <LeftSidebar />
+      <Routes>
+        <Route 
+        path="/"
+        element= {<Navigate to="/teacher" replace />}
+        />
+
+        <Route
+          path="/teacher"
+          element={
+            <MainMinigamePage isTeacher={true}/>}
+        />
+        
+        <Route
+          path="/kids"
+          element={
+            <MainMinigamePage isTeacher={false}/>}
+        />
+        
+        <Route
+          
+        />
+
+      </Routes>
+    </div>
   );
 }
 
 
-export default App;
+export default App
