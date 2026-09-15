@@ -1,4 +1,4 @@
-# Worksheet for children
+# Worksheet for kids
 
 A small learning project: HTML + CSS + JavaScript + React on the frontend,
 Java + Spring Boot on the backend. It shows one addition question.
