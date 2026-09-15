@@ -6,11 +6,12 @@ function Navigator(){
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  <Flex className="button-container" gap="medium" vertical>
-    <Button size="medium" type={location.pathname === "/teacher"  ? "primary" : "default"} onClick={() => navigate("/teacher")} >Profesor</Button>
-    <Button size="medium" type={location.pathname === "/kids"     ? "primary" : "default"} onClick={() => navigate("/kids")}>Elev</Button>
-  </Flex>
+  return(
+    <Flex className="button-container" gap="medium" vertical>
+      <Button size="medium" type={location.pathname === "/teacher"  ? "primary" : "default"} onClick={() => navigate("/teacher")} >Profesor</Button>
+      <Button size="medium" type={location.pathname === "/kids"     ? "primary" : "default"} onClick={() => navigate("/kids")}>Elev</Button>
+    </Flex>
+  );
 }
 
 
