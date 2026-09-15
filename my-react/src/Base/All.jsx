@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {Routes, Route } from "react-router-dom";
 import AvatarExample from "./Avatar";
 import MenuExample from "./Menu";
 import AuthExample from "./Auth";
@@ -6,7 +6,6 @@ import './All.css'
 
 function All() {
   return (
-    <BrowserRouter>
       <Routes>
         <Route
           path="/"
@@ -23,7 +22,6 @@ function All() {
           element={<AuthExample />}
         />
       </Routes>
-    </BrowserRouter>
   );
 }
 
