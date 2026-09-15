@@ -23,34 +23,54 @@ function MainMinigamePage(params){
     setIsAddMinigameOpen(false);
   };
 
-  return(<>
-    <main className="main-minigame-page">
-    {addedMinigames.length == 0 ? 
-      <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button> 
-      :
-      <div className="addedGames">
-        {addedMinigames.map((game , index) =>(
-          <div key= {`${game.id}-${index}`}>
-            {game.id === "color-game" && (
-              <ColorMinigame isTeacher={params.isTeacher} />
-            )}
-          </div>
-        ))}
-        <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
-      </div>
-    }
+
+  if(params.isTeacher){
+    return(<>
+      <main className="main-minigame-page">
+      {addedMinigames.length == 0 ? 
+        <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button> 
+        :
+        <div className="addedGames">
+          {addedMinigames.map((game , index) =>(
+            <div key= {`${game.id}-${index}`}>
+              {game.id === "color-game" && (
+                <ColorMinigame isTeacher={params.isTeacher} />
+              )}
+            </div>
+          ))}
+          <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
+        </div>
+      }
 
 
-    {/* Nu atinge ea isi da load cand apesi butonul de addMinigame */}
-    <AddMinigameWindow
-      open = {isAddMinigameOpen} 
-      closeFuntion={() => setIsAddMinigameOpen(false)}
-      games = {avaliableMinigames}
-      addMinigame= {addMinigameFunction}
-      />
+      {/* Nu atinge ea isi da load cand apesi butonul de addMinigame */}
+      <AddMinigameWindow
+        open = {isAddMinigameOpen} 
+        closeFuntion={() => setIsAddMinigameOpen(false)}
+        games = {avaliableMinigames}
+        addMinigame= {addMinigameFunction}
+        />
 
-    </main>
-  </>);
+      </main>
+    </>);
+  }
+  else{
+    return(<div>
+      <main className="main-minigame-page">
+      
+        <div className="addedGames">
+          {addedMinigames.map((game , index) =>(
+            <div key= {`${game.id}-${index}`}>
+              {game.id === "color-game" && (
+                <ColorMinigame isTeacher={params.isTeacher} />
+              )}
+            </div>
+          ))}
+
+        </div>
+      </main>
+    </div>)
+  }
 }
 
 export default MainMinigamePage
