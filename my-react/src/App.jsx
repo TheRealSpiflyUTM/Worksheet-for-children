@@ -1,12 +1,13 @@
+import { useState } from "react";
 import MainMinigamePage from "./MainMinigamePage.jsx";
-import Button1 from "./Buttons/Buttons.jsx";
+import ButtonKT from "./Buttons/Buttons.jsx";
 
 function App() {
-
+  const [isTeacher , setIsTeacher] = useState(true);
   return(
     <>
-      <Button1/>
-      <MainMinigamePage/>
+      <ButtonKT isTeacher= {isTeacher} setIsTeacher= {setIsTeacher}/>
+      <MainMinigamePage isTeacher= {isTeacher}/>
     </>
   );
 }

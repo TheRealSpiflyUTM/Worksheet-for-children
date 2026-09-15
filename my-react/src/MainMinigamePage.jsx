@@ -1,30 +1,25 @@
-import ColorMinigameKidsVersion from "./ElevPerspective/ColorMinigame/ColorMinigame.jsx";
+// K is for kids 
+// T is for teacher
+// We will use this to swich between teacher and student Version 
+
+import ColorMinigameT from "./TeacherPerspective/ColorMinigame/ColorMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import React, {useState, useRef} from 'react';
 
-import "./MainMinigamePage.css";
+import "./MainMinigamePage.css"; 
 
-function MainMinigamePage(){
+function MainMinigamePage(params){
+
   const avaliableMinigames = [
-    {name: "Color Game", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game1", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game2", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game3", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game4", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game5", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game6", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game7", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game8", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game9", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-    {name: "Color Game0", minigame: <ColorMinigameKidsVersion letter="u"/>, img:"/img/ColorGame.png"},
-
+    {id: "color-game", name: "Color Game", img:"/img/ColorGame.png"},
   ];
+  
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
   const [addedMinigames, setAddeMinigames] = useState([]);
 
 
   const addMinigameFunction = (game) =>{
-    setAddeMinigames([...addedMinigames, game]);
+    setAddeMinigames((currentGame) => [...currentGame, game]);
     setIsAddMinigameOpen(false);
   };
 
@@ -35,8 +30,10 @@ function MainMinigamePage(){
       :
       <div className="addedGames">
         {addedMinigames.map((game , index) =>(
-          <div key= {index}>
-            {game.minigame}
+          <div key= {`${game.id}-${index}`}>
+            {game.id === "color-game" && (
+              <ColorMinigameT isTeacher={params.isTeacher} />
+            )}
           </div>
         ))}
         <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
@@ -44,12 +41,12 @@ function MainMinigamePage(){
     }
 
 
-
     {/* Nu atinge ea isi da load cand apesi butonul de addMinigame */}
     <AddMinigameWindow
       open = {isAddMinigameOpen} 
       closeFuntion={() => setIsAddMinigameOpen(false)}
       games = {avaliableMinigames}
+      addMinigame= {addMinigameFunction}
       />
 
     </main>
