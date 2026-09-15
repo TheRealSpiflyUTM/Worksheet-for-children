@@ -28,9 +28,7 @@ function App() {
             <MainMinigamePage isTeacher={false}/>}
         />
         
-        <Route
-          
-        />
+        
 
       </Routes>
     </div>
