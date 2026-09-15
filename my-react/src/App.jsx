@@ -2,7 +2,10 @@ import { useState } from "react";
 import {Navigate , Route , Routes} from "react-router-dom"
 import MainMinigamePage from "./MainMinigamePage.jsx";
 import PerspectiveNavigation from "./Buttons/Buttons.jsx";
+<<<<<<< HEAD
+=======
 import All from "./Base/All.jsx";
+>>>>>>> origin/main
 
 function App() {
   return(
@@ -26,12 +29,16 @@ function App() {
           element={
             <MainMinigamePage isTeacher={false}/>}
         />
+<<<<<<< HEAD
+
+=======
         
         <Route
           path="/auth"
           element={
             <All/>}
         />
+>>>>>>> origin/main
 
       </Routes>
     </div>
