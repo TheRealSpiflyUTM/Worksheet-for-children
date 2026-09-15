@@ -1,0 +1,12 @@
+.avatar-top-right {
+position: fixed;
+top: 15px;
+right: 25px;
+cursor: pointer;
+border: 3px solid #d9d9d9;
+transition: 0.2s;
+}
+
+.avatar-top-right {
+transform: scale(1.1);
+}
