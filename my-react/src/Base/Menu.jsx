@@ -41,7 +41,7 @@ const MenuExample = () => {
   };
 
   return (
-    <div style={{ width: 256 }}>
+    <div className="menu-exemplu" style={{ width: 256 }}>
       <Button className="menu-button" type="primary" onClick={toggleCollapsed} style={{ marginBottom: 20 }}>
         {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
       </Button>

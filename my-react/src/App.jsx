@@ -1,7 +1,6 @@
 import { useState } from "react";
 import MainMinigamePage from "./MainMinigamePage.jsx";
 import ButtonKT from "./Buttons/Buttons.jsx";
-import Button1 from "./Buttons/Buttons.jsx";
 import All from "./Base/All.jsx";
 
 function App() {
@@ -10,12 +9,10 @@ function App() {
     <>
       <ButtonKT isTeacher= {isTeacher} setIsTeacher= {setIsTeacher}/>
       <MainMinigamePage isTeacher= {isTeacher}/>
-      <MainMinigamePage/>
-      <Button1/>
       <All/>
     </>
   );
 }
 
 
-export default App
+export default App;

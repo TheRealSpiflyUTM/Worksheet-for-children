@@ -27,7 +27,7 @@ function ColorMinigame(params){
     return(
       <>
         <div className="minigame addBorder">
-          <h2 className="titleText">{`Apasa pe bulina coresbunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
+          <h2 className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
             <div className="widgets">
               {animals.map((animal, index) =>(
                   <WidgetT key={index} img={animal.img} name={animal.name} letter={letter} onNameChange={(newName) => changeAnimalName(index, newName)}  />

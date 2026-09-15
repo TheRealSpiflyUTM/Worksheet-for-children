@@ -1,3 +1,7 @@
+.menu-exemplu{
+
+position: fixed;
+}
 .custom-menu {
 background-color: #e5e5e5 !important;
 border-radius: 10px;
@@ -6,13 +10,13 @@ width: 270px;
 }
 
 .custom-menu.ant-menu-inline-collapsed {
-width: 70px !important;
+width: 80px !important;
 
 }
 
 .custom-menu {
 
-min-height: 120px;
+/* min-height: 1020px; */
 }
 
 .custom-menu .ant-menu-item,
