@@ -1,15 +1,16 @@
 import { useState } from "react";
 import MainMinigamePage from "./MainMinigamePage.jsx";
 import ButtonKT from "./Buttons/Buttons.jsx";
-import All from "./Base/All.jsx";
+import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 
 function App() {
   const [isTeacher , setIsTeacher] = useState(true);
   return(
     <>
-      <ButtonKT isTeacher= {isTeacher} setIsTeacher= {setIsTeacher}/>
+      <LeftSidebar/>
       <MainMinigamePage isTeacher= {isTeacher}/>
-      <All/>
+      <ButtonKT isTeacher= {isTeacher} setIsTeacher= {setIsTeacher}/>
+      
     </>
   );
 }
