@@ -1,12 +1,17 @@
-import React from 'react';
-import { Button, Flex } from 'antd';
+import { Button, Flex } from "antd";
+import { useLocation, useNavigate } from "react-router-dom";
 import './Buttons.css';
 
-const Button1 = ({isTeacher , setIsTeacher}) => (
-  <Flex className="button-container" gap="medium" vertical>
-    <Button size="medium" type={isTeacher ?   "primary" : "default"} onClick={() => setIsTeacher(true)} >Profesor</Button>
-    <Button size="medium" type={!isTeacher ?  "primary" : "default"} onClick={() => setIsTeacher(false)}>Elev</Button>
-  </Flex>
-);
+function Navigator(){
 
-export default Button1;
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  <Flex className="button-container" gap="medium" vertical>
+    <Button size="medium" type={location.pathname === "/teacher"  ? "primary" : "default"} onClick={() => navigate("/teacher")} >Profesor</Button>
+    <Button size="medium" type={location.pathname === "/kids"     ? "primary" : "default"} onClick={() => navigate("/kids")}>Elev</Button>
+  </Flex>
+}
+
+
+export default Navigator;
