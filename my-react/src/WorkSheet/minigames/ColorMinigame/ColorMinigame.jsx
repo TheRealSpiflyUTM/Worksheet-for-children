@@ -14,20 +14,9 @@ function ColorMinigame(params){
     const updatedGame = {
       ...params.game,
       
-<<<<<<< HEAD:my-react/src/WorkSheet/minigames/ColorMinigame/ColorMinigame.jsx
       animals: params.game.animals.map((animal) =>{
         return (animal.id === animalId ? {...animal , name: newName} : animal);
       })
-=======
-<<<<<<< HEAD
-      animals: params.game.animals.map((animal) =>{
-        return (animal.id === animalId ? {...animal , name: newName} : animal);
-      })
-=======
-      animals: params.game.animals.map((animal) =>
-      animal.id === animalId ? {...animal , name: newName} : animal)
->>>>>>> origin/main
->>>>>>> origin/main:my-react/src/minigames/ColorMinigame/ColorMinigame.jsx
     };
 
     params.onGameChange(updatedGame);

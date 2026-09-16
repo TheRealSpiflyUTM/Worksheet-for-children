@@ -39,22 +39,6 @@ function MainMinigamePage(params){
   
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
   const [addedMinigames, setAddeMinigames] = useState([]);
-  /*
-  addedMinigames [
-  {id: "color-game",
-    name: "Color Game", 
-    img:"/img/ColorGame.png" , 
-    animals: [    
-      {name: "Urs" ,     img: "/img/BearImg.webp"}, 
-      {name: "Vulpe" ,   img: "/img/FoxImg.webp"},
-      {name: "Lup",      img: "/img/WolfImg.webp",},
-      ]
-    },
-  {
-    next obj  
-  },
-  ]
-  */
 
   const addMinigameFunction = (game) =>{
     const newGame = {
@@ -96,6 +80,7 @@ function MainMinigamePage(params){
               )}
             </div>
           ))}
+          <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
           <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
         </div>
       }
