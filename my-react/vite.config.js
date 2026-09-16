@@ -3,6 +3,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
+
+  // Development configuration
   server: {
     proxy: {
       "/api": {
@@ -10,5 +12,11 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+
+  // Production configuration
+  build: {
+    outDir: "../backend/src/main/resources/static",
+    emptyOutDir: true,
   },
 });
