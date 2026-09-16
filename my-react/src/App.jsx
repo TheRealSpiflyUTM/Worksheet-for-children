@@ -1,23 +1,28 @@
 import { useState } from "react";
 import {Navigate , Route , Routes} from "react-router-dom"
 import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
-<<<<<<< HEAD
-=======
-import PerspectiveNavigation from "./Buttons/Buttons.jsx";
->>>>>>> origin/main
+// import PerspectiveNavigation from "./Buttons/Buttons.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
+import AvatarExample from "./Avatar/Avatar.jsx";
+import AuthExample from "./Auth/Auth.jsx";
 
 function App() {
   return(
     <div>
 
       <LeftSidebar>
-
+        <AvatarExample />
         <Routes>
+
           <Route 
           path="/"
-          element= {<Navigate to="/teacher" replace />}
+          element= {<Navigate to="/teacher"  />}
+          />
+
+          <Route
+          path="/auth"
+          element={<AuthExample />}
           />
 
           <Route

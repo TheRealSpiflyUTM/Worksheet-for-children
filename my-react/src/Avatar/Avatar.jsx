@@ -12,10 +12,10 @@ const AvatarExample = () => {
 
   return (
     <Avatar
+      size={50}
       className="avatar-top-right"
-      size={48}
       icon={<UserOutlined />}
-      onClick={handleAvatarClick}
+      onClick={() => navigate("/auth")}
     />
   );
 };
