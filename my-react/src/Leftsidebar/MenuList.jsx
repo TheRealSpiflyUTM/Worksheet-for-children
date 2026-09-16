@@ -13,7 +13,10 @@ import {HomeOutlined,
 } from '@ant-design/icons'
 
 function MenuList(params) {
+<<<<<<< HEAD
     const navigate = useNavigate();
+=======
+>>>>>>> origin/main
     return(
         <Menu theme="dark" mode="inline" className='menu-bar'>
 
@@ -50,6 +53,7 @@ function MenuList(params) {
             <Menu.Item key="setting" icon={<SettingOutlined />}>
                 Settings
             </Menu.Item>
+<<<<<<< HEAD
 
             <Menu.Item key="workSheet" icon={<ReadOutlined />} onClick={() => navigate("/sheets")}>
                 WorkSheets
@@ -62,6 +66,11 @@ function MenuList(params) {
             <Menu.Item key="teacher" icon={<ReadOutlined />} onClick={() => navigate("/teacher")}>
                 Teacher
             </Menu.Item>
+=======
+            <Menu.Item key="workSheet" icon={<ReadOutlined />}>
+                WorkSheets
+            </Menu.Item>
+>>>>>>> origin/main
         </Menu>
     )
 }
