@@ -39,8 +39,6 @@ function MainMinigamePage(params){
   
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
   const [addedMinigames, setAddeMinigames] = useState([]);
-<<<<<<< HEAD
-=======
   /*
   addedMinigames [
   {id: "color-game",
@@ -57,7 +55,6 @@ function MainMinigamePage(params){
   },
   ]
   */
->>>>>>> origin/main
 
   const addMinigameFunction = (game) =>{
     const newGame = {
@@ -99,6 +96,7 @@ function MainMinigamePage(params){
               )}
             </div>
           ))}
+          <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
           <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
         </div>
       }
