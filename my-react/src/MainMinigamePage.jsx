@@ -97,7 +97,6 @@ function MainMinigamePage(params){
             </div>
           ))}
           <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
-          <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
         </div>
       }
 

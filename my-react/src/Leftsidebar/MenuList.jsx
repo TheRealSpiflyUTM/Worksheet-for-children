@@ -17,7 +17,7 @@ function MenuList(params) {
     return(
         <Menu theme="dark" mode="inline" className='menu-bar'>
 
-            <Menu.Item key="home" icon={<HomeOutlined />}>
+            <Menu.Item key="home" icon={<HomeOutlined />} onClick={() => navigate("/home")}>
                 Home
             </Menu.Item>
 
@@ -43,13 +43,8 @@ function MenuList(params) {
                 Progress
             </Menu.Item>
 
-            <Menu.Item key="payment" icon={<PayCircleOutlined />}>
-                Payment
-            </Menu.Item>
+            
 
-            <Menu.Item key="setting" icon={<SettingOutlined />}>
-                Settings
-            </Menu.Item>
 
             <Menu.Item key="workSheet" icon={<ReadOutlined />} onClick={() => navigate("/sheets")}>
                 WorkSheets
@@ -61,6 +56,10 @@ function MenuList(params) {
 
             <Menu.Item key="teacher" icon={<ReadOutlined />} onClick={() => navigate("/teacher")}>
                 Teacher
+            </Menu.Item>
+            
+            <Menu.Item key="setting" icon={<SettingOutlined />}>
+                Settings
             </Menu.Item>
         </Menu>
     )
