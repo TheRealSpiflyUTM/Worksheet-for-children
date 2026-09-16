@@ -3,15 +3,25 @@ import {Navigate , Route , Routes} from "react-router-dom"
 import MainMinigamePage from "./MainMinigamePage.jsx";
 import PerspectiveNavigation from "./Buttons/Buttons.jsx";
 <<<<<<< HEAD
+import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
+=======
+<<<<<<< HEAD
 =======
 import All from "./Base/All.jsx";
+>>>>>>> origin/main
 >>>>>>> origin/main
 
 function App() {
   return(
     <div>
+<<<<<<< HEAD
+      
+      <PerspectiveNavigation/>
+      <LeftSidebar />
+=======
       <PerspectiveNavigation/>
 
+>>>>>>> origin/main
       <Routes>
         <Route 
         path="/"
@@ -30,6 +40,10 @@ function App() {
             <MainMinigamePage isTeacher={false}/>}
         />
 <<<<<<< HEAD
+        
+        
+=======
+<<<<<<< HEAD
 
 =======
         
@@ -38,6 +52,7 @@ function App() {
           element={
             <All/>}
         />
+>>>>>>> origin/main
 >>>>>>> origin/main
 
       </Routes>

@@ -23,7 +23,6 @@ function MainMinigamePage(params){
     setIsAddMinigameOpen(false);
   };
 
-<<<<<<< HEAD
 
   if(params.isTeacher){
     return(<>
@@ -42,24 +41,6 @@ function MainMinigamePage(params){
           <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
         </div>
       }
-=======
-  return(<>
-    <main className="main-minigame-page">
-    {addedMinigames.length == 0 ? 
-      <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button> 
-      :
-      <div className="addedGames">
-        {addedMinigames.map((game , index) =>(
-          <div key= {`${game.id}-${index}`}>
-            {game.id === "color-game" && (
-              <ColorMinigame isTeacher={params.isTeacher} />
-            )}
-          </div>
-        ))}
-        <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
-      </div>
-    }
->>>>>>> origin/main
 
 
       {/* Nu atinge ea isi da load cand apesi butonul de addMinigame */}
