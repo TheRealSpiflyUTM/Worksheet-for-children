@@ -18,7 +18,7 @@ function ColorMinigame(params){
         return (animal.id === animalId ? {...animal , name: newName} : animal);
       })
     };
-
+    
     params.onGameChange(updatedGame);
   }
 
