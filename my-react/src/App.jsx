@@ -3,6 +3,7 @@ import {Navigate , Route , Routes} from "react-router-dom"
 import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
 import PerspectiveNavigation from "./Buttons/Buttons.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
+import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
 
 function App() {
   return(
@@ -27,6 +28,12 @@ function App() {
             path="/kids"
             element={
               <MainMinigamePage isTeacher={false}/>}
+          />
+
+          <Route
+            path="/sheets"
+            element={
+              <WorkSheetViewer/>}
           />
           
         </Routes>
