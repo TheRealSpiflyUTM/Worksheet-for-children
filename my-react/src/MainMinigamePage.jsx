@@ -39,6 +39,25 @@ function MainMinigamePage(params){
   
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
   const [addedMinigames, setAddeMinigames] = useState([]);
+<<<<<<< HEAD
+=======
+  /*
+  addedMinigames [
+  {id: "color-game",
+    name: "Color Game", 
+    img:"/img/ColorGame.png" , 
+    animals: [    
+      {name: "Urs" ,     img: "/img/BearImg.webp"}, 
+      {name: "Vulpe" ,   img: "/img/FoxImg.webp"},
+      {name: "Lup",      img: "/img/WolfImg.webp",},
+      ]
+    },
+  {
+    next obj  
+  },
+  ]
+  */
+>>>>>>> origin/main
 
   const addMinigameFunction = (game) =>{
     const newGame = {
