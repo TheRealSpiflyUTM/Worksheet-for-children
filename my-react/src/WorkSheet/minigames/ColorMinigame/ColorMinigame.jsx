@@ -14,14 +14,9 @@ function ColorMinigame(params){
     const updatedGame = {
       ...params.game,
       
-<<<<<<< HEAD
       animals: params.game.animals.map((animal) =>{
         return (animal.id === animalId ? {...animal , name: newName} : animal);
       })
-=======
-      animals: params.game.animals.map((animal) =>
-      animal.id === animalId ? {...animal , name: newName} : animal)
->>>>>>> origin/main
     };
 
     params.onGameChange(updatedGame);

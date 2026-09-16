@@ -2,7 +2,7 @@
 // T is for teacher
 // We will use this to swich between teacher and student Version 
 
-import ColorMinigame from "../minigames/ColorMinigame/ColorMinigame.jsx";
+import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import React, {useState, useRef} from 'react';
 
