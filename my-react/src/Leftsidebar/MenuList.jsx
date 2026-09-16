@@ -5,11 +5,12 @@ import {HomeOutlined,
         PayCircleOutlined,
         SettingOutlined, 
         BarsOutlined,
-        AppstoreOutlined,     
+        AppstoreOutlined,
+        ReadOutlined,     
 
 } from '@ant-design/icons'
 
-const MenuList = () => {
+function MenuList(params) {
     return(
         <Menu theme="dark" mode="inline" className='menu-bar'>
             <Menu.Item key="home" icon={<HomeOutlined />}>
@@ -38,6 +39,9 @@ const MenuList = () => {
             </Menu.Item>
             <Menu.Item key="setting" icon={<SettingOutlined />}>
                 Settings
+            </Menu.Item>
+            <Menu.Item key="workSheet" icon={<ReadOutlined />}>
+                WorkSheets
             </Menu.Item>
         </Menu>
     )

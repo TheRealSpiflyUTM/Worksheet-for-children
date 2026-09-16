@@ -3,6 +3,11 @@
 A small learning project: HTML + CSS + JavaScript + React on the frontend,
 Java + Spring Boot on the backend. It shows one addition question.
 
+## Start The Server:
+1. cd my-react 
+npm run build
+2. cd backend
+.\mvnw.cmd spring-boot:run
 ## Structure
 
 ```text
