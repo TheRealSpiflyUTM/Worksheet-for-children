@@ -4,25 +4,24 @@ import WidgetK from "./WidgetK.jsx";
 import './ColorMinigame.css';
 function ColorMinigame(params){
   // Values at the top
-
-  const [letter, changeLetter] = useState("u");
-  const [animals, changeAnimals] = useState([
-    {name: "Urs" ,     img: "/img/BearImg.webp"}, 
-    {name: "Vulpe" ,   img: "/img/FoxImg.webp"},
-    {name: "Lup",      img: "/img/WolfImg.webp",},
-  ]);
+  const animals = params.game.animals;
+  const letter = params.game.letter;
 
   // Functions here
-  function changeAnimalName(animalIndex, newName) {
+  function changeAnimalName(animalId, newName) {
     if(newName.length >= 15) return;
-    changeAnimals((currentAnimals) =>
-      currentAnimals.map((animal, index) =>
-        index === animalIndex
-          ? { ...animal, name: newName }
-          : animal
-      )
-    );
+
+    const updatedGame = {
+      ...params.game,
+      
+      animals: params.game.animals.map((animal) =>
+      animal.id === animalId ? {...animal , name: newName} : animal)
+    };
+
+    params.onGameChange(updatedGame);
   }
+
+  // Kid / Teacher Change
   if(params.isTeacher){
     return(
       <>
@@ -30,7 +29,12 @@ function ColorMinigame(params){
           <h2 className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
             <div className="widgets">
               {animals.map((animal, index) =>(
-                  <WidgetT key={index} img={animal.img} name={animal.name} letter={letter} onNameChange={(newName) => changeAnimalName(index, newName)}  />
+                  <WidgetT 
+                  key={animal.id} 
+                  img={animal.img} 
+                  name={animal.name} 
+                  letter={letter} 
+                  onNameChange={(newName) => changeAnimalName(animal.id, newName)}  />
               ))}
             </div>
         </div>
@@ -41,10 +45,15 @@ function ColorMinigame(params){
     return(
     <>
       <div className="minigame addBorder">
-        <h2 className="titleText">{`Apasa pe bulina coresbunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
+        <h2 className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
           <div className="widgets">
             {animals.map((animal, index) =>(
-                <WidgetK key={index} img={animal.img} name={animal.name} letter={letter} />
+                <WidgetK 
+                key={animal.id} 
+                img={animal.img} 
+                name={animal.name} 
+                letter={letter}
+                />
             ))}
           </div>
       </div>

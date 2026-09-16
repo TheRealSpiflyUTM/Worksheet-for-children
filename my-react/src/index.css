@@ -6,3 +6,11 @@
 .addBorder{
   border: 5px solid purple;
 }
+
+:root{
+  --background-color: rgb(245, 245, 245);
+}
+
+body{
+  background-color: var(--background-color);
+}

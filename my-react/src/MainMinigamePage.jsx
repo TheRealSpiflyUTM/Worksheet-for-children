@@ -11,30 +11,88 @@ import "./MainMinigamePage.css";
 function MainMinigamePage(params){
 
   const avaliableMinigames = [
-    {id: "color-game", name: "Color Game", img:"/img/ColorGame.png"},
+    {
+      id: "color-game",
+      name: "Color Game",
+      img: "/img/ColorGame.png",
+      letter: "u",
+
+      animals: [
+        {
+          id: "bear",
+          name: "Urs",
+          img: "/img/BearImg.webp",
+        },
+        {
+          id: "fox",
+          name: "Vulpe",
+          img: "/img/FoxImg.webp",
+        },
+        {
+          id: "wolf",
+          name: "Lup",
+          img: "/img/WolfImg.webp",
+        },
+      ],
+    },
   ];
   
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
   const [addedMinigames, setAddeMinigames] = useState([]);
-
+  /*
+  addedMinigames [
+  {id: "color-game",
+    name: "Color Game", 
+    img:"/img/ColorGame.png" , 
+    animals: [    
+      {name: "Urs" ,     img: "/img/BearImg.webp"}, 
+      {name: "Vulpe" ,   img: "/img/FoxImg.webp"},
+      {name: "Lup",      img: "/img/WolfImg.webp",},
+      ]
+    },
+  {
+    next obj  
+  },
+  ]
+  */
 
   const addMinigameFunction = (game) =>{
-    setAddeMinigames((currentGame) => [...currentGame, game]);
+    const newGame = {
+      ...game,
+      instanceId: crypto.randomUUID(),
+      animals: game.animals.map((animal) =>({
+        ...animal,
+      })),
+    };
+
+    setAddeMinigames((currentGame) => [...currentGame, newGame]);
     setIsAddMinigameOpen(false);
   };
 
+  function updateMinigame(instanceId , updatedGame){
+    setAddeMinigames((currentGame) => currentGame.map((game) => game.instanceId === instanceId ? updatedGame : game));
+  }
 
   if(params.isTeacher){
-    return(<>
+    return(<div>
       <main className="main-minigame-page">
       {addedMinigames.length == 0 ? 
         <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button> 
         :
         <div className="addedGames">
+
           {addedMinigames.map((game , index) =>(
             <div key= {`${game.id}-${index}`}>
               {game.id === "color-game" && (
-                <ColorMinigame isTeacher={params.isTeacher} />
+                <ColorMinigame 
+                isTeacher={params.isTeacher}
+                game = {game}
+                onGameChange={(updatedGame) =>
+                  updateMinigame(
+                    game.instanceId,
+                    updatedGame,
+                  )}
+                />
               )}
             </div>
           ))}
@@ -52,24 +110,25 @@ function MainMinigamePage(params){
         />
 
       </main>
-    </>);
+    </div>);
   }
-  else{
-    return(<div>
+  else {
+    return (
       <main className="main-minigame-page">
-      
         <div className="addedGames">
-          {addedMinigames.map((game , index) =>(
-            <div key= {`${game.id}-${index}`}>
+          {addedMinigames.map((game) => (
+            <div key={game.instanceId}>
               {game.id === "color-game" && (
-                <ColorMinigame isTeacher={params.isTeacher} />
+                <ColorMinigame
+                  isTeacher={false}
+                  game={game}
+                />
               )}
             </div>
           ))}
-
         </div>
       </main>
-    </div>)
+    );
   }
 }
 
