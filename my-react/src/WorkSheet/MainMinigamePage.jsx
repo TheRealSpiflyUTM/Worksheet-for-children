@@ -2,7 +2,7 @@
 // T is for teacher
 // We will use this to swich between teacher and student Version 
 
-import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
+import ColorMinigame from "../minigames/ColorMinigame/ColorMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import React, {useState, useRef} from 'react';
 
@@ -39,25 +39,6 @@ function MainMinigamePage(params){
   
   const [isAddMinigameOpen , setIsAddMinigameOpen] = useState(false);
   const [addedMinigames, setAddeMinigames] = useState([]);
-<<<<<<< HEAD
-=======
-  /*
-  addedMinigames [
-  {id: "color-game",
-    name: "Color Game", 
-    img:"/img/ColorGame.png" , 
-    animals: [    
-      {name: "Urs" ,     img: "/img/BearImg.webp"}, 
-      {name: "Vulpe" ,   img: "/img/FoxImg.webp"},
-      {name: "Lup",      img: "/img/WolfImg.webp",},
-      ]
-    },
-  {
-    next obj  
-  },
-  ]
-  */
->>>>>>> origin/main
 
   const addMinigameFunction = (game) =>{
     const newGame = {

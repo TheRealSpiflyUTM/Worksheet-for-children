@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {Navigate , Route , Routes} from "react-router-dom"
-import MainMinigamePage from "./MainMinigamePage.jsx";
+import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
 import PerspectiveNavigation from "./Buttons/Buttons.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 
