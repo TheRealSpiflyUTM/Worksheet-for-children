@@ -3,14 +3,14 @@
     background-color: rgb(107, 110, 106);
 }
 
-.menu-bar{
-    height: 100vh;
-    margin-top: 3rem;
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    font-size: 1rem;
-    position: relative;
-    background-color: rgb(107, 110, 106);
-    
+.menu-bar {
+  min-height: 100%;
+  padding-top: 3rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+
+  font-size: 1rem;
+  background-color: rgb(107, 110, 106);
 }
