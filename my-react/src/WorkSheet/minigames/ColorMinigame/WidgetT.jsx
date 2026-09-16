@@ -1,5 +1,4 @@
 import React, {useState, useRef} from 'react';
-import { animals } from "../../data/animals.js";
 import "./WidgetT.css"
 function Widget (params){
 
