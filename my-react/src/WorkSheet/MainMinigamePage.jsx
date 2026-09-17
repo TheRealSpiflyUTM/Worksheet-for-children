@@ -113,29 +113,9 @@ useEffect(() => {
                   </button>
                 )}
 
-<<<<<<< HEAD
               </div>
             ))}
           </div>
-=======
-          {addedMinigames.map((game , index) =>(
-            <div key= {`${game.id}-${index}`}>
-              {game.id === "color-game" && (
-                <ColorMinigame 
-                isTeacher={params.isTeacher}
-                game = {game}
-                onGameChange={(updatedGame) =>
-                  updateMinigame(
-                    game.instanceId,
-                    updatedGame,
-                  )}
-                />
-              )}
-            </div>
-          ))}
-          <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
-          <button className= "fistAddMiniga meButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button>
->>>>>>> origin/main
         </div>
       }
 
