@@ -20,6 +20,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
 	"spring.datasource.url=jdbc:h2:mem:animal-test;DB_CLOSE_DELAY=-1",
+	"app.auth.database-url=jdbc:h2:mem:auth-context-test;DB_CLOSE_DELAY=-1",
 	"app.upload-directory=./target/test-uploads"
 })
 class BackendApplicationTests {
