@@ -54,14 +54,53 @@ These connection settings assume the backend runs on your computer and
 PostgreSQL runs in Docker.
 
 The `minigame1` and `auth_users` tables share this database but store separate
-records. JPA creates or updates their structure at startup using
-`spring.jpa.hibernate.ddl-auto=update`. The earlier H2 file database is no
+records. Flyway creates and updates their structure at startup using the SQL
+migrations in `src/main/resources/db/migration`. Hibernate checks that the
+schema matches the entities using `spring.jpa.hibernate.ddl-auto=validate`.
+The earlier H2 file database is no
 longer used for application data; H2 is used only by the default tests.
 
 PostgreSQL files are stored in the root `database/postgres-data` folder,
 mounted into the container at `/var/lib/postgresql`. They are ignored by Git.
 Do not edit these files directly. Accounts remain saved after restarting the
 backend or container.
+
+### Shared schema and sample data
+
+For a new clone, start PostgreSQL and the backend with the commands above.
+Flyway automatically applies `V1__create_tables.sql` and
+`V2__insert_sample_game_data.sql`. The result is an empty `auth_users` table
+and two Minigame1 samples: Cat and Vegetables. Create your own account through
+signup. Real accounts and password hashes are never included in migrations.
+
+The two sample images in `data/uploads` are explicitly included by
+`backend/.gitignore`; other uploaded files remain ignored. Commit both the
+migration files and the sample images when sharing this setup. Always run
+the backend from `backend` so the configured image directories resolve.
+
+Flyway records completed migrations in `flyway_schema_history`. Restarting
+the application does not insert the samples again. The sample inserts also
+skip an image filename already present and use generated IDs to avoid ID
+collisions. Each developer has a separate database: new local uploads are
+not automatically shared by GitHub.
+
+For future changes, add `V3__description.sql`, then `V4__description.sql`,
+and so on. Do not edit migrations already applied to a shared database.
+To share more game content, include its SQL inserts and matching image files.
+
+### Existing databases created before Flyway
+
+An existing database must be backed up and its tables compared with V1 before
+adoption. If they match exactly, run this **once**, from `backend`:
+
+```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.arguments=--spring.flyway.baseline-on-migrate=true --spring.flyway.baseline-version=1'
+```
+
+This records V1 as already present, then applies V2. Future starts use the
+normal command without these arguments. Do not enable automatic baselining
+in the shared configuration: it could hide a mismatched existing schema.
+An empty database needs no baseline and should use the normal startup command.
 
 To inspect tables with Microsoft's PostgreSQL extension in VS Code, connect
 using the settings above and expand:
@@ -262,6 +301,10 @@ From `backend`, run:
 ```
 
 Default tests use in-memory H2 databases, not the saved PostgreSQL users.
+These tests disable Flyway and let Hibernate create/drop their isolated
+test tables. Verify PostgreSQL migrations separately against a fresh disposable
+PostgreSQL database, keeping Hibernate validation enabled. Check that both
+samples and their image endpoints load and that a restart creates no duplicates.
 They cover signup, password hashing, validation, duplicate emails, login,
 sessions, logout, cross-origin requests, Minigame1 behavior, and Count & Match.
 
