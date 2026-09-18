@@ -1,8 +1,0 @@
-.button-container {
-  position: fixed;
-  left: 50px;
-  top: 50%;
-  transform: translateY(-50%);
-  
-  /* gap: 20px; */
-}

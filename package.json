@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "antd": "^6.6.4"
+    "@ant-design/icons": "^6.3.4",
+    "react-router-dom": "^7.18.4"
   }
 }
