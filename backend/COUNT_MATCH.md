@@ -5,7 +5,7 @@ It reads the prepared PNG files directly; no database tables or uploads are need
 
 ## Run
 
-From `backend/backend`, run:
+From `backend`, run:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -57,3 +57,4 @@ This backend step supplies the images only.
 Add PNG files to an existing category folder and they appear on the next request.
 To add a category, add its lowercase name to `CATEGORIES` in `CountMatchService`
 and create a folder with the first letter capitalized.
+
