@@ -5,10 +5,11 @@ import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
 import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
 
 import CodeLogin from "../pin login/codelogin.jsx";
-import AuthExample from "./Auth/Auth.jsx";
+import AuthExample from "./Auth/Login.jsx";
 import AuthButtons from "../AuthButtons/AuthButtons.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import Avatar from "./Avatar/Avatar.jsx";
+import SignUp from "./Auth/SignUp.jsx";
 
 function App() {
 const location = useLocation();
@@ -48,7 +49,7 @@ return (
             {/* SIGN UP */}
             <Route
                 path="/signup"
-                element={<AuthExample />}
+                element={<SignUp />}
             />
 
             {/* ACCOUNT */}

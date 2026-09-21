@@ -3,7 +3,7 @@ import { Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import "./Auth.css";
 
-const AuthExample = () => {
+const Login = () => {
 const [passwordVisible, setPasswordVisible] = React.useState(false);
 
 const navigate = useNavigate();
@@ -14,12 +14,14 @@ return (
 
             <Input
                 placeholder="Username"
+                maxLength={25}
                 className="username-input"
             />
 
             <div className="password-row">
                 <Input.Password
                     placeholder="Password"
+                    maxLength={25}
                     visibilityToggle={{
                         visible: passwordVisible,
                         onVisibleChange: setPasswordVisible
@@ -42,4 +44,4 @@ return (
 
 };
 
-export default AuthExample;
+export default Login;
