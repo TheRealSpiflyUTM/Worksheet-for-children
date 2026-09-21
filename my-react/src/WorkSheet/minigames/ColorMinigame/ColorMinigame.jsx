@@ -22,11 +22,11 @@ function ColorMinigame(params){
     params.onGameChange(updatedGame);
   }
 
-  // Kid / Teacher Change
+  // Teacher / Kid Change
   if(params.isTeacher){
     return(
       <>
-        <div className="minigame addBorder">
+        <div className="minigame">
           <h2 className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
             <div className="widgets">
               {animals.map((animal, index) =>(
