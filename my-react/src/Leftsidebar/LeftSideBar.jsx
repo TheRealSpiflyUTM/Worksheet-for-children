@@ -14,7 +14,7 @@ const SIDEBAR_COLLAPSED_WIDTH = 80;
 const HEADER_HEIGHT = 64;
 
 function LeftSidebar({ children }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const {
     token: { colorBgContainer },
@@ -53,29 +53,30 @@ function LeftSidebar({ children }) {
         }}
       >
         <Header
-          style={{
-            position: "fixed",
-            top: 0,
-            left: sidebarWidth,
-            right: 0,
-            height: HEADER_HEIGHT,
-            padding: 0,
-            background: colorBgContainer,
-            zIndex: 100,
-            transition: "left 0.2s",
-          }}
-        >
-          <Button
-            type="text"
-            className="toggle"
-            onClick={() => setCollapsed(!collapsed)}
-            icon={
-              collapsed
+    style={{
+        position: "fixed",
+        top: 0,
+        left: sidebarWidth,
+        right: 0,
+        height: HEADER_HEIGHT,
+        padding: 0,
+        background: colorBgContainer,
+        zIndex: 100,
+        transition: "left 0.2s",
+    }}
+>
+    <Button
+        type="text"
+        className="toggle"
+        onClick={() => setCollapsed(!collapsed)}
+        icon={
+            collapsed
                 ? <MenuUnfoldOutlined />
                 : <MenuFoldOutlined />
-            }
-          />
-        </Header>
+        }
+    />
+</Header>
+
 
         <Content
           style={{
