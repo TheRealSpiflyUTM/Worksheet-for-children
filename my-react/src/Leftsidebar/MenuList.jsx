@@ -1,68 +1,102 @@
-import { Menu } from "antd";
-import {useNavigate} from "react-router-dom"
+import { Menu, ConfigProvider } from "antd";
+import { useNavigate } from "react-router-dom";
 
-import {HomeOutlined, 
-        AppstoreAddOutlined,
-        AreaChartOutlined,
-        PayCircleOutlined,
-        SettingOutlined, 
-        BarsOutlined,
-        AppstoreOutlined,
-        ReadOutlined,     
+import {
+    HomeOutlined,
+    AreaChartOutlined,
+    SettingOutlined,
+    BarsOutlined,
+    AppstoreOutlined,
+    ReadOutlined,
+} from "@ant-design/icons";
 
-} from '@ant-design/icons'
-
-function MenuList(params) {
+function MenuList() {
     const navigate = useNavigate();
-    return(
-        <Menu theme="dark" mode="inline" className='menu-bar'>
 
-            <Menu.Item key="home" icon={<HomeOutlined />} onClick={() => navigate("/home")}>
-                Home
-            </Menu.Item>
+    return (
+        <ConfigProvider
+            theme={{
+                components: {
+                    Menu: {
+                        itemBg: "rgb(39, 55, 77)",
+                        itemColor: "rgb(221, 230, 237)",
 
-            <Menu.Item key="activity" icon={<AppstoreOutlined />}>
-                Activity
-            </Menu.Item>
+                        itemHoverBg: "rgb(82, 109, 130)",
+                        itemHoverColor: "rgb(221, 230, 237)",
 
-            <Menu.Item key="subtasks" icon={<BarsOutlined />}>
-                Tasks
-            </Menu.Item>
+                        itemSelectedBg: "rgb(157, 178, 191)",
+                        itemSelectedColor: "rgb(39, 55, 77)",
+                        itemBorderRadius: 3,
+                    },
+                },
+            }}
+        >
+            <Menu mode="inline" className="menu-bar">
 
-            {/* <Menu.SubMenu key='subtasks' icon={<BarsOutlined />} 
-            title="Tasks">
-                <Menu.Item key='task-1'>Task 1</Menu.Item>
-                <Menu.Item key='task-2'>Task 2</Menu.Item>
-                <Menu.SubMenu key='subtasks' title='Subtasks'>
-                    <Menu.Item key='subtask-1'>Subtask 1</Menu.Item>
-                    <Menu.Item key='subtask-2'>Subtask 2</Menu.Item>
-                </Menu.SubMenu>
-            </Menu.SubMenu> */}
+                <Menu.Item
+                    key="home"
+                    icon={<HomeOutlined />}
+                    onClick={() => navigate("/home")}
+                >
+                    Home
+                </Menu.Item>
 
-            <Menu.Item key="progress" icon={<AreaChartOutlined />}>
-                Progress
-            </Menu.Item>
+                <Menu.Item
+                    key="activity"
+                    icon={<AppstoreOutlined />}
+                    onClick={() => navigate("/activity")}
+                >
+                    Activity
+                </Menu.Item>
 
-            
+                <Menu.Item
+                    key="subtasks"
+                    icon={<BarsOutlined />}
+                >
+                    Tasks
+                </Menu.Item>
 
+                <Menu.Item
+                    key="progress"
+                    icon={<AreaChartOutlined />}
+                >
+                    Progress
+                </Menu.Item>
 
-            <Menu.Item key="workSheet" icon={<ReadOutlined />} onClick={() => navigate("/sheets")}>
-                WorkSheets
-            </Menu.Item>
+                <Menu.Item
+                    key="workSheet"
+                    icon={<ReadOutlined />}
+                    onClick={() => navigate("/sheets")}
+                >
+                    WorkSheets
+                </Menu.Item>
 
-            <Menu.Item key="kids" icon={<ReadOutlined />} onClick={() => navigate("/kids")}>
-                Kids
-            </Menu.Item>
+                <Menu.Item
+                    key="kids"
+                    icon={<ReadOutlined />}
+                    onClick={() => navigate("/kids")}
+                >
+                    Kids
+                </Menu.Item>
 
-            <Menu.Item key="teacher" icon={<ReadOutlined />} onClick={() => navigate("/teacher")}>
-                Teacher
-            </Menu.Item>
-            
-            <Menu.Item key="setting" icon={<SettingOutlined />}>
-                Settings
-            </Menu.Item>
-        </Menu>
-    )
+                <Menu.Item
+                    key="teacher"
+                    icon={<ReadOutlined />}
+                    onClick={() => navigate("/teacher")}
+                >
+                    Teacher
+                </Menu.Item>
+
+                <Menu.Item
+                    key="setting"
+                    icon={<SettingOutlined />}
+                >
+                    Settings
+                </Menu.Item>
+
+            </Menu>
+        </ConfigProvider>
+    );
 }
 
 export default MenuList;

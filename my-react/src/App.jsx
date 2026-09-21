@@ -1,5 +1,5 @@
-import { useState } from "react";
-import {Navigate , Route , Routes} from "react-router-dom"
+import { ConfigProvider } from "antd";
+import { Navigate, Route, Routes } from "react-router-dom";
 import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
@@ -8,17 +8,20 @@ import AuthExample from "./Auth/Auth.jsx";
 import Login from "../pin login/login.jsx";
 
 function App() {
-  return(
-    <div>
+return (
+<ConfigProvider
+theme={{
+token: {
+colorPrimary: "rgb(14, 71, 161)",
+},
+}}
+> <div> <LeftSidebar> <AvatarExample />
 
-      <LeftSidebar>
-        <AvatarExample />
-        <Routes>
-
-          <Route 
+      <Routes>
+        <Route
           path="/"
-          element= {<Navigate to="/teacher"  />}
-          />
+          element={<Navigate to="/teacher" />}
+        />
 
           <Route
           path="/activity"
@@ -28,31 +31,28 @@ function App() {
           <Route
           path="/auth"
           element={<AuthExample />}
-          />
+        />
 
-          <Route
-            path="/teacher"
-            element={
-              <MainMinigamePage isTeacher={true}/>}
-          />
-          
-          <Route
-            path="/kids"
-            element={
-              <MainMinigamePage isTeacher={false}/>}
-          />
+        <Route
+          path="/teacher"
+          element={<MainMinigamePage isTeacher={true} />}
+        />
 
-          <Route
-            path="/sheets"
-            element={
-              <WorkSheetViewer/>}
-          />
-          
-        </Routes>
-      </LeftSidebar>
-    </div>
-  );
+        <Route
+          path="/kids"
+          element={<MainMinigamePage isTeacher={false} />}
+        />
+
+        <Route
+          path="/sheets"
+          element={<WorkSheetViewer />}
+        />
+      </Routes>
+    </LeftSidebar>
+  </div>
+</ConfigProvider>
+
+);
 }
 
-
-export default App
+export default App;
