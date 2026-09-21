@@ -1,7 +1,10 @@
-import React, {useState, useRef} from 'react';
+import { Typography } from 'antd';
 import WidgetT from "./WidgetT.jsx";
 import WidgetK from "./WidgetK.jsx";
 import './ColorMinigame.css';
+
+const { Title } = Typography;
+
 function ColorMinigame(params){
   // Values at the top
   const animals = params.game.animals;
@@ -27,9 +30,9 @@ function ColorMinigame(params){
     return(
       <>
         <div className="minigame">
-          <h2 className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
+          <Title level={2} className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</Title>
             <div className="widgets">
-              {animals.map((animal, index) =>(
+              {animals.map((animal) =>(
                   <WidgetT 
                   key={animal.id} 
                   img={animal.img} 
@@ -46,9 +49,9 @@ function ColorMinigame(params){
     return(
     <>
       <div className="minigame addBorder">
-        <h2 className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</h2>
+        <Title level={2} className="titleText">{`Apasa pe bulina corespunzatoare sunetului "${letter.toUpperCase()}"`}</Title>
           <div className="widgets">
-            {animals.map((animal, index) =>(
+            {animals.map((animal) =>(
                 <WidgetK 
                 key={animal.id} 
                 img={animal.img} 

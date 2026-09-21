@@ -4,7 +4,9 @@
 
 import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
-import React, {useState, useRef, useEffect} from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 import "./MainMinigamePage.css"; 
 
@@ -51,8 +53,25 @@ function MainMinigamePage(params){
         ...animal,
       })),
     };
+    
+    setAddeMinigames((currentGames) => {
 
-    setAddeMinigames((currentGame) => [...currentGame, newGame]);
+      if(currentGames.length === 0) return [newGame];
+
+      const selectedIndex = currentGames.findIndex(
+        (currentGame) => currentGame.instanceId === selectedGameId
+      );
+      console.log(selectedIndex);
+      if(selectedIndex === -1) return [...currentGames, newGame];
+
+      const updatedGames = [...currentGames];
+
+      updatedGames.splice(selectedIndex + 1, 0 , newGame);
+
+      return updatedGames;
+    });
+
+    setSelectedGameId(newGame.instanceId);
     setIsAddMinigameOpen(false);
   };
 
@@ -63,6 +82,9 @@ function MainMinigamePage(params){
   
 useEffect(() => {
   function handleClickAway(event) {
+    if(isAddMinigameOpen){
+      return;
+    }
     if (
       selectedAreaRef.current &&
       !selectedAreaRef.current.contains(event.target)
@@ -76,13 +98,23 @@ useEffect(() => {
   return () => {
     document.removeEventListener("pointerdown", handleClickAway);
   };
-}, []);
+}, [isAddMinigameOpen]);
 
 
   if(params.isTeacher){
     return(<div>
       <main className="main-minigame-page">
-      {addedMinigames.length == 0 ? <button className= "fistAddMinigameButton" onClick={() => setIsAddMinigameOpen(true)}>Add Minigame</button> 
+      {addedMinigames.length === 0 ? (
+        <Button
+          className="firstAddMinigameButton"
+          type="primary"
+          size="large"
+          icon={<PlusOutlined />}
+          onClick={() => setIsAddMinigameOpen(true)}
+        >
+          Add Minigame
+        </Button>
+      )
         :<div className="addedGames" >
           <div ref={selectedAreaRef} className="addedGames">
             {addedMinigames.map((game , index) =>(
@@ -91,7 +123,7 @@ useEffect(() => {
                     "addBorder selectedGame"
                   : "addBorder"
                 } 
-                key= {`${game.id}-${index}`}
+                key= {`${game.instanceId}`}
                 onClick={() => setSelectedGameId(game.instanceId)}
               >
                 {game.id === "color-game" && (
@@ -105,12 +137,14 @@ useEffect(() => {
                 )}
                 
                 {selectedGameId === game.instanceId && (
-                  <button
-                    className="fistAddMiniga meButton" 
-                    onClick={() => setIsAddMinigameOpen(true)} 
+                  <Button
+                    className="addMinigameButton"
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsAddMinigameOpen(true)}
                   >
                     Add Minigame
-                  </button>
+                  </Button>
                 )}
 
               </div>

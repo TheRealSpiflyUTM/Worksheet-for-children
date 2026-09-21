@@ -1,5 +1,9 @@
-import React, {useState, useRef} from 'react';
+import { useState } from 'react';
+import { Button, Image, Typography } from 'antd';
 import "./WidgetK.css"
+
+const { Title } = Typography;
+
 function Widget (params){
 
   // Values
@@ -31,14 +35,18 @@ function Widget (params){
 
   return(<>
     <div className="widget">
-      <img src={params.img} alt="animal Image" />
-      <h4 className='animalName'>{params.name}</h4>
+      <Image src={params.img} alt={params.name} preview={false} />
+      <Title level={4} className='animalNameText'>{params.name}</Title>
       <div className='bubles'>
         {bubles.map((buble, index)=> (
-          <button 
+          <Button
             key={index} 
+            type={buble ? "primary" : "default"}
+            shape="circle"
             className={buble ? "bubleActive" : "buble"} 
             onClick={() => bubleVerification(index)}
+            aria-label={`Litera ${index + 1} din ${params.name}`}
+            aria-pressed={buble}
           />
 
         ))}

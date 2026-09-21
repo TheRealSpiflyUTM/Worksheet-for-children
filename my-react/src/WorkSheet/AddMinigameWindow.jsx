@@ -1,21 +1,35 @@
+import { Button, Card, Image, Modal, Typography } from "antd";
+
+const { Title } = Typography;
+
 function AddMinigameWindow(params) {
-  
-  if(!params.open) return;
-  
-  return(<>
-    <div className="addMinigameWindow">
+  return (
+    <Modal
+      className="addMinigameWindow"
+      open={params.open}
+      title="Add Minigame"
+      onCancel={params.closeFuntion}
+      footer={
+        <Button onClick={params.closeFuntion}>
+          Close
+        </Button>
+      }
+      width={900}
+    >
       <div className="games">
-
-        {params.games.map((game, index) => (
-          <div key={index} className="game addBorder" onClick={() => params.addMinigame(game)}>
-            <h2>{game.name}</h2>
-            <img src={game.img} alt="Game Image" />
-          </div>
+        {params.games.map((game) => (
+          <Card
+            key={game.id}
+            className="game"
+            hoverable
+            onClick={() => params.addMinigame(game)}
+            cover={<Image src={game.img} alt={game.name} preview={false} />}
+          >
+            <Title level={4}>{game.name}</Title>
+          </Card>
         ))}
-
-      <button className="closeButton" onClick={params.closeFuntion}>CloseWindow</button>
       </div>
-    </div>
-  </>);
+    </Modal>
+  );
 }
-export default AddMinigameWindow
+export default AddMinigameWindow;
