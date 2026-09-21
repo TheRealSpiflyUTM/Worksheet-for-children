@@ -23,12 +23,12 @@ colorPrimary: "rgb(14, 71, 161)",
           element={<Navigate to="/teacher" />}
         />
 
-        <Route
+          <Route
           path="/activity"
           element={<Login />}
-        />
-
-        <Route
+          />
+          
+          <Route
           path="/auth"
           element={<AuthExample />}
         />

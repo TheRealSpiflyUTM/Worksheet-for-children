@@ -37,3 +37,6 @@ data/database/*
 data/uploads/*
 !data/database/.gitkeep
 !data/uploads/.gitkeep
+# Sample images referenced by V2; other runtime uploads remain local.
+!data/uploads/754f189b-b7eb-410c-923d-9d3690251b9a.png
+!data/uploads/a17f14db-469c-4bde-9d30-f210d40d4576.png

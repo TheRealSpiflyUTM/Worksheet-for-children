@@ -1,0 +1,12 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: worksheets-postgres
+    environment:
+      POSTGRES_DB: worksheets
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/postgres-data:/var/lib/postgresql
