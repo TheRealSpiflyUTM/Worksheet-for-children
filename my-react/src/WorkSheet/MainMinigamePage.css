@@ -9,35 +9,38 @@ body{
     width: 60%;
     margin: 0 auto;
 }
-.main-minigame-page .addMinigameWindow{
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
+.firstAddMinigameButton.ant-btn{
     display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-    background-color: rgba(0, 0, 0, 0.45);
+    margin: 2rem auto;
 }
 .addMinigameWindow .games{
-    display: flex;
-    justify-content: space-evenly;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 2rem;
-    flex-wrap: wrap;
-    padding: 2rem;
-    background-color: rgb(197, 3, 3);
-    width: min(900px, 90vw);
-    max-height: 80vh;
+    padding: 0.25rem;
+    max-height: 65vh;
     overflow-y: auto;
-    position: relative;
 }
-.addMinigameWindow .game{
+.addMinigameWindow .game.ant-card{
     cursor: pointer;
+    overflow: hidden;
 }
-.addMinigameWindow .closeButton{
-    position: absolute;
-    right: 0;
-    bottom: 0;
+.addMinigameWindow .game .ant-image,
+.addMinigameWindow .game .ant-image-img{
+    display: block;
+    width: 100%;
+}
+.addMinigameWindow .game .ant-image-img{
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+.addMinigameWindow .game .ant-typography{
+    margin: 0;
+    text-align: center;
+}
+.addMinigameButton.ant-btn{
+    display: flex;
+    margin: 1rem auto;
 }
 .AddGamesFromGameWindow{
     display: flex;

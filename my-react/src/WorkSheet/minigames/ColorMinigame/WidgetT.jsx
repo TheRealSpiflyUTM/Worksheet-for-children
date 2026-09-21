@@ -1,4 +1,5 @@
-import React, {useState, useRef} from 'react';
+import { useState } from 'react';
+import { Button, Image, Input } from 'antd';
 import "./WidgetT.css"
 function Widget (params){
 
@@ -33,21 +34,27 @@ function Widget (params){
 
   return(<>
     <div className="widget">
-      <img src={params.img} alt="animal Image" />
-      <input type='text' className='animalName' value={params.name} 
+      <Image src={params.img} alt={params.name} preview={false} />
+      <Input className='animalNameInput' value={params.name}
+        maxLength={14}
+        aria-label="Numele animalului"
         onChange={(event) =>{
           const newName = event.target.value;
           params.onNameChange(newName);
           setBuble(Array.from(newName, () => false));
         }}
-        ></input>
+      />
       
       <div className='bubles'>
         {bubles.map((buble, index)=> (
-          <button 
+          <Button
             key={index} 
+            type={buble ? "primary" : "default"}
+            shape="circle"
             className={buble ? "bubleActive" : "buble"} 
             onClick={() => bubleVerification(index)}
+            aria-label={`Litera ${index + 1} din ${params.name}`}
+            aria-pressed={buble}
           />
         ))}
       </div>
