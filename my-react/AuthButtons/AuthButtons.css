@@ -1,0 +1,29 @@
+.home-button {
+position: absolute;
+left: 20px;
+top: 12px;
+
+height: 40px;
+padding: 0 15px;
+border-radius: 8px;
+font-size: 16px;
+
+}
+
+.auth-buttons {
+position: absolute;
+right: 20px;
+top: 12px;
+
+display: flex;
+gap: 10px;
+
+}
+
+.login-button,
+.signup-button {
+height: 40px;
+padding: 0 20px;
+border-radius: 8px;
+font-size: 16px;
+}

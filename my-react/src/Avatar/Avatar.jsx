@@ -15,7 +15,7 @@ const AvatarExample = () => {
       size={50}
       className="avatar-top-right"
       icon={<UserOutlined />}
-      onClick={() => navigate("/auth")}
+      
     />
   );
 };
