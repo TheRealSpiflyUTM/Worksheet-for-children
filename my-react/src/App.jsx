@@ -5,6 +5,7 @@ import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
 import AvatarExample from "./Avatar/Avatar.jsx";
 import AuthExample from "./Auth/Auth.jsx";
+import Login from "../pin login/login.jsx";
 
 function App() {
   return(
@@ -19,6 +20,11 @@ function App() {
           element= {<Navigate to="/teacher"  />}
           />
 
+          <Route
+          path="/activity"
+          element={<Login />}
+          />
+          
           <Route
           path="/auth"
           element={<AuthExample />}
