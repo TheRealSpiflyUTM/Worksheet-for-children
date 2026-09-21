@@ -17,7 +17,7 @@ const filter = (inputValue, path) =>
     option.label.toLowerCase().includes(inputValue.toLowerCase())
   );
 
-function Login() {
+function CodeLogin() {
   const [pin, setPin] = React.useState('');
   const [pinVerified, setPinVerified] = React.useState(false);
   const [pinError, setPinError] = React.useState('');
@@ -79,4 +79,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default CodeLogin;
