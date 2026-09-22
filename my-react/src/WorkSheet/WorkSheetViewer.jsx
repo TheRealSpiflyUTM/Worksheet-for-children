@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { Alert, Card, Flex, List, Spin, Typography } from "antd";
+
+const { Title } = Typography;
 
 function WorkSheetViewer() {
   const [workSheets, setWorkSheets] = useState([]);
@@ -27,23 +30,32 @@ function WorkSheetViewer() {
   }, []);
 
   if (isLoading) {
-    return <p>Loading worksheets...</p>;
+    return (
+      <Flex justify="center" align="center">
+        <Spin size="large" tip="Loading worksheets...">
+          <div className="worksheetLoadingContent" />
+        </Spin>
+      </Flex>
+    );
   }
 
   if (error) {
-    return <p>{error}</p>;
+    return <Alert type="error" message="Could not load worksheets" description={error} showIcon />;
   }
 
   return (
-    <div>
-      <h2>My worksheets</h2>
-
-      {workSheets.map((sheet) => (
-        <div key={sheet.id}>
-          <h3>{sheet.name}</h3>
-        </div>
-      ))}
-    </div>
+    <section>
+      <Title level={2}>My worksheets</Title>
+      <List
+        dataSource={workSheets}
+        locale={{ emptyText: "No worksheets yet" }}
+        renderItem={(sheet) => (
+          <List.Item key={sheet.id}>
+            <Card title={sheet.name} className="worksheetCard" />
+          </List.Item>
+        )}
+      />
+    </section>
   );
 }
 

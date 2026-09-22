@@ -39,15 +39,15 @@ function MenuList() {
                     onClick={() => navigate("/home")}
                 >
                     Home
-                </Menu.Item>
+                </Menu.Item> 
 
-                <Menu.Item
+                {/* <Menu.Item
                     key="activity"
                     icon={<AppstoreOutlined />}
                     onClick={() => navigate("/activity")}
                 >
                     Activity
-                </Menu.Item>
+                </Menu.Item> */}
 
                 <Menu.Item
                     key="subtasks"

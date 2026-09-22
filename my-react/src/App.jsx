@@ -1,49 +1,60 @@
 import { ConfigProvider } from "antd";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
+
 import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
-import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
-import AvatarExample from "./Avatar/Avatar.jsx";
-import AuthExample from "./Auth/Auth.jsx";
-import Login from "../pin login/login.jsx";
+
+import CodeLogin from "../pin login/codelogin.jsx";
+import AuthExample from "./Auth/Login.jsx";
+import AuthButtons from "../AuthButtons/AuthButtons.jsx";
+import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import Avatar from "./Avatar/Avatar.jsx";
+import SignUp from "./Auth/SignUp.jsx";
 import MenuClass from "./Home/Menu.jsx";
 
 function App() {
+const location = useLocation();
+
+const showPinLogin = location.pathname === "/";
+const showAuthButtons = location.pathname !== "/account";
+
 return (
-<ConfigProvider
-theme={{
-token: {
-colorPrimary: "rgb(14, 71, 161)",
-},
-}}
-> <div> <LeftSidebar> <AvatarExample />
+    <ConfigProvider
+        theme={{
+            token: {
+                colorPrimary: "rgb(14, 71, 161)",
+            },
+        }}
+    >
+        {showAuthButtons && <AuthButtons />}
 
-      <Routes>
-        <Route
-          path="/"
-          element={<Navigate to="/teacher" />}
-        />
+        <Routes>
 
-          <Route
-          path="/activity"
-          element={<Login />}
-          />
-          
-          <Route
-          path="/auth"
-          element={<AuthExample />}
-        />
+            {/* HOME */}
+            <Route
+                path="/"
+                element={
+                    <>
+                        <MainMinigamePage isTeacher={false} />
+                        {showPinLogin && <CodeLogin />}
+                    </>
+                }
+            />
 
-        <Route
-          path="/teacher"
-          element={<MainMinigamePage isTeacher={true} />}
-        />
+            {/* LOGIN */}
+            <Route
+                path="/login"
+                element={<AuthExample />}
+            />
 
         <Route
             path="/home"
-            element={
+            element={ 
+                <LeftSidebar>
+                    <Avatar />
                     <MenuClass />
+                </LeftSidebar> 
+                   
             }
         />
 
@@ -57,17 +68,59 @@ colorPrimary: "rgb(14, 71, 161)",
           path="/kids"
           element={<MainMinigamePage isTeacher={false} />}
         />
+            {/* SIGN UP */}
+            <Route
+                path="/signup"
+                element={<SignUp />}
+            />
 
-        <Route
-          path="/sheets"
-          element={<WorkSheetViewer />}
-        />
-      </Routes>
-    </LeftSidebar>
-  </div>
-</ConfigProvider>
+            {/* ACCOUNT */}
+            <Route
+                path="/account"
+                element={
+                    <LeftSidebar>
+                        <Avatar />
+                    </LeftSidebar>
+                }
+            />
 
+            {/* WORKSHEETS */}
+            <Route
+                path="/sheets"
+                element={
+                    <LeftSidebar>
+                        <Avatar />
+                        <WorkSheetViewer />
+                    </LeftSidebar>
+                }
+            />
+
+            {/* TEACHER */}
+            <Route
+                path="/teacher"
+                element={
+                    <LeftSidebar>
+                        <Avatar />
+                        <MainMinigamePage isTeacher={true} />
+                    </LeftSidebar>
+                }
+            />
+
+            {/* KIDS */}
+            <Route
+                path="/kids"
+                element={
+                    <LeftSidebar>
+                        <Avatar />
+                        <MainMinigamePage isTeacher={false} />
+                    </LeftSidebar>
+                }
+            />
+
+        </Routes>
+    </ConfigProvider>
 );
+
 }
 
 export default App;
