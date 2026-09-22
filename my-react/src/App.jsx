@@ -6,6 +6,8 @@ import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
 import AvatarExample from "./Avatar/Avatar.jsx";
 import AuthExample from "./Auth/Auth.jsx";
 import Login from "../pin login/login.jsx";
+import Avatar from "./Avatar/Avatar.jsx";
+import MenuClass from "./Home/Menu.jsx";
 
 function App() {
 return (
@@ -37,6 +39,22 @@ colorPrimary: "rgb(14, 71, 161)",
           path="/teacher"
           element={<MainMinigamePage isTeacher={true} />}
         />
+            {/* HOME */}
+                        <Route
+                            path="/home"
+                            element={
+                                <LeftSidebar>
+                                    <Avatar />
+                                    <ClassMenu />
+                                </LeftSidebar>
+                            }
+                        />
+
+            {/* LOGIN */}
+            <Route
+                path="/login"
+                element={<AuthExample />}
+            />
 
         <Route
           path="/kids"
