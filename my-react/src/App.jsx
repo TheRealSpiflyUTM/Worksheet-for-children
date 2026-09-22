@@ -39,22 +39,19 @@ colorPrimary: "rgb(14, 71, 161)",
           path="/teacher"
           element={<MainMinigamePage isTeacher={true} />}
         />
-            {/* HOME */}
-                        <Route
-                            path="/home"
-                            element={
-                                <LeftSidebar>
-                                    <Avatar />
-                                    <ClassMenu />
-                                </LeftSidebar>
-                            }
-                        />
 
-            {/* LOGIN */}
-            <Route
-                path="/login"
-                element={<AuthExample />}
-            />
+        <Route
+            path="/home"
+            element={
+                    <MenuClass />
+            }
+        />
+
+        
+        <Route
+            path="/login"
+            element={<AuthExample />}
+        />
 
         <Route
           path="/kids"

@@ -3,20 +3,18 @@ import { Button } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import "./Menu.css";
 
-const PAGE_TITLE = "My classes";
-const ADD_BUTTON_LABEL = "Add class";
+const PAGE_TITLE = "Clasele Mele";
+const ADD_BUTTON_LABEL = "Adauga Clase";
 const EMPTY_TEXT = "You have no classes yet. Press Add class to create one.";
 
 const INITIAL_CLASSES = [
-  { id: 1, name: "Math 3A", members: 24 },
-  { id: 2, name: "Romanian 3A", members: 24 },
-  { id: 3, name: "Science 4B", members: 21 },
+  { id: 1, name: "Floricica", members: 14 },
+  { id: 2, name: "Fluture Mare", members: 24 },
+  { id: 3, name: "Ceva acolo", members: 21 },
 ];
 
 const NEW_CLASS_NAME = "New class";
 const NEW_CLASS_MEMBERS = 0;
-
-/* ---------------------------------------------------------------------------- */
 
 function MenuClass() {
   const [classes, setClasses] = useState(INITIAL_CLASSES);
