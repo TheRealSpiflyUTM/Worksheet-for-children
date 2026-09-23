@@ -186,7 +186,7 @@ function MenuClass() {
         onOk={handleModalOk}
         onCancel={handleModalCancel}
         okText={modalMode === "add" ? "Create" : "Save"}
-      >
+      > 
         <Input
           placeholder="Class name"
           value={nameInput}
