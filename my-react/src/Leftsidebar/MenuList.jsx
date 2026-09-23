@@ -8,6 +8,11 @@ import {
     BarsOutlined,
     AppstoreOutlined,
     ReadOutlined,
+    SolutionOutlined,
+    UserOutlined,
+    TeamOutlined,
+    SmileOutlined,
+    ManOutlined,
 } from "@ant-design/icons";
 
 function MenuList() {
@@ -49,19 +54,19 @@ function MenuList() {
                     Activity
                 </Menu.Item> */}
 
-                <Menu.Item
+                {/* <Menu.Item
                     key="subtasks"
                     icon={<BarsOutlined />}
                 >
                     Tasks
-                </Menu.Item>
+                </Menu.Item> */}
 
-                <Menu.Item
+                {/* <Menu.Item
                     key="progress"
                     icon={<AreaChartOutlined />}
                 >
                     Progress
-                </Menu.Item>
+                </Menu.Item> */}
 
                 <Menu.Item
                     key="workSheet"
@@ -73,7 +78,7 @@ function MenuList() {
 
                 <Menu.Item
                     key="kids"
-                    icon={<ReadOutlined />}
+                    icon={<SmileOutlined />}
                     onClick={() => navigate("/kids")}
                 >
                     Kids
@@ -81,7 +86,7 @@ function MenuList() {
 
                 <Menu.Item
                     key="teacher"
-                    icon={<ReadOutlined />}
+                    icon={<SolutionOutlined />}
                     onClick={() => navigate("/teacher")}
                 >
                     Teacher

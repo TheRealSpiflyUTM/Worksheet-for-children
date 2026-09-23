@@ -6,18 +6,23 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
   const [question, setQuestion] = useState(() =>
     generateQuestion(game.maxNumber)
   );
-
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
+  const [exerciseNumber, setExerciseNumber] = useState(1);
+  const [finished, setFinished] = useState(false);
 
   function getNewQuestion() {
+    if (exerciseNumber >= (game.exerciseCount || 10)) {
+      setFinished(true);
+      return;
+    }
+    setExerciseNumber((currentNumber) => currentNumber + 1);
     setQuestion(generateQuestion(game.maxNumber));
     setSelectedAnswer(null);
   }
 
   function checkAnswer(answer) {
     setSelectedAnswer(answer);
-
     if (answer === question.correctAnswer) {
       setScore((currentScore) => currentScore + 1);
     }
@@ -30,13 +35,19 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
     });
   }
 
+  function changeExerciseCount(value) {
+    onGameChange({
+      ...game,
+      exerciseCount: value,
+    });
+  }
+
   if (isTeacher) {
     return (
       <div className="odd-even-minigame teacher-odd-even">
         <h2>{game.name}</h2>
-
         <label>
-          Maximum number:
+          Număr maxim:
           <InputNumber
             min={10}
             max={100}
@@ -45,9 +56,33 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
           />
         </label>
 
+        <label>
+          Număr de exerciții:
+          <InputNumber
+            min={1}
+            max={100}
+            value={game.exerciseCount || 10}
+            onChange={changeExerciseCount}
+          />
+        </label>
+
         <p>
-          Children will have to decide if a number is odd or even.
+          Copiii vor trebui să decidă dacă un număr este impar sau par.
         </p>
+      </div>
+    );
+  }
+
+  if (finished) {
+    return (
+      <div className="odd-even-minigame">
+        <h2>{game.name}</h2>
+        <div className="odd-even-feedback">
+          <h3>Finalizat!</h3>
+          <p>
+            Scorul tău: {score} / {game.exerciseCount || 10}
+          </p>
+        </div>
       </div>
     );
   }
@@ -55,11 +90,14 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
   return (
     <div className="odd-even-minigame">
       <h2>{game.name}</h2>
+      <div className="odd-even-score">Scor: {score}</div>
 
-      <div className="odd-even-score">Score: {score}</div>
+      <div className="odd-even-exercise-number">
+        Exercițiul {exerciseNumber} / {game.exerciseCount || 10}
+      </div>
 
       <div className="odd-even-question">
-        <p>Is this number odd or even?</p>
+        <p>Acest număr este impar sau par?</p>
         <strong>{question.number}</strong>
       </div>
 
@@ -70,7 +108,7 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
           onClick={() => checkAnswer("odd")}
           disabled={selectedAnswer !== null}
         >
-          Odd
+          Impar
         </Button>
 
         <Button
@@ -79,7 +117,7 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
           onClick={() => checkAnswer("even")}
           disabled={selectedAnswer !== null}
         >
-          Even
+          Par
         </Button>
       </div>
 
@@ -87,16 +125,18 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
         <div className="odd-even-feedback">
           {selectedAnswer === question.correctAnswer ? (
             <>
-              <p>Correct!</p>
+              <p>Corect!</p>
               <Button type="primary" onClick={getNewQuestion}>
-                Next Question
+                {exerciseNumber >= (game.exerciseCount || 10)
+                  ? "Finalizează"
+                  : "Următorul exercițiu"}
               </Button>
             </>
           ) : (
             <>
-              <p>Try again!</p>
+              <p>Încearcă din nou!</p>
               <Button onClick={() => setSelectedAnswer(null)}>
-                Try Again
+                Încearcă din nou
               </Button>
             </>
           )}
@@ -107,9 +147,9 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange }) {
 }
 
 function generateQuestion(maxNumber) {
-  const number = Math.floor(Math.random() * maxNumber) + 1;
+  const safeMaxNumber = Number(maxNumber) || 10;
+  const number = Math.floor(Math.random() * safeMaxNumber) + 1;
   const correctAnswer = number % 2 === 0 ? "even" : "odd";
-
   return {
     number,
     correctAnswer,

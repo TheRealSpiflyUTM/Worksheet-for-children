@@ -8,8 +8,15 @@ function SequenceMinigame({ isTeacher, game, onGameChange }) {
   );
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
+  const [exerciseNumber, setExerciseNumber] = useState(1);
+  const [finished, setFinished] = useState(false);
 
   function getNewQuestion() {
+    if (exerciseNumber >= (game.exerciseCount || 10)) {
+      setFinished(true);
+      return;
+    }
+    setExerciseNumber((currentNumber) => currentNumber + 1);
     setQuestion(generateQuestion(game.maxNumber));
     setSelectedAnswer(null);
   }
@@ -28,13 +35,20 @@ function SequenceMinigame({ isTeacher, game, onGameChange }) {
     });
   }
 
+  function changeExerciseCount(value) {
+    onGameChange({
+      ...game,
+      exerciseCount: value,
+    });
+  }
+
   if (isTeacher) {
     return (
       <div className="sequence-minigame teacher-sequence">
         <h2>{game.name}</h2>
 
         <label>
-          Maximum number:
+          Număr maxim:
           <InputNumber
             min={10}
             max={100}
@@ -43,9 +57,33 @@ function SequenceMinigame({ isTeacher, game, onGameChange }) {
           />
         </label>
 
+        <label>
+          Număr de exerciții:
+          <InputNumber
+            min={1}
+            max={100}
+            value={game.exerciseCount || 10}
+            onChange={changeExerciseCount}
+          />
+        </label>
+
         <p>
-          Children will have to find the next number in different sequences.
+          Copiii vor trebui să găsească următorul număr din diferite șiruri.
         </p>
+      </div>
+    );
+  }
+
+  if (finished) {
+    return (
+      <div className="sequence-minigame">
+        <h2>{game.name}</h2>
+        <div className="sequence-feedback">
+          <h3>Finalizat!</h3>
+          <p>
+            Scorul tău: {score} / {game.exerciseCount || 10}
+          </p>
+        </div>
       </div>
     );
   }
@@ -54,7 +92,11 @@ function SequenceMinigame({ isTeacher, game, onGameChange }) {
     <div className="sequence-minigame">
       <h2>{game.name}</h2>
 
-      <div className="sequence-score">Score: {score}</div>
+      <div className="sequence-score">Scor: {score}</div>
+
+      <div className="sequence-exercise-number">
+        Exercițiul {exerciseNumber} / {game.exerciseCount || 10}
+      </div>
 
       <div className="sequence-question">
         {question.sequence.map((number, index) => (
@@ -80,16 +122,18 @@ function SequenceMinigame({ isTeacher, game, onGameChange }) {
         <div className="sequence-feedback">
           {selectedAnswer === question.correctAnswer ? (
             <>
-              <p>Correct!</p>
+              <p>Corect!</p>
               <Button type="primary" onClick={getNewQuestion}>
-                Next Question
+                {exerciseNumber >= (game.exerciseCount || 10)
+                  ? "Finalizează"
+                  : "Următorul exercițiu"}
               </Button>
             </>
           ) : (
             <>
-              <p>Try again!</p>
+              <p>Încearcă din nou!</p>
               <Button onClick={() => setSelectedAnswer(null)}>
-                Try Again
+                Încearcă din nou
               </Button>
             </>
           )}
@@ -107,7 +151,6 @@ function generateQuestion(maxNumber) {
   const realStep = step * direction;
 
   let startNumber;
-
   if (realStep > 0) {
     const maxStart = safeMaxNumber - realStep * 4;
     if (maxStart < 1) {
@@ -118,7 +161,6 @@ function generateQuestion(maxNumber) {
   } else {
     const minStart = Math.abs(realStep) * 4 + 1;
     const maxStart = safeMaxNumber;
-
     if (maxStart < minStart) {
       startNumber = safeMaxNumber;
     } else {
@@ -145,7 +187,6 @@ function generateQuestion(maxNumber) {
 function generateAnswers(correctAnswer, step) {
   const answers = [correctAnswer];
   let difference = Math.abs(step);
-
   if (difference === 0) {
     difference = 1;
   }

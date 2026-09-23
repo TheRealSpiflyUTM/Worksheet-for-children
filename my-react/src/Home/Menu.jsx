@@ -1,6 +1,19 @@
 import { useState } from "react";
-import { Button, Modal, Input, Popconfirm, Popover, Flex, message } from "antd";
-import { EditOutlined, DeleteOutlined, MoreOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import {
+  Button,
+  Modal,
+  Input,
+  Popconfirm,
+  Popover,
+  Flex,
+  message,
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  MoreOutlined,
+} from "@ant-design/icons";
 import "./Menu.css";
 
 const PAGE_TITLE = "Clasele Mele";
@@ -15,7 +28,16 @@ const INITIAL_CLASSES = [
 
 const NEW_CLASS_MEMBERS = 0;
 
+function slugify(name) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function MenuClass() {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState(INITIAL_CLASSES);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +66,7 @@ function MenuClass() {
 
   function handleModalOk() {
     const trimmedName = nameInput.trim();
+
     if (!trimmedName) {
       message.error("Nu poate sa fie gol");
       return;
@@ -74,6 +97,7 @@ function MenuClass() {
           if (c.id === editingId) {
             return { ...c, name: trimmedName };
           }
+
           return c;
         });
       });
@@ -93,6 +117,10 @@ function MenuClass() {
 
   function handleNameInputChange(e) {
     setNameInput(e.target.value);
+  }
+
+  function goToClass(c) {
+    navigate("/home/" + slugify(c.name));
   }
 
   return (
@@ -130,6 +158,7 @@ function MenuClass() {
                     if (e) {
                       e.stopPropagation();
                     }
+
                     handleDeleteClass(c.id);
                   }}
                   onCancel={function (e) {
@@ -155,7 +184,13 @@ function MenuClass() {
             );
 
             return (
-              <div key={c.id} className="class-tile">
+              <div
+                key={c.id}
+                className="class-tile"
+                onClick={function () {
+                  goToClass(c);
+                }}
+              >
                 <Popover
                   content={menuContent}
                   trigger="click"
@@ -173,7 +208,9 @@ function MenuClass() {
                 </Popover>
 
                 <span className="class-tile__name">{c.name}</span>
-                <span className="class-tile__members">{c.members} members</span>
+                <span className="class-tile__members">
+                  {c.members} members
+                </span>
               </div>
             );
           })}
@@ -186,7 +223,7 @@ function MenuClass() {
         onOk={handleModalOk}
         onCancel={handleModalCancel}
         okText={modalMode === "add" ? "Create" : "Save"}
-      > 
+      >
         <Input
           placeholder="Class name"
           value={nameInput}
