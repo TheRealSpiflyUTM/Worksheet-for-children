@@ -46,17 +46,22 @@ function Widget (params){
       />
       
       <div className='bubles'>
-        {bubles.map((buble, index)=> (
-          <Button
-            key={index} 
-            type={buble ? "primary" : "default"}
-            shape="circle"
-            className={buble ? "bubleActive" : "buble"} 
-            onClick={() => bubleVerification(index)}
-            aria-label={`Litera ${index + 1} din ${params.name}`}
-            aria-pressed={buble}
-          />
-        ))}
+        {bubles.map((buble, index)=> {
+          const isSpace = params.name[index] === " ";
+          return(
+            <Button
+              key={index} 
+              type={buble ? "primary" : "default"}
+              shape="circle"
+              className={`${
+                buble ? "bubleActive" : "buble"} ${
+                isSpace ? "bubbleSpace" : ""}`}  
+              onClick={() => bubleVerification(index)}
+              aria-label={`Litera ${index + 1} din ${params.name}`}
+              aria-pressed={buble}
+            />
+          )
+        })}
       </div>
     </div>
   </>);
