@@ -1,6 +1,8 @@
 package com.worksheet.worksheets;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
@@ -21,6 +23,12 @@ public class WorksheetService {
 
     public List<WorksheetResponse> getAll() {
         return repository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    public void delete(Long id) {
+        Worksheet worksheet = repository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Worksheet not found."));
+        repository.delete(worksheet);
     }
 
     private WorksheetResponse toResponse(Worksheet worksheet) {

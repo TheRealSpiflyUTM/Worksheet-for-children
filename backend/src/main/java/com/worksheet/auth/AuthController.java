@@ -25,7 +25,6 @@ public class AuthController {
             throw new ResponseStatusException(FORBIDDEN, "Invalid authentication request.");
         }
     }
-
     @PostMapping(value = "/signup", consumes = "application/json")
     @ResponseStatus(CREATED)
     public UserResponse signup(@RequestBody Signup input, HttpServletRequest request) {
