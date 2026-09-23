@@ -1,4 +1,4 @@
-package com.worksheet.worksheets;
+package com.worksheet.worksheet;
 
 import jakarta.persistence.*;
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package com.worksheet.worksheets;
+package com.worksheet.worksheet;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
