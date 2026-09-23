@@ -54,3 +54,7 @@
     background-color: rgb(34, 190, 34) !important;
     border-color: black !important;
 }
+.bubleSpace {
+  visibility: hidden;
+  pointer-events: none;
+}
