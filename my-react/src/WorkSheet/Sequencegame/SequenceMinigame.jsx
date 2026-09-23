@@ -3,192 +3,177 @@ import { InputNumber, Button } from "antd";
 import "./SequenceMinigame.css";
 
 function SequenceMinigame({ isTeacher, game, onGameChange }) {
-const [question, setQuestion] = useState(() =>
-generateQuestion(game.maxNumber)
-);
+  const [question, setQuestion] = useState(() =>
+    generateQuestion(game.maxNumber)
+  );
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [score, setScore] = useState(0);
 
-const [selectedAnswer, setSelectedAnswer] = useState(null);
-const [score, setScore] = useState(0);
+  function getNewQuestion() {
+    setQuestion(generateQuestion(game.maxNumber));
+    setSelectedAnswer(null);
+  }
 
-function getNewQuestion() {
-setQuestion(generateQuestion(game.maxNumber));
-setSelectedAnswer(null);
-}
+  function checkAnswer(answer) {
+    setSelectedAnswer(answer);
+    if (answer === question.correctAnswer) {
+      setScore((currentScore) => currentScore + 1);
+    }
+  }
 
-function checkAnswer(answer) {
-setSelectedAnswer(answer);
+  function changeMaxNumber(value) {
+    onGameChange({
+      ...game,
+      maxNumber: value,
+    });
+  }
 
-if (answer === question.correctAnswer) {
-  setScore((currentScore) => currentScore + 1);
-}
+  if (isTeacher) {
+    return (
+      <div className="sequence-minigame teacher-sequence">
+        <h2>{game.name}</h2>
 
-}
+        <label>
+          Maximum number:
+          <InputNumber
+            min={10}
+            max={100}
+            value={game.maxNumber}
+            onChange={changeMaxNumber}
+          />
+        </label>
 
-function changeMaxNumber(value) {
-onGameChange({
-...game,
-maxNumber: value,
-});
-}
+        <p>
+          Children will have to find the next number in different sequences.
+        </p>
+      </div>
+    );
+  }
 
-if (isTeacher) {
-return ( <div className="sequence-minigame teacher-sequence"> <h2>{game.name}</h2>
+  return (
+    <div className="sequence-minigame">
+      <h2>{game.name}</h2>
 
-    <label>
-      Maximum number:
+      <div className="sequence-score">Score: {score}</div>
 
-      <InputNumber
-        min={10}
-        max={100}
-        value={game.maxNumber}
-        onChange={changeMaxNumber}
-      />
-    </label>
+      <div className="sequence-question">
+        {question.sequence.map((number, index) => (
+          <span key={index}>{number}</span>
+        ))}
+        <span>?</span>
+      </div>
 
-    <p>
-      Children will have to find the next number in
-      different sequences.
-    </p>
-  </div>
-);
-
-}
-
-return ( <div className="sequence-minigame"> <h2>{game.name}</h2>
-
-  <div className="sequence-score">
-    Score: {score}
-  </div>
-
-  <div className="sequence-question">
-    {question.sequence.map((number, index) => (
-      <span key={index}>
-        {number}
-      </span>
-    ))}
-
-    <span>?</span>
-  </div>
-
-  <div className="sequence-answers">
-    {question.answers.map((answer, index) => (
-      <Button
-        key={index}
-        size="large"
-        onClick={() => checkAnswer(answer)}
-        disabled={selectedAnswer !== null}
-      >
-        {answer}
-      </Button>
-    ))}
-  </div>
-
-  {selectedAnswer !== null && (
-    <div className="sequence-feedback">
-
-      {selectedAnswer === question.correctAnswer ? (
-        <>
-          <p>Correct!</p>
-
+      <div className="sequence-answers">
+        {question.answers.map((answer, index) => (
           <Button
-            type="primary"
-            onClick={getNewQuestion}
+            key={index}
+            size="large"
+            onClick={() => checkAnswer(answer)}
+            disabled={selectedAnswer !== null}
           >
-            Next Question
+            {answer}
           </Button>
-        </>
-      ) : (
-        <>
-          <p>Try again!</p>
+        ))}
+      </div>
 
-          <Button
-            onClick={() => setSelectedAnswer(null)}
-          >
-            Try Again
-          </Button>
-        </>
+      {selectedAnswer !== null && (
+        <div className="sequence-feedback">
+          {selectedAnswer === question.correctAnswer ? (
+            <>
+              <p>Correct!</p>
+              <Button type="primary" onClick={getNewQuestion}>
+                Next Question
+              </Button>
+            </>
+          ) : (
+            <>
+              <p>Try again!</p>
+              <Button onClick={() => setSelectedAnswer(null)}>
+                Try Again
+              </Button>
+            </>
+          )}
+        </div>
       )}
-
     </div>
-  )}
-</div>
-
-);
+  );
 }
 
 function generateQuestion(maxNumber) {
-const patterns = [
-1,
-2,
-3,
-5,
-10,
-];
+  const patterns = [1, 2, 3, 5, 10];
+  const safeMaxNumber = Number(maxNumber) || 50;
+  const step = patterns[Math.floor(Math.random() * patterns.length)];
+  const direction = Math.random() < 0.5 ? 1 : -1;
+  const realStep = step * direction;
 
-const step =
-patterns[Math.floor(Math.random() * patterns.length)];
+  let startNumber;
 
-const direction = Math.random() < 0.5 ? 1 : -1;
+  if (realStep > 0) {
+    const maxStart = safeMaxNumber - realStep * 4;
+    if (maxStart < 1) {
+      startNumber = 1;
+    } else {
+      startNumber = Math.floor(Math.random() * maxStart) + 1;
+    }
+  } else {
+    const minStart = Math.abs(realStep) * 4 + 1;
+    const maxStart = safeMaxNumber;
 
-const realStep = step * direction;
+    if (maxStart < minStart) {
+      startNumber = safeMaxNumber;
+    } else {
+      startNumber =
+        Math.floor(Math.random() * (maxStart - minStart + 1)) + minStart;
+    }
+  }
 
-let startNumber;
+  const sequence = [];
+  for (let i = 0; i < 4; i++) {
+    sequence.push(startNumber + realStep * i);
+  }
 
-if (realStep > 0) {
-const maxStart =
-maxNumber - realStep * 4;
+  const correctAnswer = startNumber + realStep * 4;
+  const answers = generateAnswers(correctAnswer, realStep);
 
-startNumber =
-  Math.floor(Math.random() * maxStart) + 1;
-
-} else {
-startNumber =
-Math.floor(Math.random() * (maxNumber - 10)) + 10;
-}
-
-const sequence = [];
-
-for (let i = 0; i < 4; i++) {
-sequence.push(startNumber + realStep * i);
-}
-
-const correctAnswer =
-startNumber + realStep * 4;
-
-const answers = generateAnswers(
-correctAnswer,
-realStep
-);
-
-return {
-sequence,
-correctAnswer,
-answers,
-};
+  return {
+    sequence,
+    correctAnswer,
+    answers,
+  };
 }
 
 function generateAnswers(correctAnswer, step) {
-const answers = [correctAnswer];
+  const answers = [correctAnswer];
+  let difference = Math.abs(step);
 
-while (answers.length < 4) {
-const randomOffset =
-Math.floor(Math.random() * 3) + 1;
+  if (difference === 0) {
+    difference = 1;
+  }
 
-const wrongAnswer =
-  Math.random() < 0.5
-    ? correctAnswer + randomOffset * Math.abs(step)
-    : correctAnswer - randomOffset * Math.abs(step);
+  let attempts = 0;
+  while (answers.length < 4 && attempts < 100) {
+    const randomOffset = Math.floor(Math.random() * 3) + 1;
+    const wrongAnswer =
+      Math.random() < 0.5
+        ? correctAnswer + randomOffset * difference
+        : correctAnswer - randomOffset * difference;
 
-if (
-  wrongAnswer > 0 &&
-  !answers.includes(wrongAnswer)
-) {
-  answers.push(wrongAnswer);
-}
+    if (wrongAnswer > 0 && !answers.includes(wrongAnswer)) {
+      answers.push(wrongAnswer);
+    }
 
-}
+    attempts++;
+  }
 
-return answers.sort(() => Math.random() - 0.5);
+  let nextNumber = 1;
+  while (answers.length < 4) {
+    if (!answers.includes(nextNumber)) {
+      answers.push(nextNumber);
+    }
+    nextNumber++;
+  }
+
+  return answers.sort(() => Math.random() - 0.5);
 }
 
 export default SequenceMinigame;

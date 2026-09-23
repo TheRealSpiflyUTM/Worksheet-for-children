@@ -64,10 +64,10 @@ return (
             element={<AuthExample />}
         />
 
-        <Route
+        {/* <Route
           path="/kids"
           element={<MainMinigamePage isTeacher={false} />}
-        />
+        /> */}
             {/* SIGN UP */}
             <Route
                 path="/signup"

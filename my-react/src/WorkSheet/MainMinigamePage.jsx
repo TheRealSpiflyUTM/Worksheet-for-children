@@ -271,6 +271,19 @@ useEffect(() => {
                   game={game}
                 />
               )}
+              {game.id === "higher-lower-game" && (
+                  <HigherOrLowerMinigame 
+                  isTeacher={false} 
+                  game={game} 
+                  />
+              )}
+
+              {game.id === "odd-even-game" && (
+                  <OddOrEvenMinigame 
+                  isTeacher={false} 
+                  game={game} 
+                  />
+              )}
 
             </div>
           ))}
