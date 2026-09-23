@@ -1,7 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Modal, Input, Popconfirm, Popover, Flex, message } from "antd";
-import { EditOutlined, DeleteOutlined, MoreOutlined } from "@ant-design/icons";
+import {
+  Button,
+  Modal,
+  Input,
+  Popconfirm,
+  Popover,
+  Flex,
+  message,
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  MoreOutlined,
+} from "@ant-design/icons";
 import "./Menu.css";
 
 const PAGE_TITLE = "Clasele Mele";
@@ -54,6 +66,7 @@ function MenuClass() {
 
   function handleModalOk() {
     const trimmedName = nameInput.trim();
+
     if (!trimmedName) {
       message.error("Nu poate sa fie gol");
       return;
@@ -84,6 +97,7 @@ function MenuClass() {
           if (c.id === editingId) {
             return { ...c, name: trimmedName };
           }
+
           return c;
         });
       });
@@ -144,6 +158,7 @@ function MenuClass() {
                     if (e) {
                       e.stopPropagation();
                     }
+
                     handleDeleteClass(c.id);
                   }}
                   onCancel={function (e) {
@@ -193,7 +208,9 @@ function MenuClass() {
                 </Popover>
 
                 <span className="class-tile__name">{c.name}</span>
-                <span className="class-tile__members">{c.members} members</span>
+                <span className="class-tile__members">
+                  {c.members} members
+                </span>
               </div>
             );
           })}

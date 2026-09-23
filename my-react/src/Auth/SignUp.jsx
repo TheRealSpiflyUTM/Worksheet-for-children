@@ -1,55 +1,121 @@
-import React from "react";
-import { Input, Button } from "antd";
+import { useState } from "react";
+import { Alert, Button, Input } from "antd";
 import { useNavigate } from "react-router-dom";
 import "./Auth.css";
 
 const SignUp = () => {
-const [passwordVisible, setPasswordVisible] = React.useState(false);
-const [confirmPasswordVisible, setConfirmPasswordVisible] = React.useState(false);
+        
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-const navigate = useNavigate();
+    const navigate = useNavigate();
 
-return (
-    <div className="auth-container">
-        <div className="auth-form">
+    async function handleSighnUp() {
+        if(password !== confirmPassword){
+            setError("Confirm password is not correct");
+            return;
+        }
 
-            <Input
-                placeholder="Username"
-                maxLength={25}
-                className="username-input"
-            />
+        setIsSubmitting(true);
+        setError("");
 
-            <Input.Password
-                placeholder="Password"
-                maxLength={25}
-                visibilityToggle={{
-                    visible: passwordVisible,
-                    onVisibleChange: setPasswordVisible
-                }}
-                className="password-input"
-            />
+        try{
+            const response = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers:{
+                    "Content-Type": "application/json",
+                    "X-Auth-Request": "1",
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password,
+                }),
+            });
+                
+            const data = await response.json();
 
-            <Input.Password
-                placeholder="Confirm Password"
-                maxLength={25}
-                visibilityToggle={{
-                    visible: confirmPasswordVisible,
-                    onVisibleChange: setConfirmPasswordVisible
-                }}
-                className="password-input"
-            />
+            if(!response.ok){
+                throw new Error(data.message || "Could not create the account");
+            }
 
-            <Button
-                type="primary"
-                className="enter-button"
-                onClick={() => navigate("/account")}
-            >
-                Enter
-            </Button>
+            navigate("/account");
+        }catch(requestError){
+            setError(requestError.message);
+        }finally{
+            setIsSubmitting(false);
+        }
+    }
 
+
+
+
+
+    return (
+        <div className="auth-container">
+            <div className="auth-form">
+                
+                <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    maxLength={254}
+                    onChange={(event) => setEmail(event.target.value)}
+                />
+
+                <Input
+                    placeholder="Username"
+                    maxLength={25}
+                    value={name}
+                    className="username-input"
+                    onChange={(e) => setName(e.target.value)}
+                />
+
+                <Input.Password
+                    placeholder="Password"
+                    maxLength={25}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    visibilityToggle={{
+                        visible: passwordVisible,
+                        onVisibleChange: setPasswordVisible
+                    }}
+                    className="password-input"
+                />
+
+                <Input.Password
+                    placeholder="Confirm Password"
+                    maxLength={25}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    visibilityToggle={{
+                        visible: confirmPasswordVisible,
+                        onVisibleChange: setConfirmPasswordVisible
+                    }}
+                    className="password-input"
+                />
+
+                <Button
+                    type="primary"
+                    className="enter-button"
+                    loading= {isSubmitting}
+                    
+                    onClick={handleSighnUp}
+                >
+                    Create Acount
+                </Button>
+                
+                {error && <Alert type="error" message={error} showIcon />}
+            </div>
         </div>
-    </div>
-);
+    );
 
 };
 
