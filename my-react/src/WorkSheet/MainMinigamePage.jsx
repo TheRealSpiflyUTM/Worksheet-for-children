@@ -1,8 +1,13 @@
+
 // K is for kids 
 // T is for teacher
 // We will use this to swich between teacher and student Version 
 
 import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
+import MathMinigame from "./Mathgame/MathMinigame.jsx";
+import SequenceMinigame from "./Sequencegame/SequenceMinigame.jsx";
+import HigherOrLowerMinigame from "./HigherOrLower/HigherOrLowergame.jsx";
+import OddOrEvenMinigame from "./OddOrEven/OddOrEvengame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import { useState, useRef, useEffect } from 'react';
 import { Button } from 'antd';
@@ -37,6 +42,35 @@ function MainMinigamePage(params){
         },
       ],
     },
+
+    {
+      id: "math-game",
+      name: "Easy Math",
+      img: "/img/MathGame.png",
+      maxNumber: 10,
+      operations: ["+", "-", "*", "/"],
+    },  
+
+    {
+      id: "sequence-game",
+      name: "Number Sequence",
+      img: "/img/SequenceGame.png",
+      maxNumber: 10,
+    },
+    {
+      id: "higher-lower-game",
+      name: "Higher or Lower",
+      img: "/img/HigherLowerGame.png",
+      maxNumber: 10,
+    },
+
+    {
+      id: "odd-even-game",
+      name: "Odd or Even",
+      img: "/img/OddEvenGame.png",
+      maxNumber: 10,
+    },
+
   ];
 
   const [selectedGameId, setSelectedGameId] = useState(null);
@@ -49,9 +83,11 @@ function MainMinigamePage(params){
     const newGame = {
       ...game,
       instanceId: crypto.randomUUID(),
-      animals: game.animals.map((animal) =>({
-        ...animal,
-      })),
+      animals: game.animals
+        ? game.animals.map((animal) =>({
+            ...animal,
+          }))
+        : undefined,
     };
     
     setAddeMinigames((currentGames) => {
@@ -61,7 +97,9 @@ function MainMinigamePage(params){
       const selectedIndex = currentGames.findIndex(
         (currentGame) => currentGame.instanceId === selectedGameId
       );
+
       console.log(selectedIndex);
+
       if(selectedIndex === -1) return [...currentGames, newGame];
 
       const updatedGames = [...currentGames];
@@ -85,6 +123,7 @@ useEffect(() => {
     if(isAddMinigameOpen){
       return;
     }
+
     if (
       selectedAreaRef.current &&
       !selectedAreaRef.current.contains(event.target)
@@ -135,13 +174,53 @@ useEffect(() => {
                     }
                   />
                 )}
-                
+
+                {game.id === "math-game" && (
+                  <MathMinigame
+                    isTeacher={params.isTeacher}
+                    game={game}
+                    onGameChange={(updatedGame) =>
+                      updateMinigame(game.instanceId, updatedGame)
+                    }
+                  />
+                )}
+
+                {game.id === "sequence-game" && (
+                  <SequenceMinigame
+                    isTeacher={params.isTeacher}
+                    game={game}
+                    onGameChange={(updatedGame) =>
+                      updateMinigame(game.instanceId, updatedGame)
+                    }
+                  />
+                )}
+                {game.id === "higher-lower-game" && (
+                  <HigherOrLowerMinigame
+                  isTeacher={params.isTeacher}
+                  game={game}
+                  onGameChange={(updatedGame) =>
+                    updateMinigame(game.instanceId, updatedGame)
+                  }
+                  />
+                )}
+                {game.id === "odd-even-game" && (
+                  <OddOrEvenMinigame
+                  isTeacher={params.isTeacher}
+                  game={game}
+                  onGameChange={(updatedGame) =>
+                  updateMinigame(game.instanceId, updatedGame)
+                  }
+                  />
+                )}
                 {selectedGameId === game.instanceId && (
                   <Button
                     className="addMinigameButton"
                     type="primary"
                     icon={<PlusOutlined />}
-                    onClick={() => setIsAddMinigameOpen(true)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setIsAddMinigameOpen(true);
+                    }}
                   >
                     Add Minigame
                   </Button>
@@ -171,12 +250,28 @@ useEffect(() => {
         <div className="addedGames">
           {addedMinigames.map((game) => (
             <div key={game.instanceId}>
+
               {game.id === "color-game" && (
                 <ColorMinigame
                   isTeacher={false}
                   game={game}
                 />
               )}
+
+              {game.id === "math-game" && (
+                <MathMinigame
+                  isTeacher={false}
+                  game={game}
+                />
+              )}
+
+              {game.id === "sequence-game" && (
+                <SequenceMinigame
+                  isTeacher={false}
+                  game={game}
+                />
+              )}
+
             </div>
           ))}
         </div>
