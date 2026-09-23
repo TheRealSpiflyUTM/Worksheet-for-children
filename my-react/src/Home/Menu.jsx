@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button, Modal, Input, Popconfirm, Popover, Flex, message } from "antd";
 import { EditOutlined, DeleteOutlined, MoreOutlined } from "@ant-design/icons";
 import "./Menu.css";
@@ -15,7 +16,16 @@ const INITIAL_CLASSES = [
 
 const NEW_CLASS_MEMBERS = 0;
 
+function slugify(name) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function MenuClass() {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState(INITIAL_CLASSES);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -95,6 +105,10 @@ function MenuClass() {
     setNameInput(e.target.value);
   }
 
+  function goToClass(c) {
+    navigate("/home/" + slugify(c.name));
+  }
+
   return (
     <section className="class-menu">
       <div className="class-menu__header">
@@ -155,7 +169,13 @@ function MenuClass() {
             );
 
             return (
-              <div key={c.id} className="class-tile">
+              <div
+                key={c.id}
+                className="class-tile"
+                onClick={function () {
+                  goToClass(c);
+                }}
+              >
                 <Popover
                   content={menuContent}
                   trigger="click"
@@ -186,7 +206,7 @@ function MenuClass() {
         onOk={handleModalOk}
         onCancel={handleModalCancel}
         okText={modalMode === "add" ? "Create" : "Save"}
-      > 
+      >
         <Input
           placeholder="Class name"
           value={nameInput}
