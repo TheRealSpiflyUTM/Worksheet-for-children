@@ -10,6 +10,7 @@ import AuthButtons from "../AuthButtons/AuthButtons.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import Avatar from "./Avatar/Avatar.jsx";
 import SignUp from "./Auth/SignUp.jsx";
+import MenuClass from "./Home/Menu.jsx";
 
 function App() {
 const location = useLocation();
@@ -46,6 +47,27 @@ return (
                 element={<AuthExample />}
             />
 
+        <Route
+            path="/home"
+            element={ 
+                <LeftSidebar>
+                    <Avatar />
+                    <MenuClass />
+                </LeftSidebar> 
+                   
+            }
+        />
+
+        
+        <Route
+            path="/login"
+            element={<AuthExample />}
+        />
+
+        <Route
+          path="/kids"
+          element={<MainMinigamePage isTeacher={false} />}
+        />
             {/* SIGN UP */}
             <Route
                 path="/signup"
