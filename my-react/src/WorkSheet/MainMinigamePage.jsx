@@ -4,10 +4,10 @@
 // We will use this to swich between teacher and student Version 
 
 import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
-import MathMinigame from "./Mathgame/MathMinigame.jsx";
-import SequenceMinigame from "./Sequencegame/SequenceMinigame.jsx";
-import HigherOrLowerMinigame from "./HigherOrLower/HigherOrLowergame.jsx";
-import OddOrEvenMinigame from "./OddOrEven/OddOrEvengame.jsx";
+import MathMinigame from "./minigames/Mathgame/MathMinigame.jsx";
+import SequenceMinigame from "./minigames/Sequencegame/SequenceMinigame.jsx";
+import HigherOrLowerMinigame from "./minigames/HigherOrLower/HigherOrLowergame.jsx";
+import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import { useState, useRef, useEffect } from 'react';
 import { Button } from 'antd';
