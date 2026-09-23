@@ -1,4 +1,4 @@
-package com.worksheet.worksheets;
+package com.worksheet.worksheet;
 
 public record CreateWorksheetRequest(String name) {
 }
