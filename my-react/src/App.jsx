@@ -10,7 +10,9 @@ import AuthButtons from "../AuthButtons/AuthButtons.jsx";
 import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import Avatar from "./Avatar/Avatar.jsx";
 import SignUp from "./Auth/SignUp.jsx";
+
 import MenuClass from "./Home/Menu.jsx";
+import ClassPage from "./Home/ClassPage.jsx";
 
 function App() {
 const location = useLocation();
@@ -57,7 +59,15 @@ return (
                    
             }
         />
-
+        <Route
+            path="/home/:className"
+            element={
+                <LeftSidebar>
+                    <Avatar />
+                    <ClassPage />
+                </LeftSidebar>
+            }
+        />
         
         <Route
             path="/login"
