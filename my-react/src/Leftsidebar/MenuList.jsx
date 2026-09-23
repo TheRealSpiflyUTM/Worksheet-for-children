@@ -33,13 +33,13 @@ function MenuList() {
         >
             <Menu mode="inline" className="menu-bar">
 
-                {/* <Menu.Item
+                <Menu.Item
                     key="home"
                     icon={<HomeOutlined />}
                     onClick={() => navigate("/home")}
                 >
                     Home
-                </Menu.Item> */}
+                </Menu.Item> 
 
                 {/* <Menu.Item
                     key="activity"
