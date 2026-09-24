@@ -1,5 +1,6 @@
 package com.worksheet.worksheet.result;
 
+import com.worksheet.assignment.WorksheetAssignment;
 import com.worksheet.worksheet.Worksheet;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -15,6 +16,10 @@ public class WorksheetResult {
     @JoinColumn(name = "worksheet_id", nullable = false)
     private Worksheet worksheet;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_id")
+    private WorksheetAssignment assignment;
+
     @Column(name = "total_score", nullable = false)
     private int totalScore;
 
@@ -27,7 +32,12 @@ public class WorksheetResult {
     protected WorksheetResult() {}
 
     public WorksheetResult(Worksheet worksheet, int totalScore, int maxScore) {
+        this(worksheet, null, totalScore, maxScore);
+    }
+
+    public WorksheetResult(Worksheet worksheet, WorksheetAssignment assignment, int totalScore, int maxScore) {
         this.worksheet = worksheet;
+        this.assignment = assignment;
         this.totalScore = totalScore;
         this.maxScore = maxScore;
         this.completedAt = Instant.now();
@@ -35,7 +45,13 @@ public class WorksheetResult {
 
     public Long getId() { return id; }
     public Worksheet getWorksheet() { return worksheet; }
+    public WorksheetAssignment getAssignment() { return assignment; }
     public int getTotalScore() { return totalScore; }
     public int getMaxScore() { return maxScore; }
     public Instant getCompletedAt() { return completedAt; }
+
+    public void updateScores(int totalScore, int maxScore) {
+        this.totalScore = totalScore;
+        this.maxScore = maxScore;
+    }
 }

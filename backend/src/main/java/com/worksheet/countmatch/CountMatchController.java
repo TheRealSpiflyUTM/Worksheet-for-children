@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/count-match")
-@CrossOrigin(origins = "http://localhost:5173")
 public class CountMatchController {
 
     private final CountMatchService service;

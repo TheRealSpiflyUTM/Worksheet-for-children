@@ -16,7 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
     "spring.datasource.url=${auth.test.database-url:jdbc:h2:mem:auth-test;DB_CLOSE_DELAY=-1}",
     "spring.flyway.enabled=false",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "app.security.csrf-enabled=true"
 })
 @AutoConfigureMockMvc
 class AuthTests {
@@ -30,7 +31,7 @@ class AuthTests {
     @BeforeEach void clearUsers() { users.deleteAll(); }
 
     @Test void signupStoresHashAndReturnsOnlyPublicFields() throws Exception {
-        mvc.perform(post("/api/auth/signup").header("X-Auth-Request", "1")
+        mvc.perform(post("/api/auth/signup").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("X-Auth-Request", "1")
                 .contentType("application/json").content(DETAILS))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").isNumber())
@@ -51,31 +52,31 @@ class AuthTests {
         mvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
         var original = new MockHttpSession();
         String originalId = original.getId();
-        var signup = mvc.perform(post("/api/auth/signup").session(original).header("X-Auth-Request", "1")
+        var signup = mvc.perform(post("/api/auth/signup").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).session(original).header("X-Auth-Request", "1")
             .contentType("application/json").content(DETAILS)).andExpect(status().isCreated()).andReturn();
         var session = (MockHttpSession) signup.getRequest().getSession(false);
         assertNotEquals(originalId, session.getId());
         assertEquals(1800, session.getMaxInactiveInterval());
         mvc.perform(get("/api/auth/me").session(session)).andExpect(status().isOk());
-        mvc.perform(post("/api/auth/logout").session(session).header("X-Auth-Request", "1"))
+        mvc.perform(post("/api/auth/logout").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).session(session).header("X-Auth-Request", "1"))
             .andExpect(status().isNoContent());
         assertTrue(session.isInvalid());
         mvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
-        var login = mvc.perform(post("/api/auth/login").header("X-Auth-Request", "1")
+        var login = mvc.perform(post("/api/auth/login").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("X-Auth-Request", "1")
             .contentType("application/json").content(DETAILS)).andExpect(status().isOk()).andReturn();
         mvc.perform(get("/api/auth/me").session((MockHttpSession) login.getRequest().getSession(false)))
             .andExpect(status().isOk());
     }
 
     @Test void rejectsDuplicateEmailAndIncorrectCredentials() throws Exception {
-        mvc.perform(post("/api/auth/signup").header("X-Auth-Request", "1")
+        mvc.perform(post("/api/auth/signup").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("X-Auth-Request", "1")
             .contentType("application/json").content(DETAILS)).andExpect(status().isCreated());
-        mvc.perform(post("/api/auth/signup").header("X-Auth-Request", "1")
+        mvc.perform(post("/api/auth/signup").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("X-Auth-Request", "1")
             .contentType("application/json").content(DETAILS.replace("Teacher@Example.com", " teacher@example.com ")))
             .andExpect(status().isConflict());
         for (String input : new String[] {DETAILS.replace("a long test password", "an incorrect password"),
                 DETAILS.replace("Teacher@Example.com", "unknown@example.com")}) {
-            var result = mvc.perform(post("/api/auth/login").header("X-Auth-Request", "1")
+            var result = mvc.perform(post("/api/auth/login").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("X-Auth-Request", "1")
                 .contentType("application/json").content(input))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Email or password is incorrect.")).andReturn();
@@ -90,7 +91,7 @@ class AuthTests {
                 DETAILS.replace("a long test password", "short"),
                 DETAILS.replace("a long test password", "x".repeat(129)),
                 DETAILS.replace(" Teacher ", "x".repeat(101))}) {
-            mvc.perform(post("/api/auth/signup").header("X-Auth-Request", "1")
+            mvc.perform(post("/api/auth/signup").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("X-Auth-Request", "1")
                 .contentType("application/json").content(input)).andExpect(status().isBadRequest());
         }
         assertEquals(0, users.count());
@@ -105,7 +106,7 @@ class AuthTests {
             .header("Access-Control-Request-Method", "POST")
             .header("Access-Control-Request-Headers", "X-Auth-Request"))
             .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
-        mvc.perform(post("/api/auth/signup").header("Origin", "https://untrusted.example")
+        mvc.perform(post("/api/auth/signup").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("Origin", "https://untrusted.example")
             .header("X-Auth-Request", "1").contentType("application/json").content(DETAILS))
             .andExpect(status().isForbidden());
         assertEquals(0, users.count());

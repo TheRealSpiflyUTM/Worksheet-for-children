@@ -2,8 +2,7 @@ package com.worksheet.auth;
 
 import java.util.Locale;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
-import static org.springframework.security.crypto.password.Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm.PBKDF2WithHmacSHA256;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.*;
@@ -11,12 +10,16 @@ import static org.springframework.http.HttpStatus.*;
 @Service
 public class AuthService {
     private final UserRepository users;
-    private final Pbkdf2PasswordEncoder passwords = new Pbkdf2PasswordEncoder("", 16, 600_000, PBKDF2WithHmacSHA256);
-    private final String dummyHash = passwords.encode("unused-password-for-timing");
+    private final PasswordEncoder passwords;
+    private final String dummyHash;
 
-    public AuthService(UserRepository users) { this.users = users; }
+    public AuthService(UserRepository users, PasswordEncoder passwords) {
+        this.users = users;
+        this.passwords = passwords;
+        this.dummyHash = passwords.encode("unused-password-for-timing");
+    }
 
-    public UserResponse signup(String name, String email, String password) {
+    public UserResponse signup(String name, String email, String password, UserRole role) {
         if (name == null || name.isBlank() || name.strip().length() > 100) {
             throw new ResponseStatusException(BAD_REQUEST, "Name must contain 1 to 100 characters.");
         }
@@ -24,7 +27,11 @@ public class AuthService {
         validatePassword(password);
         if (users.existsByEmail(normalizedEmail)) throw duplicateEmail();
         try {
-            User user = users.saveAndFlush(new User(name.strip(), normalizedEmail, passwords.encode(password)));
+            UserRole requestedRole = role == null ? UserRole.USER : role;
+            if (requestedRole == UserRole.ADMIN) {
+                throw new ResponseStatusException(FORBIDDEN, "Administrator accounts cannot be created through public signup.");
+            }
+            User user = users.saveAndFlush(new User(name.strip(), normalizedEmail, passwords.encode(password), requestedRole));
             return UserResponse.from(user);
         } catch (DataIntegrityViolationException error) {
             // The database's unique constraint also covers simultaneous signup requests.
