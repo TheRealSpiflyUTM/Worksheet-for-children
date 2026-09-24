@@ -1,42 +1,35 @@
 package com.worksheet.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.util.Map;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "${app.auth.allowed-origin:http://localhost:5173}", allowCredentials = "true")
 public class AuthController {
     private static final String USER_ID = "auth.userId";
     private final AuthService auth;
 
     public AuthController(AuthService auth) { this.auth = auth; }
 
-    @ModelAttribute
-    void protectRequest(HttpServletRequest request, HttpServletResponse response) {
-        response.setHeader("Cache-Control", "no-store");
-        // Custom headers require a CORS preflight; only the configured origin is allowed.
-        if ("POST".equals(request.getMethod()) && !"1".equals(request.getHeader("X-Auth-Request"))) {
-            throw new ResponseStatusException(FORBIDDEN, "Invalid authentication request.");
-        }
-    }
     @PostMapping(value = "/signup", consumes = "application/json")
     @ResponseStatus(CREATED)
     public UserResponse signup(@RequestBody Signup input, HttpServletRequest request) {
-        UserResponse user = auth.signup(input.name(), input.email(), input.password());
-        startSession(request, user.id());
+        UserResponse user = auth.signup(input.name(), input.email(), input.password(), input.role());
+        startSession(request, user);
         return user;
     }
 
     @PostMapping(value = "/login", consumes = "application/json")
     public UserResponse login(@RequestBody Login input, HttpServletRequest request) {
         UserResponse user = auth.login(input.email(), input.password());
-        startSession(request, user.id());
+        startSession(request, user);
         return user;
     }
 
@@ -52,22 +45,30 @@ public class AuthController {
     @PostMapping("/logout")
     @ResponseStatus(NO_CONTENT)
     public void logout(HttpServletRequest request) {
+        SecurityContextHolder.clearContext();
         var session = request.getSession(false);
         if (session != null) session.invalidate();
     }
 
-    private void startSession(HttpServletRequest request, Long id) {
+    @GetMapping("/csrf")
+    public CsrfResponse csrf(CsrfToken token) {
+        return new CsrfResponse(token.getHeaderName(), token.getParameterName(), token.getToken());
+    }
+
+    private void startSession(HttpServletRequest request, UserResponse user) {
         request.getSession();
         request.changeSessionId();
-        request.getSession().setAttribute(USER_ID, id);
+        request.getSession().setAttribute(USER_ID, user.id());
         request.getSession().setMaxInactiveInterval(30 * 60);
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(
+            user.id().toString(), null, java.util.List.of(new SimpleGrantedAuthority("ROLE_" + user.role().name())));
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+        request.getSession().setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
     }
 
-    @ExceptionHandler(ResponseStatusException.class)
-    ResponseEntity<Map<String, String>> handleError(ResponseStatusException error) {
-        return ResponseEntity.status(error.getStatusCode()).body(Map.of("message", error.getReason()));
-    }
-
-    public record Signup(String name, String email, String password) {}
+    public record Signup(String name, String email, String password, UserRole role) {}
     public record Login(String email, String password) {}
+    public record CsrfResponse(String headerName, String parameterName, String token) {}
 }

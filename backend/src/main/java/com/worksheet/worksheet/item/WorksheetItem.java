@@ -43,4 +43,10 @@ public class WorksheetItem {
     public MiniGameDefinition getMiniGame() { return miniGame; }
     public int getOrderIndex() { return orderIndex; }
     public JsonNode getConfiguration() { return configuration; }
+
+    public void update(MiniGameDefinition miniGame, int orderIndex, JsonNode configuration) {
+        this.miniGame = miniGame;
+        this.orderIndex = orderIndex;
+        this.configuration = configuration;
+    }
 }

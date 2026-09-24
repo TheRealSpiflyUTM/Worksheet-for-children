@@ -2,13 +2,15 @@ package com.worksheet.worksheet.item;
 
 import com.worksheet.minigame.MiniGameDefinition;
 import com.worksheet.minigame.MiniGameDefinitionRepository;
+import com.worksheet.minigame.JsonSchemaValidationService;
 import com.worksheet.worksheet.Worksheet;
 import com.worksheet.worksheet.WorksheetRepository;
+import com.worksheet.worksheet.result.minigame.MiniGameResultRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.JsonNodeFactory;
 import java.util.List;
 
 @Service
@@ -16,27 +18,68 @@ public class WorksheetItemService {
     private final WorksheetItemRepository repository;
     private final WorksheetRepository worksheetRepository;
     private final MiniGameDefinitionRepository miniGameRepository;
+    private final MiniGameResultRepository miniGameResultRepository;
+    private final JsonSchemaValidationService schemaValidator;
 
-    public WorksheetItemService(WorksheetItemRepository repository, WorksheetRepository worksheetRepository, MiniGameDefinitionRepository miniGameRepository) {
+    public WorksheetItemService(WorksheetItemRepository repository, WorksheetRepository worksheetRepository, MiniGameDefinitionRepository miniGameRepository, MiniGameResultRepository miniGameResultRepository, JsonSchemaValidationService schemaValidator) {
         this.repository = repository;
         this.worksheetRepository = worksheetRepository;
         this.miniGameRepository = miniGameRepository;
+        this.miniGameResultRepository = miniGameResultRepository;
+        this.schemaValidator = schemaValidator;
     }
 
-    public WorksheetItemResponse create(Long worksheetId, CreateWorksheetItemRequest request) {
-        Worksheet worksheet = worksheetRepository.findById(worksheetId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Worksheet not found."));
+    @Transactional
+    public WorksheetItemResponse create(Long worksheetId, Long userId, CreateWorksheetItemRequest request) {
+        Worksheet worksheet = worksheetRepository.findByIdAndUser_Id(worksheetId, userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Worksheet not found."));
         MiniGameDefinition miniGame = miniGameRepository.findById(request.miniGameId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mini-game not found."));
+        requireActive(miniGame);
 
-        JsonNode configuration = request.configuration() != null ? request.configuration() : JsonNodeFactory.instance.objectNode();
+        JsonNode configuration = request.configuration() != null ? request.configuration() : miniGame.getDefaultConfiguration().deepCopy();
+        schemaValidator.validate(miniGame.getConfigurationSchema(), configuration, "Mini-game configuration");
 
         WorksheetItem item = repository.save(new WorksheetItem(worksheet, miniGame, request.orderIndex(), configuration));
         return toResponse(item);
     }
 
-    public List<WorksheetItemResponse> getAll(Long worksheetId) {
-        if(!worksheetRepository.existsById(worksheetId)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Worksheet not found.");
+    @Transactional(readOnly = true)
+    public List<WorksheetItemResponse> getAll(Long worksheetId, Long userId) {
+        if(worksheetRepository.findByIdAndUser_Id(worksheetId, userId).isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Worksheet not found.");
 
-        return repository.findByWorksheet_IdOrderByOrderIndex(worksheetId).stream().map(this::toResponse).toList();
+        return repository.findByWorksheet_IdAndWorksheet_User_IdOrderByOrderIndex(worksheetId, userId).stream().map(this::toResponse).toList();
+    }
+
+    @Transactional
+    public WorksheetItemResponse update(Long worksheetId, Long itemId, Long userId, CreateWorksheetItemRequest request) {
+        WorksheetItem item = requireOwned(worksheetId, itemId, userId);
+        MiniGameDefinition miniGame = miniGameRepository.findById(request.miniGameId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mini-game not found."));
+        if (!miniGame.getId().equals(item.getMiniGame().getId())) requireActive(miniGame);
+        JsonNode configuration = request.configuration() != null ? request.configuration() : miniGame.getDefaultConfiguration().deepCopy();
+        schemaValidator.validate(miniGame.getConfigurationSchema(), configuration, "Mini-game configuration");
+
+        item.update(miniGame, request.orderIndex(), configuration);
+        return toResponse(repository.save(item));
+    }
+
+    @Transactional
+    public void delete(Long worksheetId, Long itemId, Long userId) {
+        WorksheetItem item = requireOwned(worksheetId, itemId, userId);
+        if(miniGameResultRepository.existsByWorksheetItem_Id(itemId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Worksheet item has saved results and cannot be deleted.");
+        }
+        repository.delete(item);
+    }
+
+    private WorksheetItem requireOwned(Long worksheetId, Long itemId, Long userId) {
+        return repository.findByIdAndWorksheet_IdAndWorksheet_User_Id(itemId, worksheetId, userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Worksheet item not found."));
+    }
+
+    private void requireActive(MiniGameDefinition miniGame) {
+        if (!miniGame.isActive()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Mini-game version is inactive.");
+        }
     }
 
     private WorksheetItemResponse toResponse(WorksheetItem item) {
