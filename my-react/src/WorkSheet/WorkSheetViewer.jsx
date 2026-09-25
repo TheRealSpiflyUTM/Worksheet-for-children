@@ -12,6 +12,13 @@ import {
   Tooltip,
   Typography,
 } from "antd";
+
+import {
+  createWorksheet,
+  deleteWorksheet,
+  getWorksheets,
+} from "../api/worksheets.js";
+
 import { CloseOutlined, PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import "./WorkSheetViewer.css";
@@ -29,69 +36,35 @@ function WorkSheetViewer() {
   const [deletingWorkSheetId, setDeletingWorkSheetId] = useState(null);
   const [form] = Form.useForm();
 
-  async function loadWorkSheets() {
-    setIsLoading(true);
-    setError("");
+ async function loadWorkSheets() {
+  setIsLoading(true);
+  setError("");
 
-    try {
-      const response = await fetch("/api/worksheets");
-
-      if (!response.ok) {
-        throw new Error("Could not load worksheets");
-      }
-
-      setWorkSheets(await response.json());
-    } catch (requestError) {
+  try {
+      const worksheets = await getWorksheets();
+      setWorkSheets(worksheets);
+  } catch (requestError) {
       setError(requestError.message);
-    } finally {
+  } finally {
       setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    let isCurrent = true;
-
-    async function loadInitialWorkSheets() {
-      try {
-        const response = await fetch("/api/worksheets");
-
-        if (!response.ok) {
-          throw new Error("Could not load worksheets");
-        }
-
-        const data = await response.json();
-        if (isCurrent) setWorkSheets(data);
-      } catch (requestError) {
-        if (isCurrent) setError(requestError.message);
-      } finally {
-        if (isCurrent) setIsLoading(false);
-      }
-    }
-
-    loadInitialWorkSheets();
-
-    return () => {
-      isCurrent = false;
-    };
+    loadWorkSheets();
   }, []);
 
+  
   async function createWorkSheet({ name }) {
     setIsCreating(true);
     setCreateError("");
 
     try {
-      const response = await fetch("/api/worksheets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Could not create the worksheet");
-      }
-
-      const createdWorkSheet = await response.json();
+      const createdWorkSheet = await createWorksheet(name);
+      
+      await response.json();
       setWorkSheets((currentWorkSheets) => [createdWorkSheet, ...currentWorkSheets]);
+
       form.resetFields();
       setIsCreateOpen(false);
     } catch (requestError) {
@@ -109,8 +82,8 @@ function WorkSheetViewer() {
     setIsCreateOpen(false);
   }
 
-  function openWorkSheet() {
-    navigate("/teacher");
+  function openWorkSheet(workSheetId) {
+    navigate(`/teacher/${workSheetId}`);
   }
 
   function preventCardOpen(event) {
@@ -119,19 +92,12 @@ function WorkSheetViewer() {
 
   async function removeWorkSheet(workSheetId) {
     setDeletingWorkSheetId(workSheetId);
+    setError("");
 
     try {
-      const response = await fetch(`/api/worksheets/${workSheetId}`, {
-        method: "DELETE",
-      });
+      await deleteWorksheet(workSheetId);
 
-      if (!response.ok) {
-        throw new Error("Could not delete the worksheet");
-      }
-
-      setWorkSheets((currentWorkSheets) => (
-        currentWorkSheets.filter((workSheet) => workSheet.id !== workSheetId)
-      ));
+      setWorkSheets((currentWorkSheets) => ( currentWorkSheets.filter((workSheet) => workSheet.id !== workSheetId)));
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -139,10 +105,10 @@ function WorkSheetViewer() {
     }
   }
 
-  function handleWorkSheetKeyDown(event) {
+  function handleWorkSheetKeyDown(event, worksheetId) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      openWorkSheet();
+      openWorkSheet(worksheetId);
     }
   }
 
@@ -201,8 +167,8 @@ function WorkSheetViewer() {
                 className="worksheet-card"
                 size="small"
                 hoverable
-                onClick={openWorkSheet}
-                onKeyDown={handleWorkSheetKeyDown}
+                onClick={() => openWorkSheet(sheet.id)}
+                onKeyDown={(event) => handleWorkSheetKeyDown(event , sheet.id)}
                 role="button"
                 tabIndex={0}
                 style={{ width: "100%" }}

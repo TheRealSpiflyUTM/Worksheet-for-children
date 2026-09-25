@@ -1,46 +1,97 @@
-import React from "react";
-import { Input, Button } from "antd";
+import { useState } from "react";
+import { Alert, Button, Input } from "antd";
 import { useNavigate } from "react-router-dom";
+import { login } from "../api/auth.js";
 import "./Auth.css";
 
 const Login = () => {
-const [passwordVisible, setPasswordVisible] = React.useState(false);
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const [email , setEmail] = useState("");
+    const [password , setPassword] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(false);
 
-const navigate = useNavigate();
+    const navigate = useNavigate();
 
-return (
-    <div className="auth-container">
-        <div className="auth-form">
+    async function handleLogin() {
+        if(!email.trim()){
+            setError("Enter your email adress");
+            return;
+        }
+        if(!password){
+            setError("Enter your password");
+            return;
+        }
 
-            <Input
-                placeholder="Username"
-                maxLength={25}
-                className="username-input"
-            />
+        setIsSubmitting(true);
+        setError("");
 
-            <div className="password-row">
+        try{
+            const user = await login(email , password);
+
+            if(user.role === "TEACHER"){
+                navigate("/sheets");
+            }
+            else{
+                navigate("/home");
+            }
+        }catch(error){
+            setError(error.message);
+        }finally{
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <div className="auth-container">
+            <div className="auth-form">
+
+                <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    maxLength={50}
+                    autoComplete="email"
+                    disabled={isSubmitting}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onPressEnter={handleLogin}
+                />
+
                 <Input.Password
                     placeholder="Password"
-                    maxLength={25}
+                    value={password}
+                    maxLength={60}
+                    autoComplete="current-password"
+                    disabled={isSubmitting}
+                    onChange={(event) => setPassword(event.target.value)}
+                    onPressEnter={handleLogin}
                     visibilityToggle={{
                         visible: passwordVisible,
-                        onVisibleChange: setPasswordVisible
+                        onVisibleChange: setPasswordVisible,
                     }}
                     className="password-input"
                 />
+
+                <Button
+                    type="primary"
+                    className="enter-button"
+                    loading={isSubmitting}
+                    onClick={handleLogin}
+                >
+                Log in
+                </Button>
+
+                {error && (
+                    <Alert
+                        type="error"
+                        title={error}
+                        showIcon
+                    />
+                )}
+
             </div>
-
-            <Button
-                type="primary"
-                className="enter-button"
-                onClick={() => navigate("/account")}
-            >
-                Enter
-            </Button>
-
         </div>
-    </div>
-);
+    );
 
 };
 
