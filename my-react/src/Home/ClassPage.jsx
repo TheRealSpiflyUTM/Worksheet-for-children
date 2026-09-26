@@ -7,7 +7,7 @@ function ClassPage() {
   return (
     <section className="class-page">
       <h2>{className}</h2>
-      <p>67.</p>
+      <p>ceva</p>
     </section>
   );
 }

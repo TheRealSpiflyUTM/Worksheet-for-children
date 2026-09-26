@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/minigame1")
-@CrossOrigin(origins = "http://localhost:5173")
 public class Minigame1Controller {
 
     private final Minigame1Service minigame1Service;

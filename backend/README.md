@@ -1,313 +1,200 @@
-# Backend
+# Worksheet Backend
 
-Four separate modules: `minigame1`, `countmatch`, `worksheets`, and `auth`.
-They run in the same Spring Boot application. Authentication has its own
-`auth_users` table and does not change access to the existing minigame APIs.
+This backend is one Spring Boot modular monolith backed by PostgreSQL. Editable worksheets are separated from immutable published revisions, so assignments and completed history do not change when a worksheet is edited later.
 
-## Run
+## Module map
 
-Requirements: Java 25 and Docker Desktop. Maven is included through the wrapper.
-
-Start Docker Desktop, then run this from the repository root:
-
-```powershell
-docker compose up -d postgres
+```text
+com.worksheet
+├── auth                 users, roles, sessions, admin bootstrap/API
+├── classroom            classrooms and membership lifecycle
+├── minigame             dynamic catalog, versions, schemas and asset links
+├── worksheet            editable worksheet drafts and items
+│   ├── revision         immutable published worksheet snapshots
+│   └── result           deprecated result compatibility API
+├── assignment           per-user grants to frozen revisions
+├── attempt              canonical attempt and scoring lifecycle
+├── minigame1            legacy game adapter
+├── countmatch           legacy game adapter
+└── shared
+    ├── errors           stable JSON errors and request IDs
+    ├── security         Spring Security, CORS and CSRF
+    └── storage          replaceable asset storage contract
 ```
 
-Open a terminal in `backend`:
+Each feature keeps the `controller -> service -> repository -> entity` flow. Controllers translate HTTP, services own authorization and transactions, repositories only query persistence, and response records keep JPA entities out of the API.
+
+## Domain and database
+
+```text
+auth_users (USER / TEACHER / ADMIN)
+  ├──< worksheet (editable, owned)
+  │      ├──< worksheet_item (editable)
+  │      └──< worksheet_revision (immutable publication)
+  │              └──< worksheet_revision_item (frozen game + configuration)
+  │                      └──< worksheet_attempt
+  │                              └──< worksheet_attempt_item_result
+  ├──< classroom (teacher-owned)
+  │      └──< classroom_member >── USER
+  └── worksheet_assignment
+          ├── one assigned USER
+          ├── optional classroom
+          └── one immutable worksheet_revision
+
+mini_game_definition (type + version + JSON Schemas)
+  ├──< worksheet_item
+  ├──< worksheet_revision_item
+  └──< mini_game_definition_asset >── mini_game_asset
+```
+
+Only `worksheet` stores worksheet ownership. An assignment derives its worksheet and teacher through `worksheet_revision -> worksheet -> auth_users`; it does not duplicate those foreign keys. Child access is checked through these parent relationships.
+
+Publishing occurs when an assignment is created or a personal attempt starts. A SHA-256 content hash reuses the latest unchanged revision. A changed name, item order, definition version, or configuration creates the next revision. Published rows are never edited.
+
+The old `worksheet_result` and `mini_game_result` tables/routes remain as deprecated compatibility APIs. New work uses `worksheet_attempt` and `worksheet_attempt_item_result`.
+
+## Attempt lifecycle
+
+```text
+POST worksheet/assignment attempts
+        |
+        v
+  IN_PROGRESS on a frozen revision
+        |
+        +-- PUT each item result (COMPLETED or SKIPPED)
+        |      - membership and score bounds checked
+        |      - details checked against the definition result schema
+        |      - repeated PUT replaces that item while in progress
+        |
+        +-- POST complete
+               - every revision item must have a result
+               - backend sums totalScore and maxScore
+               - status becomes COMPLETED and immutable
+
+membership removal -> active assignment revoked -> unfinished attempts ABANDONED
+                                      completed history remains readable by teacher
+```
+
+The client reports each dynamic game's item score because the backend cannot reproduce arbitrary frontend game logic. The backend controls revision membership, schemas, non-negative numeric bounds, `score <= maxScore`, completeness, lifecycle state, and aggregate totals.
+
+## Authorization matrix
+
+| Capability | USER | TEACHER | ADMIN |
+| --- | --- | --- | --- |
+| Signup/login and personal worksheets | Yes | Yes | Yes |
+| Create/join classroom | Join | Create/manage | No special classroom bypass |
+| Assign an owned worksheet | No | Yes | No implicit teacher bypass |
+| Play a received assignment | Yes | No | No |
+| Read assignment attempts | Own active assignment | Assignments created through owned worksheets | No global bypass |
+| Read active public catalog | Public | Public | Public |
+| Create/version/activate catalog entries | No | No | Yes |
+| Upload/delete catalog assets | No | No | Yes |
+| Manage account roles | No | No | Yes |
+
+Missing authentication returns `401`, insufficient role returns `403`, inaccessible or cross-user resources return `404`, and lifecycle/data conflicts return `409`.
+
+## Security
+
+- Spring Security stores authentication in the existing `WORKSHEET_SESSION` HTTP session.
+- Login/signup rotate the session ID. Logout invalidates it.
+- The cookie is `HttpOnly`, `SameSite=Strict`, scoped to `/api`, and can be made secure with `AUTH_COOKIE_SECURE=true`.
+- `GET /api/auth/csrf` returns the standard token. Send it as the returned header (normally `X-XSRF-TOKEN`) on mutating requests.
+- CORS allows one configured frontend origin and credentials.
+- Public signup can select `USER` or `TEACHER`, never `ADMIN`.
+- Every JSON error has `code`, `message`, `fieldErrors`, `requestId`, and `timestamp`.
+
+Example browser sequence:
+
+```text
+GET  /api/auth/csrf              credentials: include
+POST /api/auth/login             credentials: include + X-XSRF-TOKEN
+POST /api/worksheets/42/attempts credentials: include + X-XSRF-TOKEN
+```
+
+## Canonical APIs
+
+| Route | Purpose |
+| --- | --- |
+| `POST /api/worksheets/{id}/attempts` | Start a personal attempt and publish/reuse a revision |
+| `POST /api/assignments/{id}/attempts` | Assigned USER starts an attempt |
+| `GET /api/attempts/{id}` | Frozen content, progress, results and totals |
+| `PUT /api/attempts/{attemptId}/items/{revisionItemId}/result` | Idempotently save/replace an item result |
+| `POST /api/attempts/{id}/complete` | Validate completeness and aggregate totals |
+| `GET /api/worksheets/{id}/attempts` | Personal attempt history |
+| `GET /api/assignments/{id}/attempts` | Assigned history visible to user/teacher |
+
+Item result example:
+
+```json
+{
+  "outcome": "COMPLETED",
+  "score": 3,
+  "maxScore": 5,
+  "timeSeconds": 12,
+  "details": { "moves": 4 }
+}
+```
+
+Use `"outcome":"SKIPPED"` with score zero for an explicit skip.
+
+Worksheet draft routes retain their existing paths. `PUT /api/worksheets/{id}` edits a worksheet name; item update/delete remains nested below the worksheet. Assignment and classroom routes also retain their existing paths.
+
+## Dynamic mini-game catalog
+
+Definitions are identified by stable `type` plus positive `version`. Configuration and result payloads are validated with NetworkNT's Jackson 3-compatible JSON Schema Draft 2020-12 implementation. Remote `$ref` values are rejected. Once a worksheet draft or immutable revision references a definition version, its contract cannot be edited; create a higher version.
+
+Public `GET /api/minigames` returns active versions only. Admin APIs can list all definitions and create, edit unused versions, activate, or deactivate them. Definition metadata supports a description, optional thumbnail, and logical asset keys.
+
+Assets are verified from magic bytes (not the submitted MIME header), limited to supported image/audio formats and 10 MB, hashed with SHA-256, and stored through `MiniGameAssetStorage`. Local disk is the default implementation; an S3-compatible implementation can replace it without changing catalog services. Referenced assets cannot be deleted.
+
+`minigame1` and `countmatch` are legacy adapters and remain behavior-compatible. New games use the dynamic catalog.
+
+## Configuration
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/worksheets` | PostgreSQL JDBC URL |
+| `DB_USERNAME` | `postgres` | Database username |
+| `DB_PASSWORD` | `postgres` | Local-development fallback; set a secret in deployed environments |
+| `AUTH_COOKIE_SECURE` | `false` | Use `true` behind HTTPS |
+| `APP_CSRF_ENABLED` | `true` | Keep enabled outside isolated tests |
+| `APP_BOOTSTRAP_ADMIN_NAME` | empty | Optional first-admin display name |
+| `APP_BOOTSTRAP_ADMIN_EMAIL` | empty | Optional first-admin email |
+| `APP_BOOTSTRAP_ADMIN_PASSWORD` | empty | Optional first-admin password (15–128 characters) |
+
+All three admin bootstrap values must be supplied together. Creation is idempotent. Startup fails if the email already belongs to a non-admin account; the application never silently promotes it and never logs the password.
+
+File paths and the allowed frontend origin are configured in `src/main/resources/application.properties`. Hibernate Open Session in View is disabled.
+
+## Migrations
+
+Flyway migrations are forward-only. Never rewrite V1–V13 or another migration already applied to a shared database.
+
+- V14 adds `ADMIN` and optimistic locking to editable worksheet/classroom rows.
+- V15 publishes/backfills immutable worksheet revisions, attaches assignments to revisions, then removes duplicate assignment teacher/worksheet columns.
+- V16 creates attempts and item results and copies existing results while preserving their IDs and scores.
+- V17 adds catalog metadata, asset integrity/lifecycle fields, and relational definition asset keys.
+
+The V13 upgrade migration can only snapshot the worksheet content available at upgrade time because older edits were not historically stored. Existing result history is preserved and linked to that snapshot.
+
+## Run and verify
+
+Requirements: Temurin Java 25 and Docker Desktop.
 
 ```powershell
+# repository root
+docker compose up -d postgres
+
+# backend directory
 .\mvnw.cmd spring-boot:run
 ```
 
-Backend address: `http://localhost:8080`.
-
-## How the code works
-
-- **Controller** receives requests from the frontend or an API client.
-- **Service** does the work and prepares the response.
-- **Repository** saves and reads database records through Spring Data JPA.
-- **Entity** describes a database table; a **response** contains fields sent to the client.
-
-Java modules are in `src/main/java/com/worksheet`.
-Backend settings are in `src/main/resources/application.properties`.
-
-## Database connection
-
-```text
-Spring Boot -> Spring Data JPA -> PostgreSQL in Docker
-```
-
-| Setting | Value |
-| --- | --- |
-| Container | `worksheets-postgres` |
-| PostgreSQL version | 18 |
-| Host / port | `localhost:5432` |
-| Database | `worksheets` |
-| Username | `postgres` |
-| Password | The configured `POSTGRES_PASSWORD` in the root `docker-compose.yml` |
-| JDBC URL | `jdbc:postgresql://localhost:5432/worksheets` |
-| Schema | `public` |
-
-The backend's `spring.datasource.password` must match the database password.
-These connection settings assume the backend runs on your computer and
-PostgreSQL runs in Docker.
-
-The `minigame1` and `auth_users` tables share this database but store separate
-records. Flyway creates and updates their structure at startup using the SQL
-migrations in `src/main/resources/db/migration`. Hibernate checks that the
-schema matches the entities using `spring.jpa.hibernate.ddl-auto=validate`.
-The earlier H2 file database is no
-longer used for application data; H2 is used only by the default tests.
-
-PostgreSQL files are stored in the root `database/postgres-data` folder,
-mounted into the container at `/var/lib/postgresql`. They are ignored by Git.
-Do not edit these files directly. Accounts remain saved after restarting the
-backend or container.
-
-### Shared schema and sample data
-
-For a new clone, start PostgreSQL and the backend with the commands above.
-Flyway automatically applies `V1__create_tables.sql` and
-`V2__insert_sample_game_data.sql`. The result is an empty `auth_users` table
-and two Minigame1 samples: Cat and Vegetables. Create your own account through
-signup. Real accounts and password hashes are never included in migrations.
-
-The two sample images in `data/uploads` are explicitly included by
-`backend/.gitignore`; other uploaded files remain ignored. Commit both the
-migration files and the sample images when sharing this setup. Always run
-the backend from `backend` so the configured image directories resolve.
-
-Flyway records completed migrations in `flyway_schema_history`. Restarting
-the application does not insert the samples again. The sample inserts also
-skip an image filename already present and use generated IDs to avoid ID
-collisions. Each developer has a separate database: new local uploads are
-not automatically shared by GitHub.
-
-For future changes, add `V3__description.sql`, then `V4__description.sql`,
-and so on. Do not edit migrations already applied to a shared database.
-To share more game content, include its SQL inserts and matching image files.
-
-### Existing databases created before Flyway
-
-An existing database must be backed up and its tables compared with V1 before
-adoption. If they match exactly, run this **once**, from `backend`:
+Verification:
 
 ```powershell
-.\mvnw.cmd spring-boot:run '-Dspring-boot.run.arguments=--spring.flyway.baseline-on-migrate=true --spring.flyway.baseline-version=1'
-```
-
-This records V1 as already present, then applies V2. Future starts use the
-normal command without these arguments. Do not enable automatic baselining
-in the shared configuration: it could hide a mismatched existing schema.
-An empty database needs no baseline and should use the normal startup command.
-
-To inspect tables with Microsoft's PostgreSQL extension in VS Code, connect
-using the settings above and expand:
-
-```text
-worksheets -> Schemas -> public -> Tables
-```
-
-Right-click `auth_users` or `minigame1` and select **Select Top 1000**.
-Refresh the Tables folder if a newly created table is missing.
-
-## 1. Minigame1
-
-Saves an animal name and an uploaded image.
-
-```text
-Frontend -> Controller -> Service -> PostgreSQL + image folder
-```
-
-Records are in the `minigame1` table. Images are in `backend/data/uploads`.
-
-| Request | Send | Receive |
-| --- | --- | --- |
-| `POST /api/minigame1` | Form data: `name` and `image` file | Saved entry |
-| `GET /api/minigame1` | Nothing | Array of saved entries |
-| `GET /api/minigame1/{id}/image` | Entry ID in the URL | Image file |
-
-Example saved entry:
-
-```json
-{
-  "id": 1,
-  "name": "Cat",
-  "imageUrl": "/api/minigame1/1/image",
-  "createdAt": "2026-09-15T19:00:00Z"
-}
-```
-
-## 2. Worksheet list
-
-Returns a fixed list of worksheet descriptions from `WorksheetController`.
-
-| Request | Receive |
-| --- | --- |
-| `GET /api/worksheets` | Array containing `id` and `name` for each worksheet |
-
-Example entry: `{ "id": 1, "name": "Animals worksheet" }`.
-This endpoint does not store worksheet records in the database.
-
-## 3. Authentication
-
-Creates accounts, checks login details, remembers signed-in users, and logs them out.
-
-```text
-Client -> AuthController -> AuthService -> UserRepository -> PostgreSQL auth_users
-```
-
-All authentication code is in `src/main/java/com/worksheet/auth`.
-
-| File | Responsibility |
-| --- | --- |
-| `AuthController.java` | Endpoints, session handling, request header checks, and authentication error responses |
-| `AuthService.java` | Validate input, hash passwords, and check credentials |
-| `UserRepository.java` | Read and save users through Spring Data JPA |
-| `User.java` | Map the `auth_users` table |
-| `UserResponse.java` | Return public account fields without the password hash |
-
-### Stored user data
-
-| Column | Purpose |
-| --- | --- |
-| `id` | Automatically generated user ID |
-| `name` | Display name, 1–100 characters after trimming |
-| `email` | Unique email, trimmed and lowercased, at most 254 characters |
-| `password_hash` | Salted PBKDF2-HMAC-SHA256 hash; never the original password |
-| `created_at` | Account creation time |
-
-Passwords must contain 15–128 characters. Spring Security Crypto hashes them
-with a random 16-byte salt and 600,000 iterations. Only the crypto library is
-added; there is no global Spring Security filter changing other endpoints.
-Create accounts through signup so validation and hashing are applied.
-Do not enter a plain password directly into `password_hash`.
-
-### Requests
-
-| Request | Send | Receive |
-| --- | --- | --- |
-| `POST /api/auth/signup` | JSON: `name`, `email`, `password` | `201`: saved user and a session cookie |
-| `POST /api/auth/login` | JSON: `email`, `password` | `200`: user and a session cookie |
-| `GET /api/auth/me` | Session cookie | `200`: current user; `401` if not signed in |
-| `POST /api/auth/logout` | Session cookie | `204`: session invalidated, no response body |
-
-All authentication POST requests require `X-Auth-Request: 1`.
-Signup and login also require `Content-Type: application/json`.
-
-Example signup body:
-
-```json
-{
-  "name": "Example User",
-  "email": "example.user@example.com",
-  "password": "ExamplePassphrase2026!"
-}
-```
-
-For login, send only `email` and `password`. Signup, login, and `/me` return
-the same public user structure:
-
-```json
-{
-  "id": 1,
-  "name": "Example User",
-  "email": "example.user@example.com",
-  "createdAt": "2026-09-18T08:00:00Z"
-}
-```
-
-### Sessions and client connection
-
-- Signup automatically signs the new user in. Login checks the stored password hash.
-- The session cookie is named `WORKSHEET_SESSION`, with `HttpOnly`,
-  `SameSite=Strict`, and path `/api/auth`. The session ID changes on authentication.
-- Sessions expire after 30 minutes without a session-bearing auth request or
-  when the backend restarts. Logout invalidates the server session.
-- Browser requests from `http://localhost:5173` are allowed for authentication.
-  Set `app.auth.allowed-origin` in backend settings to change that origin.
-- A future frontend connection must use `credentials: 'include'` in `fetch`
-  to send and receive the session cookie across localhost ports, and include
-  `X-Auth-Request: 1` on POST requests. Use the same hostname on both sides
-  (`localhost` on both, rather than mixing it with `127.0.0.1`).
-- For HTTPS deployment, set `AUTH_COOKIE_SECURE=true`. The current cookie
-  settings assume the client and API are on the same site.
-
-This module provides the backend authentication API; frontend integration is maintained separately.
-The existing minigame endpoints remain public. Roles, email verification,
-password reset, and login rate limiting are not implemented.
-
-### Authentication errors
-
-| Status | Meaning |
-| --- | --- |
-| `400` | Missing or invalid account fields |
-| `401` | Incorrect credentials, missing session, or expired session |
-| `403` | Missing required request header or rejected cross-origin request |
-| `409` | Email already registered |
-
-Validation and authentication errors raised by the module return a `message`,
-for example:
-
-```json
-{ "message": "Email or password is incorrect." }
-```
-
-## 4. Count & Match
-
-Returns random images from a category.
-
-```text
-Frontend -> Controller -> Service -> Prepared image folders
-```
-
-Images are in `data/Count & Mathc (MiniGame)/Images`.
-Categories: `animals`, `fruits`, `shapes`, `toys`, `vegetables`.
-
-| Request | Receive |
-| --- | --- |
-| `GET /api/count-match/categories` | Array of category names |
-| `GET /api/count-match/images?category=vegetables&count=5` | Array of 5 random image URLs, without duplicates |
-| `GET /api/count-match/images/{category}/{filename}` | Image file |
-
-Example response when `count=2`:
-
-```json
-[
-  "/api/count-match/images/vegetables/image-r1-c1.png",
-  "/api/count-match/images/vegetables/image-r3-c2.png"
-]
-```
-
-Both `category` and `count` are required. Count must be at least 1 and cannot
-exceed the available images. The frontend handles counting and matching.
-
-## Frontend notes
-
-- Add `http://localhost:8080` before an image URL when requesting it directly from the backend.
-- Minigame1 allows browser requests from `http://localhost:5173`.
-  Count & Match and the worksheet-list endpoint also allow this origin.
-- Authentication has its own origin and cookie requirements, described above.
-- `400` means invalid input; `404` means not found; `500` means a backend error.
-- Backend settings are in `src/main/resources/application.properties`.
-
-## Tests
-
-From `backend`, run:
-
-```powershell
+.\mvnw.cmd clean compile
 .\mvnw.cmd test
+.\mvnw.cmd verify
 ```
 
-Default tests use in-memory H2 databases, not the saved PostgreSQL users.
-These tests disable Flyway and let Hibernate create/drop their isolated
-test tables. Verify PostgreSQL migrations separately against a fresh disposable
-PostgreSQL database, keeping Hibernate validation enabled. Check that both
-samples and their image endpoints load and that a restart creates no duplicates.
-They cover signup, password hashing, validation, duplicate emails, login,
-sessions, logout, cross-origin requests, Minigame1 behavior, and Count & Match.
-
-`AuthTests` also accepts `-Dauth.test.database-url=jdbc:postgresql://localhost:5432/TEST_DATABASE`
-for PostgreSQL testing. Use only a separate disposable test database: these
-tests create/drop tables and delete test users. Never point them at `worksheets`.
+Fast tests use isolated H2 schemas with Flyway disabled. `verify` additionally runs Testcontainers PostgreSQL tests for a fresh V1-to-latest migration, Hibernate schema validation, and a populated V13-to-latest upgrade. PostgreSQL integration tests are skipped with an explicit JUnit skip when Docker is unavailable.

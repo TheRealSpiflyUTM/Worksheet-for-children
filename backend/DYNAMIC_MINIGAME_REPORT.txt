@@ -1,0 +1,89 @@
+BACKEND ARCHITECTURE HANDOFF
+============================
+
+System shape
+------------
+One Spring Boot modular monolith and one PostgreSQL database. Do not split each
+mini-game into a backend. New games use one versioned dynamic catalog.
+
+Main flow
+---------
+User owns editable Worksheet -> WorksheetItem.
+Starting a personal attempt or assigning a worksheet publishes/reuses an
+immutable WorksheetRevision -> WorksheetRevisionItem snapshot.
+Assignment grants one USER access to that frozen revision.
+WorksheetAttempt -> WorksheetAttemptItemResult records play history.
+Completed attempts are immutable and totals are calculated by the backend.
+
+Roles
+-----
+USER: personal worksheets, joins classes, plays own active assignments.
+TEACHER: personal worksheets, owns classes, assigns owned worksheets, reads
+attempts for assignments created from those worksheets.
+ADMIN: manages users, catalog definitions/versions, and catalog assets.
+Public signup may create USER or TEACHER, never ADMIN.
+
+Catalog
+-------
+MiniGameDefinition has stable type + positive version, configuration schema,
+result schema, defaults, description, active state, thumbnail, and logical
+asset keys. JSON is validated using JSON Schema Draft 2020-12. Remote $ref is
+rejected. Referenced versions are immutable; publish a higher version.
+Assets are magic-byte checked, SHA-256 hashed, stored behind
+MiniGameAssetStorage, and protected from deletion while referenced.
+
+Canonical attempt API
+---------------------
+POST /api/worksheets/{id}/attempts
+POST /api/assignments/{id}/attempts
+GET  /api/attempts/{id}
+PUT  /api/attempts/{attemptId}/items/{revisionItemId}/result
+POST /api/attempts/{id}/complete
+
+Result outcome is COMPLETED or SKIPPED. A skip has score 0. Every frozen item
+needs a result before completion. Item PUT is idempotent while IN_PROGRESS.
+After completion no result may change. Revocation abandons unfinished assigned
+attempts but preserves completed history.
+
+Security/API rules
+------------------
+Session cookie: WORKSHEET_SESSION. Obtain CSRF data from GET /api/auth/csrf and
+send the returned header on mutations. Browser calls use credentials: include.
+401 = no session; 403 = wrong role; 404 = inaccessible/cross-user resource;
+409 = lifecycle/data conflict. Errors include stable code, message, fieldErrors,
+requestId, and timestamp. Ownership IDs are never accepted from the client.
+
+Database
+--------
+Never edit applied migrations. V14-V17 add ADMIN/optimistic locks, immutable
+revisions, canonical attempts/backfill, and catalog asset integrity. Assignment
+derives worksheet/teacher through revision -> worksheet -> owner. Child tables
+do not duplicate user ownership.
+
+Deployment variables
+--------------------
+DB_URL, DB_USERNAME, DB_PASSWORD, AUTH_COOKIE_SECURE, APP_CSRF_ENABLED.
+Optional first admin requires all three: APP_BOOTSTRAP_ADMIN_NAME,
+APP_BOOTSTRAP_ADMIN_EMAIL, APP_BOOTSTRAP_ADMIN_PASSWORD.
+
+Verification
+------------
+Run in backend:
+  .\mvnw.cmd clean compile
+  .\mvnw.cmd test
+  .\mvnw.cmd verify
+The verify phase uses Testcontainers PostgreSQL for fresh migration/Hibernate
+validation and populated V13 upgrade coverage. Docker is required to execute
+those integration tests.
+
+Implementation verification (2026-09-24)
+----------------------------------------
+.\mvnw.cmd clean compile: BUILD SUCCESS (102 main source files).
+.\mvnw.cmd test: BUILD SUCCESS (25 tests, 0 failures, 0 errors, 0 skipped).
+.\mvnw.cmd verify: BUILD SUCCESS. Fast tests passed again; PostgreSQL
+integration tests: 2 discovered, 2 skipped because no Docker environment was
+available. Start Docker Desktop and rerun verify to execute the real PostgreSQL
+fresh-schema and populated-V13 migration checks.
+
+No frontend files, existing V1-V13 migrations, database volume files, or
+application data were modified by this cleanup.

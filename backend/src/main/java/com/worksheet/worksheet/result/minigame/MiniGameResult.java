@@ -53,4 +53,12 @@ public class MiniGameResult {
     public int getMaxScore() { return maxScore; }
     public int getTimeSeconds() { return timeSeconds; }
     public JsonNode getDetails() { return details; }
+
+    public void update(WorksheetItem worksheetItem, int score, int maxScore, int timeSeconds, JsonNode details) {
+        this.worksheetItem = worksheetItem;
+        this.score = score;
+        this.maxScore = maxScore;
+        this.timeSeconds = timeSeconds;
+        this.details = details;
+    }
 }

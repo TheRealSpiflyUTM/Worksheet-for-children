@@ -68,11 +68,6 @@ return (
                 </LeftSidebar>
             }
         />
-        
-        <Route
-            path="/login"
-            element={<AuthExample />}
-        />
 
         {/* <Route
           path="/kids"
@@ -107,7 +102,7 @@ return (
 
             {/* TEACHER */}
             <Route
-                path="/teacher"
+                path="/teacher/:worksheetId"
                 element={
                     <LeftSidebar>
                         <Avatar />
