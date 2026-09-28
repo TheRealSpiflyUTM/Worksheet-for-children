@@ -113,14 +113,15 @@ return (
 
             {/* KIDS */}
             <Route
-                path="/kids"
-                element={
-                    <LeftSidebar>
-                        <Avatar />
-                        <MainMinigamePage isTeacher={false} />
+                path="/kids/:worksheetId"
+                element={ 
+                    <LeftSidebar> 
+                        <Avatar /> 
+                        <MainMinigamePage isTeacher={false} /> 
                     </LeftSidebar>
                 }
             />
+
 
         </Routes>
     </ConfigProvider>
