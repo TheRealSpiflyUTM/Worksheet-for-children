@@ -9,11 +9,16 @@ import tools.jackson.databind.node.ObjectNode;
 
 @Component
 public class MiniGameDataInitializer implements CommandLineRunner {
+private static final int INITIAL_VERSION = 1;
+private static final int CORRECTED_SCHEMA_VERSION = 2;
 
 private final MiniGameDefinitionRepository repository;
+private final JsonSchemaValidationService schemaValidator;
 
-public MiniGameDataInitializer(MiniGameDefinitionRepository repository) {
+public MiniGameDataInitializer(MiniGameDefinitionRepository repository,
+                               JsonSchemaValidationService schemaValidator) {
     this.repository = repository;
+    this.schemaValidator = schemaValidator;
 }
 
 @Override
@@ -60,15 +65,27 @@ private void createIfMissing(
     JsonNode configurationSchema,
     JsonNode defaultConfiguration
 ) {
-    if (repository.existsByTypeIgnoreCaseAndVersion(type, 1)) {
+    if (repository.existsByTypeIgnoreCaseAndVersion(type, CORRECTED_SCHEMA_VERSION)) {
         return;
     }
+
+    var initial = repository.findByTypeIgnoreCaseAndVersion(type, INITIAL_VERSION);
+    if (initial.isPresent()
+            && initial.get().getConfigurationSchema().equals(configurationSchema)
+            && initial.get().getDefaultConfiguration().equals(defaultConfiguration)) {
+        return;
+    }
+    int version = initial.isPresent() ? CORRECTED_SCHEMA_VERSION : INITIAL_VERSION;
+
+    schemaValidator.validateSchema(configurationSchema, name + " configuration schema");
+    schemaValidator.validate(configurationSchema, defaultConfiguration,
+        name + " default configuration");
 
     repository.save(
         new MiniGameDefinition(
             name,
             type,
-            1,
+            version,
             configurationSchema,
             emptyObject(),
             defaultConfiguration,
@@ -81,15 +98,25 @@ private void createIfMissing(
 private JsonNode colorConfigurationSchema() {
     ObjectNode schema = baseObjectSchema();
 
+    ObjectNode animal = baseObjectSchema();
+    addStringProperty(animal, "id");
+    addStringProperty(animal, "name");
+    addStringProperty(animal, "img");
+    require(animal, "id", "name", "img");
+
     ObjectNode animals = JsonNodeFactory.instance.objectNode();
     animals.put("type", "array");
+    animals.set("items", animal);
+    animals.put("minItems", 1);
 
-    schema.set("animals", animals);
+    properties(schema).set("animals", animals);
 
     ObjectNode letter = JsonNodeFactory.instance.objectNode();
     letter.put("type", "string");
 
-    schema.set("letter", letter);
+    letter.put("minLength", 1);
+    properties(schema).set("letter", letter);
+    require(schema, "animals", "letter");
 
     return schema;
 }
@@ -98,13 +125,21 @@ private JsonNode colorDefaultConfiguration() {
     ObjectNode config = JsonNodeFactory.instance.objectNode();
 
     config.put("letter", "u");
-
-    config.set(
-        "animals",
-        JsonNodeFactory.instance.arrayNode()
-    );
+    var animals = JsonNodeFactory.instance.arrayNode();
+    animals.add(animal("bear", "Urs", "/img/BearImg.webp"));
+    animals.add(animal("fox", "Vulpe", "/img/FoxImg.webp"));
+    animals.add(animal("wolf", "Lup", "/img/WolfImg.webp"));
+    config.set("animals", animals);
 
     return config;
+}
+
+private ObjectNode animal(String id, String name, String image) {
+    ObjectNode animal = JsonNodeFactory.instance.objectNode();
+    animal.put("id", id);
+    animal.put("name", name);
+    animal.put("img", image);
+    return animal;
 }
 
 private JsonNode mathConfigurationSchema() {
@@ -114,12 +149,24 @@ private JsonNode mathConfigurationSchema() {
     maxNumber.put("type", "integer");
     maxNumber.put("minimum", 1);
 
-    schema.set("maxNumber", maxNumber);
+    properties(schema).set("maxNumber", maxNumber);
 
     ObjectNode operations = JsonNodeFactory.instance.objectNode();
     operations.put("type", "array");
+    operations.put("minItems", 1);
+    operations.put("uniqueItems", true);
+    ObjectNode operation = JsonNodeFactory.instance.objectNode();
+    operation.put("type", "string");
+    var allowedOperations = JsonNodeFactory.instance.arrayNode();
+    allowedOperations.add("+");
+    allowedOperations.add("-");
+    allowedOperations.add("*");
+    allowedOperations.add("/");
+    operation.set("enum", allowedOperations);
+    operations.set("items", operation);
 
-    schema.set("operations", operations);
+    properties(schema).set("operations", operations);
+    require(schema, "maxNumber", "operations");
 
     return schema;
 }
@@ -147,7 +194,8 @@ private JsonNode sequenceConfigurationSchema() {
     maxNumber.put("type", "integer");
     maxNumber.put("minimum", 1);
 
-    schema.set("maxNumber", maxNumber);
+    properties(schema).set("maxNumber", maxNumber);
+    require(schema, "maxNumber");
 
     return schema;
 }
@@ -167,7 +215,8 @@ private JsonNode higherLowerConfigurationSchema() {
     maxNumber.put("type", "integer");
     maxNumber.put("minimum", 1);
 
-    schema.set("maxNumber", maxNumber);
+    properties(schema).set("maxNumber", maxNumber);
+    require(schema, "maxNumber");
 
     return schema;
 }
@@ -187,7 +236,8 @@ private JsonNode oddEvenConfigurationSchema() {
     maxNumber.put("type", "integer");
     maxNumber.put("minimum", 1);
 
-    schema.set("maxNumber", maxNumber);
+    properties(schema).set("maxNumber", maxNumber);
+    require(schema, "maxNumber");
 
     return schema;
 }
@@ -208,8 +258,25 @@ private ObjectNode baseObjectSchema() {
         "properties",
         JsonNodeFactory.instance.objectNode()
     );
+    schema.put("additionalProperties", false);
 
     return schema;
+}
+
+private ObjectNode properties(ObjectNode schema) {
+    return (ObjectNode) schema.get("properties");
+}
+
+private void addStringProperty(ObjectNode schema, String name) {
+    ObjectNode property = JsonNodeFactory.instance.objectNode();
+    property.put("type", "string");
+    properties(schema).set(name, property);
+}
+
+private void require(ObjectNode schema, String... names) {
+    var required = JsonNodeFactory.instance.arrayNode();
+    for (String name : names) required.add(name);
+    schema.set("required", required);
 }
 
 private ObjectNode emptyObject() {
