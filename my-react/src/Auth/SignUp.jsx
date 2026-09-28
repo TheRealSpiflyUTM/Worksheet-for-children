@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Alert, Button, Input } from "antd";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../api/client.js";
 import "./Auth.css";
 
 const SignUp = () => {
-        
+
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
     const [name, setName] = useState("");
@@ -17,7 +18,7 @@ const SignUp = () => {
     const navigate = useNavigate();
 
     async function handleSighnUp() {
-        if(password !== confirmPassword){
+        if (password !== confirmPassword) {
             setError("Confirm password is not correct");
             return;
         }
@@ -25,43 +26,32 @@ const SignUp = () => {
         setIsSubmitting(true);
         setError("");
 
-        try{
-            const response = await fetch("/api/auth/signup", {
+        try {
+            await apiRequest("/api/auth/signup", {
                 method: "POST",
-                headers:{
+                headers: {
                     "Content-Type": "application/json",
                     "X-Auth-Request": "1",
                 },
-                credentials: "include",
                 body: JSON.stringify({
                     name,
                     email,
                     password,
                 }),
             });
-                
-            const data = await response.json();
-
-            if(!response.ok){
-                throw new Error(data.message || "Could not create the account");
-            }
 
             navigate("/account");
-        }catch(requestError){
+        } catch (requestError) {
             setError(requestError.message);
-        }finally{
+        } finally {
             setIsSubmitting(false);
         }
     }
 
-
-
-
-
     return (
         <div className="auth-container">
             <div className="auth-form">
-                
+
                 <Input
                     type="email"
                     placeholder="Email"
@@ -105,18 +95,23 @@ const SignUp = () => {
                 <Button
                     type="primary"
                     className="enter-button"
-                    loading= {isSubmitting}
-                    
+                    loading={isSubmitting}
                     onClick={handleSighnUp}
                 >
                     Create Acount
                 </Button>
-                
-                {error && <Alert type="error" message={error} showIcon />}
+
+                {error && (
+                    <Alert
+                        type="error"
+                        message={error}
+                        showIcon
+                    />
+                )}
+
             </div>
         </div>
     );
-
 };
 
 export default SignUp;

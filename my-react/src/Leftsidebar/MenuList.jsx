@@ -81,7 +81,7 @@ function MenuList() {
                     icon={<SettingOutlined />}
                 >
                     Settings
-                </Menu.Item>
+                </Menu.Item> 
 
             </Menu>
         </ConfigProvider>
