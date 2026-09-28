@@ -61,9 +61,11 @@ function WorkSheetViewer() {
 
     try {
       const createdWorkSheet = await createWorksheet(name);
-      
-      await response.json();
-      setWorkSheets((currentWorkSheets) => [createdWorkSheet, ...currentWorkSheets]);
+
+      setWorkSheets((currentWorkSheets) =>{ 
+        
+        return([createdWorkSheet, ...currentWorkSheets]);
+      });
 
       form.resetFields();
       setIsCreateOpen(false);
@@ -133,9 +135,6 @@ function WorkSheetViewer() {
       />
     );
   }
-
-  console.log(workSheets);
-
 
   return (
     <section aria-labelledby="worksheets-title">
