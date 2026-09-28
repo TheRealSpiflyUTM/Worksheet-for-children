@@ -5,6 +5,13 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorksheetRepository extends JpaRepository<Worksheet, Long> {
-    List<Worksheet> findByUser_Id(Long userId);
-    Optional<Worksheet> findByIdAndUser_Id(Long id, Long userId);
+
+List<Worksheet> findByUser_Id(Long userId);
+
+Optional<Worksheet> findByIdAndUser_Id(Long id, Long userId);
+
+boolean existsByShareCode(String shareCode);
+
+Optional<Worksheet> findByShareCode(String shareCode);
+
 }
