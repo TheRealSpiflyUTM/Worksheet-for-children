@@ -5,7 +5,7 @@ import com.worksheet.assignment.WorksheetAssignmentRepository;
 import com.worksheet.attempt.WorksheetAttemptService;
 import com.worksheet.auth.User;
 import com.worksheet.auth.UserRole;
-import java.security.SecureRandom;
+import com.worksheet.shared.codes.JoinCodeGenerator;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.http.HttpStatus;
@@ -16,19 +16,20 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @Transactional
 public class ClassroomService {
-    private static final char[] CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
-    private final SecureRandom random = new SecureRandom();
+    private final JoinCodeGenerator codes;
     private final ClassroomRepository classrooms;
     private final ClassroomMemberRepository members;
     private final WorksheetAssignmentRepository assignments;
     private final WorksheetAttemptService attempts;
 
     public ClassroomService(ClassroomRepository classrooms, ClassroomMemberRepository members,
-                            WorksheetAssignmentRepository assignments, WorksheetAttemptService attempts) {
+                            WorksheetAssignmentRepository assignments, WorksheetAttemptService attempts,
+                            JoinCodeGenerator codes) {
         this.classrooms = classrooms;
         this.members = members;
         this.assignments = assignments;
         this.attempts = attempts;
+        this.codes = codes;
     }
 
     public ClassroomResponse create(User teacher, CreateClassroomRequest request) {
@@ -115,9 +116,7 @@ public class ClassroomService {
     private String nextJoinCode() {
         String code;
         do {
-            StringBuilder value = new StringBuilder(8);
-            for(int index = 0; index < 8; index++) value.append(CODE_CHARS[random.nextInt(CODE_CHARS.length)]);
-            code = value.toString();
+            code = codes.generate();
         } while(classrooms.existsByJoinCode(code));
         return code;
     }
