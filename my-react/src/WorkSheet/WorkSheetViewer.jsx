@@ -21,6 +21,8 @@ import {
 
 import { CloseOutlined, PlusOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { clickSoftSound } from "@/lib/click-soft";
+import { playSound } from "@/lib/sound-engine";
 import "./WorkSheetViewer.css";
 
 const { Text, Title } = Typography;
@@ -34,6 +36,12 @@ function WorkSheetViewer() {
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [deletingWorkSheetId, setDeletingWorkSheetId] = useState(null);
+  
+  // Helper Functions
+  function playClick() {
+  void playSound(clickSoftSound.dataUri);
+  }
+
   const [form] = Form.useForm();
 
  async function loadWorkSheets() {
@@ -134,9 +142,6 @@ function WorkSheetViewer() {
     );
   }
 
-  console.log(workSheets);
-
-
   return (
     <section aria-labelledby="worksheets-title">
       <Card>
@@ -152,7 +157,14 @@ function WorkSheetViewer() {
             <Tooltip title="Refresh worksheets">
               <Button icon={<ReloadOutlined />} onClick={loadWorkSheets} aria-label="Refresh worksheets" />
             </Tooltip>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsCreateOpen(true)}>
+            <Button type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => {
+                setIsCreateOpen(true);
+                playClick();
+                }}
+
+            >
               New worksheet
             </Button>
           </Flex>
