@@ -16,7 +16,7 @@ import {
   PlusOutlined,
   SaveOutlined,
 } from "@ant-design/icons";
-import { useParams } from "react-router-dom";
+import { useBlocker, useParams } from "react-router-dom";
 import {
   getWorksheet,
   getWorksheetItems,
@@ -104,7 +104,15 @@ function MainMinigamePage(params) {
   const [definitions, setDefinitions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const selectedAreaRef = useRef(null);
+  const saveWorksheetShortcutRef = useRef(null);
+  const pendingScrollGameIdRef = useRef(null);
+  const gameElementRefs = useRef(new Map());
+
+  const navigationBlocker = useBlocker(
+    params.isTeacher && hasUnsavedChanges
+  );
 
   const [toolsWidth, setToolsWidth] = useState(() => {
     try {
@@ -146,6 +154,39 @@ function MainMinigamePage(params) {
       console.warn("Could not save the tools width:", error);
     }
   }, [toolsWidth]);
+
+  useEffect(() => {
+    if (!params.isTeacher || !hasUnsavedChanges) {
+      return;
+    }
+
+    function warnAboutUnsavedChanges(event) {
+      event.preventDefault();
+      event.returnValue = true;
+    }
+
+    window.addEventListener("beforeunload", warnAboutUnsavedChanges);
+
+    return () => {
+      window.removeEventListener("beforeunload", warnAboutUnsavedChanges);
+    };
+  }, [params.isTeacher, hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (navigationBlocker.state !== "blocked") {
+      return;
+    }
+
+    const shouldLeave = window.confirm(
+      "You have unsaved worksheet changes. Leave without saving?"
+    );
+
+    if (shouldLeave) {
+      navigationBlocker.proceed();
+    } else {
+      navigationBlocker.reset();
+    }
+  }, [navigationBlocker]);
 
   function startToolsResize(event) {
     event.preventDefault();
@@ -252,6 +293,7 @@ function MainMinigamePage(params) {
         .filter(Boolean);
 
       setAddedMinigames(loadedGames);
+      setHasUnsavedChanges(false);
     } catch (error) {
       console.error("Failed to load worksheet:", error);
       message.error(error.message || "Failed to load the worksheet.");
@@ -276,6 +318,8 @@ function MainMinigamePage(params) {
         : undefined,
     };
 
+    pendingScrollGameIdRef.current = newGame.instanceId;
+
     setAddedMinigames((currentGames) => {
       if (currentGames.length === 0) {
         return [newGame];
@@ -296,7 +340,28 @@ function MainMinigamePage(params) {
 
     setSelectedGameId(newGame.instanceId);
     setIsAddMinigameOpen(false);
+    setHasUnsavedChanges(true);
   };
+
+  useEffect(() => {
+    const gameId = pendingScrollGameIdRef.current;
+
+    if (!gameId) {
+      return;
+    }
+
+    const gameElement = gameElementRefs.current.get(gameId);
+
+    if (!gameElement) {
+      return;
+    }
+
+    pendingScrollGameIdRef.current = null;
+    gameElement.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [addedMinigames]);
 
   /*
     Update a mini-game configuration.
@@ -307,6 +372,7 @@ function MainMinigamePage(params) {
         game.instanceId === instanceId ? updatedGame : game
       )
     );
+    setHasUnsavedChanges(true);
   }
 
   /*
@@ -330,15 +396,18 @@ function MainMinigamePage(params) {
     Save the whole worksheet.
   */
   async function saveWorksheet() {
+    if (isSaving) {
+      return;
+    }
+
     if (!worksheetId) {
       message.error("Worksheet ID is missing.");
       return;
     }
     setIsSaving(true);
-    try {
-      for (let index = 0; index < addedMinigames.length; index++) {
-        const game = addedMinigames[index];
 
+    try {
+      const itemsToSave = addedMinigames.map((game, index) => {
         const definition = definitions.find(
           (miniGame) => miniGame.type === game.id
         );
@@ -349,32 +418,58 @@ function MainMinigamePage(params) {
           );
         }
 
-        const item = {
-          miniGameId: definition.id,
-          orderIndex: index,
-          configuration: getGameConfiguration(game),
+        return {
+          game,
+          item: {
+            miniGameId: definition.id,
+            orderIndex: index,
+            configuration: getGameConfiguration(game),
+          },
         };
+      });
 
-        if (game.itemId) {
-          await updateWorksheetItem(worksheetId, game.itemId, item);
-        } else {
-          const createdItem = await createWorksheetItem(worksheetId, item);
+      const existingItems = itemsToSave
+        .filter(({ game }) => game.itemId)
+        .sort((first, second) =>
+          second.item.orderIndex - first.item.orderIndex
+        );
 
-          setAddedMinigames((currentGames) =>
-            currentGames.map((currentGame) =>
-              currentGame.instanceId === game.instanceId
-                ? {
-                    ...currentGame,
-                    itemId: createdItem.id,
-                    miniGameId: createdItem.miniGameId,
-                    orderIndex: createdItem.orderIndex,
-                  }
-                : currentGame
-            )
-          );
-        }
+      // Move existing items from bottom to top so each destination index is
+      // free before a newly inserted item is created there.
+      for (const { game, item } of existingItems) {
+        await updateWorksheetItem(worksheetId, game.itemId, item);
       }
 
+      for (const { game, item } of itemsToSave) {
+        if (game.itemId) {
+          continue;
+        }
+
+        const createdItem = await createWorksheetItem(worksheetId, item);
+
+        // Store each new database ID immediately. If a later request fails,
+        // retrying the save updates this item instead of creating it twice.
+        setAddedMinigames((currentGames) =>
+          currentGames.map((currentGame) =>
+            currentGame.instanceId === game.instanceId
+              ? {
+                  ...currentGame,
+                  itemId: createdItem.id,
+                  miniGameId: createdItem.miniGameId,
+                  orderIndex: createdItem.orderIndex,
+                }
+              : currentGame
+          )
+        );
+      }
+
+      setAddedMinigames((currentGames) =>
+        currentGames.map((game, index) => ({
+          ...game,
+          orderIndex: index,
+        }))
+      );
+      setHasUnsavedChanges(false);
       message.success("Worksheet saved successfully.");
     } catch (error) {
       console.error("Failed to save worksheet:", error);
@@ -383,6 +478,37 @@ function MainMinigamePage(params) {
       setIsSaving(false);
     }
   }
+
+  useEffect(() => {
+    saveWorksheetShortcutRef.current = params.isTeacher
+      ? saveWorksheet
+      : null;
+  });
+
+  useEffect(() => {
+    function handleSaveShortcut(event) {
+      const isSaveShortcut =
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        event.key.toLowerCase() === "s";
+
+      if (!isSaveShortcut || !saveWorksheetShortcutRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (!event.repeat) {
+        saveWorksheetShortcutRef.current();
+      }
+    }
+
+    window.addEventListener("keydown", handleSaveShortcut);
+
+    return () => {
+      window.removeEventListener("keydown", handleSaveShortcut);
+    };
+  }, []);
 
   /*
     Close selection when clicking outside the game area.
@@ -450,6 +576,13 @@ function MainMinigamePage(params) {
                         : "worksheetGame addBorder"
                     }
                     key={game.instanceId}
+                    ref={(element) => {
+                      if (element) {
+                        gameElementRefs.current.set(game.instanceId, element);
+                      } else {
+                        gameElementRefs.current.delete(game.instanceId);
+                      }
+                    }}
                     onClick={() => setSelectedGameId(game.instanceId)}
                   >
                     {game.id === "color-game" && (
