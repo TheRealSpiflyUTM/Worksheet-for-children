@@ -77,27 +77,11 @@ function MenuList() {
                 </Menu.Item>
 
                 <Menu.Item
-                    key="kids"
-                    icon={<SmileOutlined />}
-                    onClick={() => navigate("/kids")}
-                >
-                    Kids
-                </Menu.Item>
-
-                <Menu.Item
-                    key="teacher"
-                    icon={<SolutionOutlined />}
-                    onClick={() => navigate("/teacher")}
-                >
-                    Teacher
-                </Menu.Item>
-
-                <Menu.Item
                     key="setting"
                     icon={<SettingOutlined />}
                 >
                     Settings
-                </Menu.Item>
+                </Menu.Item> 
 
             </Menu>
         </ConfigProvider>

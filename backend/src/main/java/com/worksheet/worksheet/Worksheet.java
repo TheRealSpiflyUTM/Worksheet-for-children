@@ -7,45 +7,76 @@ import java.time.Instant;
 @Entity
 @Table(name = "worksheet")
 public class Worksheet {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    @Column(nullable = false, length = 150)
-    private String name;
+@Id
+@GeneratedValue(strategy = GenerationType.IDENTITY)
+private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+@Column(nullable = false, length = 150)
+private String name;
 
-    @Column(nullable = false)
-    private Instant createdAt;
+@ManyToOne(fetch = FetchType.LAZY, optional = false)
+@JoinColumn(name = "user_id", nullable = false)
+private User user;
 
-    @Column(nullable = false)
-    private Instant updatedAt;
+@Column(nullable = false)
+private Instant createdAt;
 
-    @Version
-    @Column(name = "row_version", nullable = false)
-    private long rowVersion;
+@Column(nullable = false)
+private Instant updatedAt;
 
-    protected Worksheet() {}
+@Column(name = "share_code", unique = true, length = 9)
+private String shareCode;
 
-    public Worksheet(String name, User user) {
-        this.name = name;
-        this.user = user;
-        this.createdAt = Instant.now();
-        this.updatedAt = this.createdAt;
-    }
+@Version
+@Column(name = "row_version", nullable = false)
+private long rowVersion;
 
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public User getUser() { return user; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public long getRowVersion() { return rowVersion; }
+protected Worksheet() {}
 
-    public void setName(String name) {
-        this.name = name;
-        this.updatedAt = Instant.now();
-    }
+public Worksheet(String name, User user) {
+    this.name = name;
+    this.user = user;
+    this.createdAt = Instant.now();
+    this.updatedAt = this.createdAt;
+}
+
+public Long getId() {
+    return id;
+}
+
+public String getName() {
+    return name;
+}
+
+public User getUser() {
+    return user;
+}
+
+public Instant getCreatedAt() {
+    return createdAt;
+}
+
+public Instant getUpdatedAt() {
+    return updatedAt;
+}
+
+public String getShareCode() {
+    return shareCode;
+}
+
+public long getRowVersion() {
+    return rowVersion;
+}
+
+public void setName(String name) {
+    this.name = name;
+    this.updatedAt = Instant.now();
+}
+
+public void setShareCode(String shareCode) {
+    this.shareCode = shareCode;
+    this.updatedAt = Instant.now();
+}
+
 }

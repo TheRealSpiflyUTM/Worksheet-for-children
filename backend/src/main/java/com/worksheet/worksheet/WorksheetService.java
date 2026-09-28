@@ -9,70 +9,224 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.util.List;
 
 @Service
 public class WorksheetService {
-    private final WorksheetRepository repository;
-    private final WorksheetItemService itemService;
-    private final UserRepository userRepository;
-    private final WorksheetAssignmentRepository assignmentRepository;
 
-    public WorksheetService(WorksheetRepository repository, WorksheetItemService itemService, UserRepository userRepository, WorksheetAssignmentRepository assignmentRepository) {
-        this.repository = repository;
-        this.itemService = itemService;
-        this.userRepository = userRepository;
-        this.assignmentRepository = assignmentRepository;
+private final WorksheetRepository repository;
+private final WorksheetItemService itemService;
+private final UserRepository userRepository;
+private final WorksheetAssignmentRepository assignmentRepository;
+
+public WorksheetService(
+        WorksheetRepository repository,
+        WorksheetItemService itemService,
+        UserRepository userRepository,
+        WorksheetAssignmentRepository assignmentRepository
+) {
+    this.repository = repository;
+    this.itemService = itemService;
+    this.userRepository = userRepository;
+    this.assignmentRepository = assignmentRepository;
+}
+
+@Transactional
+public WorksheetResponse create(
+        Long userId,
+        CreateWorksheetRequest request
+) {
+    String name = request.name() == null
+            ? ""
+            : request.name().trim();
+
+    if (name.isEmpty()) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Worksheet name is required."
+        );
     }
 
-    @Transactional
-    public WorksheetResponse create(Long userId, CreateWorksheetRequest request) {
-        String name = request.name() == null ? "" : request.name().trim();
-        if(name.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Worksheet name is required.");
+    User user = userRepository.findById(userId)
+            .orElseThrow(() ->
+                    new ResponseStatusException(
+                            HttpStatus.UNAUTHORIZED,
+                            "Please log in."
+                    )
+            );
 
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Please log in."));
-        Worksheet worksheet = repository.save(new Worksheet(name, user));
-        return toResponse(worksheet, List.of());
-    }
+    Worksheet worksheet = repository.save(
+            new Worksheet(name, user)
+    );
 
-    @Transactional(readOnly = true)
-    public List<WorksheetResponse> getAll(Long userId) {
-        return repository.findByUser_Id(userId).stream()
-            .map(worksheet -> toResponse(worksheet, itemService.getAll(worksheet.getId(), userId)))
+    return toResponse(
+            worksheet,
+            List.of()
+    );
+}
+
+@Transactional(readOnly = true)
+public List<WorksheetResponse> getAll(Long userId) {
+    return repository.findByUser_Id(userId)
+            .stream()
+            .map(worksheet ->
+                    toResponse(
+                            worksheet,
+                            itemService.getAll(
+                                    worksheet.getId(),
+                                    userId
+                            )
+                    )
+            )
             .toList();
+}
+
+@Transactional(readOnly = true)
+public WorksheetResponse getById(
+        Long id,
+        Long userId
+) {
+    Worksheet worksheet = requireOwned(id, userId);
+
+    return toResponse(
+            worksheet,
+            itemService.getAll(id, userId)
+    );
+}
+
+@Transactional
+public WorksheetResponse update(
+        Long id,
+        Long userId,
+        CreateWorksheetRequest request
+) {
+    String name = request.name() == null
+            ? ""
+            : request.name().trim();
+
+    if (name.isEmpty()) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Worksheet name is required."
+        );
     }
 
-    @Transactional(readOnly = true)
-    public WorksheetResponse getById(Long id, Long userId) {
-        Worksheet worksheet = requireOwned(id, userId);
-        return toResponse(worksheet, itemService.getAll(id, userId));
+    Worksheet worksheet = requireOwned(id, userId);
+
+    worksheet.setName(name);
+
+    return toResponse(
+            repository.save(worksheet),
+            itemService.getAll(id, userId)
+    );
+}
+
+@Transactional
+public void delete(
+        Long id,
+        Long userId
+) {
+    if (assignmentRepository
+            .existsByWorksheetRevision_Worksheet_Id(id)) {
+
+        requireOwned(id, userId);
+
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Assigned worksheets cannot be deleted."
+        );
     }
 
-    @Transactional
-    public WorksheetResponse update(Long id, Long userId, CreateWorksheetRequest request) {
-        String name = request.name() == null ? "" : request.name().trim();
-        if (name.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Worksheet name is required.");
-        Worksheet worksheet = requireOwned(id, userId);
-        worksheet.setName(name);
-        return toResponse(repository.save(worksheet), itemService.getAll(id, userId));
+    repository.delete(
+            requireOwned(id, userId)
+    );
+}
+
+@Transactional
+public String share(
+        Long id,
+        Long userId
+) {
+    Worksheet worksheet = requireOwned(id, userId);
+
+    // Reuse the existing code if one already exists.
+    if (worksheet.getShareCode() != null
+            && !worksheet.getShareCode().isBlank()) {
+
+        return worksheet.getShareCode();
     }
 
-    @Transactional
-    public void delete(Long id, Long userId) {
-        if(assignmentRepository.existsByWorksheetRevision_Worksheet_Id(id)) {
-            requireOwned(id, userId);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Assigned worksheets cannot be deleted.");
-        }
-        repository.delete(requireOwned(id, userId));
+    String code;
+
+    do {
+        code = ShareCodeGenerator.generateCode();
+    } while (repository.existsByShareCode(code));
+
+    worksheet.setShareCode(code);
+
+    repository.save(worksheet);
+
+    return code;
+}
+
+@Transactional(readOnly = true)
+public WorksheetResponse getByShareCode(String code) {
+
+    String shareCode = code == null
+            ? ""
+            : code.trim().toUpperCase();
+
+    if (shareCode.isEmpty()) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Worksheet code is required."
+        );
     }
 
-    private Worksheet requireOwned(Long id, Long userId) {
-        return repository.findByIdAndUser_Id(id, userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Worksheet not found."));
-    }
+    Worksheet worksheet = repository
+            .findByShareCode(shareCode)
+            .orElseThrow(() ->
+                    new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Worksheet code not found."
+                    )
+            );
 
-    private WorksheetResponse toResponse(Worksheet worksheet, List<WorksheetItemResponse> items) {
-        return new WorksheetResponse(worksheet.getId(), worksheet.getName(), worksheet.getCreatedAt(), worksheet.getUpdatedAt(), items);
-    }
+    return toResponse(
+            worksheet,
+            itemService.getAll(
+                    worksheet.getId(),
+                    worksheet.getUser().getId()
+            )
+    );
+}
+
+private Worksheet requireOwned(
+        Long id,
+        Long userId
+) {
+    return repository
+            .findByIdAndUser_Id(id, userId)
+            .orElseThrow(() ->
+                    new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Worksheet not found."
+                    )
+            );
+}
+
+private WorksheetResponse toResponse(
+        Worksheet worksheet,
+        List<WorksheetItemResponse> items
+) {
+    return new WorksheetResponse(
+            worksheet.getId(),
+            worksheet.getName(),
+            worksheet.getCreatedAt(),
+            worksheet.getUpdatedAt(),
+            items
+    );
+}
+
 }

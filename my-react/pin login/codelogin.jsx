@@ -1,82 +1,136 @@
-import React from 'react';
-import { Input, Button, Cascader } from 'antd';
-import './login.css';
+import React from "react";
+import { Input, Button, Cascader } from "antd";
+import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../src/api/client.js";
+import "./login.css";
 
 // Replace with the actual list of students for the class
 const options = [
-  { value: '1', label: 'Student Name 1' },
-  { value: '2', label: 'Student Name 2' },
-  { value: '3', label: 'Student Name 3' },
+{ value: "1", label: "Student Name 1" },
+{ value: "2", label: "Student Name 2" },
+{ value: "3", label: "Student Name 3" },
 ];
 
-// Replace with a real check against your backend (e.g. fetch to verify the PIN)
-const CORRECT_PIN = '1234';
-
 const filter = (inputValue, path) =>
-  path.some((option) =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase())
-  );
+path.some((option) =>
+option.label.toLowerCase().includes(inputValue.toLowerCase())
+);
 
 function CodeLogin() {
-  const [pin, setPin] = React.useState('');
-  const [pinVerified, setPinVerified] = React.useState(false);
-  const [pinError, setPinError] = React.useState('');
-  const [studentId, setStudentId] = React.useState(null);
+const navigate = useNavigate();
 
-  const onPinSubmit = () => {
-    if (pin.trim() === CORRECT_PIN) {
-      setPinVerified(true);
-      setPinError('');
-    } else {
-      setPinError('Wrong PIN, try again');
-    }
-  };
+const [code, setCode] = React.useState("");
+const [codeVerified, setCodeVerified] = React.useState(false);
+const [codeError, setCodeError] = React.useState("");
+const [studentId, setStudentId] = React.useState(null);
+const [worksheetId, setWorksheetId] = React.useState(null);
+const [isCheckingCode, setIsCheckingCode] = React.useState(false);
 
-  const onNameChange = (value) => {
-    setStudentId(value);
-  };
+const onCodeSubmit = async () => {
+const cleanCode = code.trim().toUpperCase();
 
-  return (
-    <div className="auth-container">
-      <div className="auth-form">
+if (!cleanCode) {
+  setCodeError("Enter the worksheet code");
+  return;
+}
 
-        <Input
-          maxLength={20}
-          placeholder="PIN"
-          className="pin-input"
-          value={pin}
-          onChange={(e) => {
-            setPin(e.target.value);
-            setPinError('');
-          }}
-          onPressEnter={onPinSubmit}
-          disabled={pinVerified}
+setIsCheckingCode(true);
+setCodeError("");
+
+try {
+  const worksheet = await apiRequest("/api/worksheets/join", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      code: cleanCode,
+    }),
+  });
+
+  setWorksheetId(worksheet.id);
+  setCodeVerified(true);
+  setCodeError("");
+} catch (requestError) {
+  setCodeError(
+    requestError.message || "Worksheet code not found"
+  );
+} finally {
+  setIsCheckingCode(false);
+}
+
+};
+
+const onNameChange = (value) => {
+setStudentId(value);
+};
+
+const onEnter = () => {
+if (!worksheetId || !studentId) {
+return;
+}
+
+navigate(`/kids/${worksheetId}`);
+
+};
+
+return ( <div className="auth-container"> <div className="auth-form">
+
+    <Input
+      maxLength={9}
+      placeholder="Worksheet code"
+      className="pin-input"
+      value={code}
+      onChange={(e) => {
+        setCode(e.target.value.toUpperCase());
+        setCodeError("");
+      }}
+      onPressEnter={onCodeSubmit}
+      disabled={codeVerified}
+    />
+
+    {codeError && (
+      <div className="pin-error">
+        {codeError}
+      </div>
+    )}
+
+    {!codeVerified && (
+      <Button
+        type="primary"
+        className="enter-button"
+        onClick={onCodeSubmit}
+        loading={isCheckingCode}
+      >
+        Check code
+      </Button>
+    )}
+
+    {codeVerified && (
+      <>
+        <Cascader
+          options={options}
+          onChange={onNameChange}
+          placeholder="Select your name"
+          className="name-select"
+          showSearch={{ filter }}
         />
-
-        {pinError && <div className="pin-error">{pinError}</div>}
-
-        {pinVerified && (
-          <Cascader
-            options={options}
-            onChange={onNameChange}
-            placeholder="Select your name"
-            className="name-select"
-            showSearch={{ filter }}
-          />
-        )}
 
         <Button
           type="primary"
           className="enter-button"
-          onClick={pinVerified ? undefined : onPinSubmit}
-          disabled={pinVerified && !studentId}
+          onClick={onEnter}
+          disabled={!studentId}
         >
           Enter
         </Button>
+      </>
+    )}
 
-      </div>
-    </div>
-  );
+  </div>
+</div>
+
+);
 }
 
 export default CodeLogin;
