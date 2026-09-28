@@ -49,7 +49,9 @@ mini_game_definition (type + version + JSON Schemas)
 
 Only `worksheet` stores worksheet ownership. An assignment derives its worksheet and teacher through `worksheet_revision -> worksheet -> auth_users`; it does not duplicate those foreign keys. Child access is checked through these parent relationships.
 
-Publishing occurs when an assignment is created or a personal attempt starts. A SHA-256 content hash reuses the latest unchanged revision. A changed name, item order, definition version, or configuration creates the next revision. Published rows are never edited.
+Publishing occurs when an assignment is created, a personal attempt starts, or a worksheet is shared. A SHA-256 content hash reuses the latest unchanged revision. A changed name, item order, definition version, or configuration creates the next revision. Published rows are never edited.
+
+A worksheet share code points to one immutable revision. A signed-in `USER` redeems it once to receive a normal assignment, then uses the assignment attempt APIs. Reusing the same code returns the existing active assignment. `POST /api/worksheets/{id}/share/rotate` publishes the latest draft under a new code without changing earlier assignments.
 
 The old `worksheet_result` and `mini_game_result` tables/routes remain as deprecated compatibility APIs. New work uses `worksheet_attempt` and `worksheet_attempt_item_result`.
 
@@ -117,6 +119,9 @@ POST /api/worksheets/42/attempts credentials: include + X-XSRF-TOKEN
 | --- | --- |
 | `POST /api/worksheets/{id}/attempts` | Start a personal attempt and publish/reuse a revision |
 | `POST /api/assignments/{id}/attempts` | Assigned USER starts an attempt |
+| `POST /api/worksheets/{id}/share` | Pin a revision and return its stable share code |
+| `POST /api/worksheets/{id}/share/rotate` | Pin the latest draft and replace the share code |
+| `POST /api/worksheets/join` | Redeem a code into a per-user assignment |
 | `GET /api/attempts/{id}` | Frozen content, progress, results and totals |
 | `PUT /api/attempts/{attemptId}/items/{revisionItemId}/result` | Idempotently save/replace an item result |
 | `POST /api/attempts/{id}/complete` | Validate completeness and aggregate totals |
@@ -172,6 +177,8 @@ Flyway migrations are forward-only. Never rewrite V1–V13 or another migration 
 
 - V14 adds `ADMIN` and optimistic locking to editable worksheet/classroom rows.
 - V15 publishes/backfills immutable worksheet revisions, attaches assignments to revisions, then removes duplicate assignment teacher/worksheet columns.
+- V18 adds worksheet share codes.
+- V19 pins each share code to an immutable worksheet revision.
 - V16 creates attempts and item results and copies existing results while preserving their IDs and scores.
 - V17 adds catalog metadata, asset integrity/lifecycle fields, and relational definition asset keys.
 

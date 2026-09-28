@@ -11,9 +11,8 @@ import com.worksheet.classroom.ClassroomRepository;
 import com.worksheet.worksheet.Worksheet;
 import com.worksheet.worksheet.WorksheetRepository;
 import com.worksheet.worksheet.WorksheetResponse;
-import com.worksheet.worksheet.item.WorksheetItemResponse;
 import com.worksheet.worksheet.revision.WorksheetRevision;
-import com.worksheet.worksheet.revision.WorksheetRevisionItemRepository;
+import com.worksheet.worksheet.revision.WorksheetRevisionResponseMapper;
 import com.worksheet.worksheet.revision.WorksheetRevisionService;
 import com.worksheet.worksheet.result.CreateWorksheetResultRequest;
 import com.worksheet.worksheet.result.WorksheetResult;
@@ -35,13 +34,13 @@ public class WorksheetAssignmentService {
     private final ClassroomMemberRepository members;
     private final WorksheetResultRepository results;
     private final WorksheetRevisionService revisionService;
-    private final WorksheetRevisionItemRepository revisionItems;
+    private final WorksheetRevisionResponseMapper revisionResponses;
     private final WorksheetAttemptRepository attempts;
 
     public WorksheetAssignmentService(WorksheetAssignmentRepository assignments, WorksheetRepository worksheets,
             ClassroomRepository classrooms, ClassroomMemberRepository members, WorksheetResultRepository results,
             WorksheetRevisionService revisionService,
-            WorksheetRevisionItemRepository revisionItems,
+            WorksheetRevisionResponseMapper revisionResponses,
             WorksheetAttemptRepository attempts) {
         this.assignments = assignments;
         this.worksheets = worksheets;
@@ -49,7 +48,7 @@ public class WorksheetAssignmentService {
         this.members = members;
         this.results = results;
         this.revisionService = revisionService;
-        this.revisionItems = revisionItems;
+        this.revisionResponses = revisionResponses;
         this.attempts = attempts;
     }
 
@@ -121,15 +120,7 @@ public class WorksheetAssignmentService {
     }
 
     private WorksheetAssignmentResponse toResponse(WorksheetAssignment assignment) {
-        Worksheet worksheet = assignment.getWorksheetRevision().getWorksheet();
-        List<WorksheetItemResponse> frozenItems = revisionItems
-            .findByRevision_IdOrderByOrderIndex(assignment.getWorksheetRevision().getId()).stream()
-            .map(item -> new WorksheetItemResponse(item.getId(), worksheet.getId(),
-                item.getMiniGameDefinition().getId(), item.getOrderIndex(), item.getConfiguration()))
-            .toList();
-        WorksheetResponse worksheetResponse = new WorksheetResponse(worksheet.getId(),
-            assignment.getWorksheetRevision().getNameSnapshot(), worksheet.getCreatedAt(),
-            assignment.getWorksheetRevision().getPublishedAt(), frozenItems);
+        WorksheetResponse worksheetResponse = revisionResponses.toResponse(assignment.getWorksheetRevision());
         AssignmentStatus status = assignment.getRevokedAt() != null ? AssignmentStatus.REVOKED
             : results.existsByAssignment_Id(assignment.getId())
                 || attempts.existsByAssignment_IdAndStatus(assignment.getId(), AttemptStatus.COMPLETED)
