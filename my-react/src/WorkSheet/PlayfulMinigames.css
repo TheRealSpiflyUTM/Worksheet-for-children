@@ -1,0 +1,559 @@
+:is(
+  .math-minigame,
+  .sequence-minigame,
+  .higher-lower-minigame,
+  .odd-even-minigame,
+  .colorMinigame
+) {
+  --game-accent: #6c5ce7;
+  --game-soft: #efecff;
+  --game-shadow: rgba(108, 92, 231, 0.22);
+  position: relative;
+  isolation: isolate;
+  width: min(1586px, calc(100% - 12px));
+  min-height: 400px;
+  overflow: hidden;
+  margin: 22px auto 34px;
+  padding: clamp(24px, 5vw, 52px);
+  border: 3px solid var(--play-ink);
+  border-radius: 34px 26px 38px 28px;
+  background-color: rgba(255, 255, 255, 0.96);
+  background-image:
+    linear-gradient(rgba(55, 167, 232, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(55, 167, 232, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+  box-shadow: 8px 10px 0 var(--game-shadow), 0 24px 45px rgba(32, 52, 91, 0.1);
+  color: var(--play-ink);
+}
+
+.math-minigame {
+  --game-accent: #6c5ce7;
+  --game-soft: #efecff;
+  --game-shadow: rgba(108, 92, 231, 0.22);
+}
+
+.sequence-minigame {
+  --game-accent: #e89c00;
+  --game-soft: #fff3bd;
+  --game-shadow: rgba(255, 183, 3, 0.24);
+}
+
+.higher-lower-minigame {
+  --game-accent: #168fbd;
+  --game-soft: #dff5ff;
+  --game-shadow: rgba(55, 167, 232, 0.24);
+}
+
+.odd-even-minigame {
+  --game-accent: #e83367;
+  --game-soft: #ffe3ed;
+  --game-shadow: rgba(240, 68, 114, 0.22);
+}
+
+.colorMinigame {
+  --game-accent: #754ee8;
+  --game-soft: #f0ebff;
+  --game-shadow: rgba(108, 92, 231, 0.22);
+}
+
+:is(
+  .math-minigame,
+  .sequence-minigame,
+  .higher-lower-minigame,
+  .odd-even-minigame,
+  .colorMinigame
+)::before,
+:is(
+  .math-minigame,
+  .sequence-minigame,
+  .higher-lower-minigame,
+  .odd-even-minigame,
+  .colorMinigame
+)::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border: 3px solid var(--play-ink);
+  opacity: 0.9;
+}
+
+:is(
+  .math-minigame,
+  .sequence-minigame,
+  .higher-lower-minigame,
+  .odd-even-minigame,
+  .colorMinigame
+)::before {
+  top: 24px;
+  right: 28px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--play-yellow);
+}
+
+:is(
+  .math-minigame,
+  .sequence-minigame,
+  .higher-lower-minigame,
+  .odd-even-minigame,
+  .colorMinigame
+)::after {
+  bottom: 24px;
+  left: 30px;
+  width: 34px;
+  height: 10px;
+  border-width: 3px 0 0;
+  transform: rotate(-8deg);
+}
+
+:is(
+  .math-minigame,
+  .sequence-minigame,
+  .higher-lower-minigame,
+  .odd-even-minigame
+) > h2 {
+  display: table;
+  margin: 0 auto 22px;
+  padding: 9px 18px;
+  border: 2px solid var(--play-ink);
+  border-radius: 16px 12px 18px 13px;
+  background: var(--game-soft);
+  box-shadow: 4px 4px 0 var(--play-ink);
+  color: var(--play-ink);
+  font-family: "Trebuchet MS", "Geist Variable", sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.1;
+  transform: rotate(-0.6deg);
+}
+
+:is(
+  .math-score,
+  .sequence-score,
+  .higher-lower-score,
+  .odd-even-score,
+  .math-exercise-number,
+  .sequence-exercise-number,
+  .higher-lower-exercise-number,
+  .odd-even-exercise-number
+) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  margin: 4px 5px 12px;
+  padding: 7px 13px;
+  border: 2px solid var(--play-ink);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 0 rgba(32, 52, 91, 0.15);
+  font-size: clamp(0.92rem, 2vw, 1.05rem);
+  font-weight: 800;
+}
+
+:is(
+  .math-score,
+  .sequence-score,
+  .higher-lower-score,
+  .odd-even-score
+)::before {
+  content: "⭐";
+  margin-right: 6px;
+}
+
+:is(
+  .math-question,
+  .sequence-question,
+  .higher-lower-question,
+  .odd-even-question
+) {
+  width: min(720px, 100%);
+  margin: clamp(22px, 5vw, 42px) auto;
+  padding: clamp(20px, 4vw, 34px);
+  border: 3px solid var(--play-ink);
+  border-radius: 26px 20px 28px 22px;
+  background: var(--game-soft);
+  box-shadow: 6px 7px 0 var(--game-shadow);
+}
+
+.math-question {
+  font-family: "Trebuchet MS", "Geist Variable", sans-serif;
+  font-size: clamp(2.5rem, 9vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+.sequence-question {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 2vw, 16px);
+  font-size: clamp(1.6rem, 6vw, 3rem);
+}
+
+.sequence-question span {
+  display: grid;
+  min-width: clamp(48px, 9vw, 72px);
+  min-height: clamp(48px, 9vw, 72px);
+  place-items: center;
+  border: 2px solid var(--play-ink);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 0 rgba(32, 52, 91, 0.16);
+}
+
+.sequence-question span:last-child {
+  background: var(--play-yellow);
+  transform: rotate(3deg);
+}
+
+:is(.higher-lower-question, .odd-even-question) p {
+  margin: 0;
+  color: #52627d;
+  font-size: clamp(1rem, 2.4vw, 1.25rem);
+  font-weight: 700;
+}
+
+:is(.higher-lower-question, .odd-even-question) strong {
+  display: block;
+  margin: 18px 0 0;
+  color: var(--game-accent);
+  font-family: "Trebuchet MS", "Geist Variable", sans-serif;
+  font-size: clamp(3rem, 12vw, 6rem);
+  line-height: 1;
+  text-shadow: 3px 3px 0 #fff, 5px 5px 0 rgba(32, 52, 91, 0.17);
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: clamp(12px, 2vw, 18px);
+  width: min(680px, 100%);
+  margin-inline: auto;
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button,
+:is(
+  .math-feedback,
+  .sequence-feedback,
+  .higher-lower-feedback,
+  .odd-even-feedback
+) button {
+  min-width: 0;
+  min-height: 58px;
+  border: 2px solid var(--play-ink) !important;
+  border-radius: 18px !important;
+  background: #fff !important;
+  box-shadow: 0 5px 0 var(--play-ink);
+  color: var(--play-ink) !important;
+  font-size: clamp(1.05rem, 3vw, 1.35rem) !important;
+  font-weight: 850;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button:nth-child(4n + 1) {
+  background: #efeaff !important;
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button:nth-child(4n + 2) {
+  background: #dff5ff !important;
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button:nth-child(4n + 3) {
+  background: #fff3bd !important;
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button:nth-child(4n + 4) {
+  background: #ffe3ed !important;
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button:hover:not(:disabled),
+:is(
+  .math-feedback,
+  .sequence-feedback,
+  .higher-lower-feedback,
+  .odd-even-feedback
+) button:hover:not(:disabled) {
+  transform: translateY(-3px) rotate(-0.5deg);
+  box-shadow: 0 8px 0 var(--play-ink);
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button:active:not(:disabled),
+:is(
+  .math-feedback,
+  .sequence-feedback,
+  .higher-lower-feedback,
+  .odd-even-feedback
+) button:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--play-ink);
+}
+
+:is(
+  .math-answers,
+  .sequence-answers,
+  .higher-lower-answers,
+  .odd-even-answers
+) button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+:is(
+  .math-feedback,
+  .sequence-feedback,
+  .higher-lower-feedback,
+  .odd-even-feedback
+) {
+  width: min(600px, 100%);
+  margin: 28px auto 0;
+  padding: 18px;
+  border: 2px dashed var(--game-accent);
+  border-radius: 20px;
+  background: #f1fff8;
+  color: #13744a;
+  font-size: clamp(1.1rem, 3vw, 1.35rem);
+  font-weight: 800;
+}
+
+:is(
+  .math-feedback,
+  .sequence-feedback,
+  .higher-lower-feedback,
+  .odd-even-feedback
+) h3 {
+  margin: 0 0 8px;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+}
+
+:is(
+  .math-feedback,
+  .sequence-feedback,
+  .higher-lower-feedback,
+  .odd-even-feedback
+) p {
+  margin: 0 0 14px;
+}
+
+:is(
+  .teacher-math,
+  .teacher-sequence,
+  .teacher-higher-lower,
+  .teacher-odd-even
+) {
+  text-align: left;
+}
+
+:is(
+  .teacher-math,
+  .teacher-sequence,
+  .teacher-higher-lower,
+  .teacher-odd-even
+) > h2 {
+  margin-inline: 0 auto;
+}
+
+:is(.math-setting, .teacher-sequence label, .teacher-higher-lower label, .teacher-odd-even label) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(620px, 100%);
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 2px solid #dbe3f0;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.math-operations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: min(620px, 100%);
+}
+
+.math-operations .ant-checkbox-wrapper {
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 2px solid #dbe3f0;
+  border-radius: 14px;
+  background: #fff;
+  font-weight: 700;
+}
+
+.colorMinigame .titleText.ant-typography {
+  position: relative;
+  display: table;
+  width: auto;
+  max-width: min(900px, 100%);
+  padding: 8px 18px 12px;
+  color: var(--play-ink);
+  font-family: "Trebuchet MS", "Geist Variable", sans-serif;
+  font-weight: 900;
+}
+
+.colorMinigame .titleText.ant-typography::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: 8%;
+  bottom: 5px;
+  left: 8%;
+  height: 0.45em;
+  border-radius: 4px;
+  background: var(--play-yellow);
+  transform: rotate(-1deg);
+}
+
+.colorMinigame .widget {
+  padding: 18px 12px;
+  border: 2px solid #dbe3f0;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.colorMinigame .widget .ant-image-img {
+  border: 3px solid var(--play-ink);
+  border-radius: 26px 20px 28px 22px;
+  box-shadow: 5px 6px 0 rgba(32, 52, 91, 0.18);
+}
+
+.colorMinigame .animalNameText.ant-typography {
+  color: var(--play-ink);
+  font-family: "Trebuchet MS", "Geist Variable", sans-serif;
+  font-weight: 900;
+}
+
+.colorMinigame .buble.ant-btn,
+.colorMinigame .bubleActive.ant-btn {
+  border: 2px solid var(--play-ink);
+  box-shadow: 0 4px 0 rgba(32, 52, 91, 0.22);
+}
+
+.colorMinigame .buble.ant-btn:nth-child(4n + 1) {
+  background: #efeaff;
+}
+
+.colorMinigame .buble.ant-btn:nth-child(4n + 2) {
+  background: #dff5ff;
+}
+
+.colorMinigame .buble.ant-btn:nth-child(4n + 3) {
+  background: #fff3bd;
+}
+
+.colorMinigame .buble.ant-btn:nth-child(4n + 4) {
+  background: #ffe3ed;
+}
+
+.colorMinigame .buble.ant-btn:hover {
+  border-color: var(--play-ink) !important;
+  transform: translateY(-4px) rotate(-3deg);
+  box-shadow: 0 7px 0 rgba(32, 52, 91, 0.22);
+}
+
+.colorMinigame .bubleActive.ant-btn,
+.colorMinigame .bubleActive.ant-btn:hover {
+  border-color: var(--play-ink) !important;
+  background: #5bd89b !important;
+  box-shadow: 0 4px 0 #13744a;
+}
+
+.targetLetterControl {
+  border: 2px solid var(--play-ink);
+  background: var(--game-soft);
+  box-shadow: 0 4px 0 rgba(32, 52, 91, 0.18);
+}
+
+.targetLetterInput.ant-input {
+  border: 2px solid var(--play-ink);
+  color: var(--game-accent);
+  box-shadow: 0 3px 0 rgba(32, 52, 91, 0.16);
+}
+
+@media (max-width: 620px) {
+  :is(
+    .math-minigame,
+    .sequence-minigame,
+    .higher-lower-minigame,
+    .odd-even-minigame,
+    .colorMinigame
+  ) {
+    width: calc(100% - 12px);
+    margin-block: 12px 24px;
+    padding: 22px 14px 28px;
+    border-radius: 24px 20px 26px 22px;
+    box-shadow: 5px 7px 0 var(--game-shadow);
+  }
+
+  :is(
+    .math-answers,
+    .sequence-answers,
+    .higher-lower-answers,
+    .odd-even-answers
+  ) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .math-operations {
+    grid-template-columns: 1fr;
+  }
+
+  :is(.math-setting, .teacher-sequence label, .teacher-higher-lower label, .teacher-odd-even label) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(
+    .math-answers,
+    .sequence-answers,
+    .higher-lower-answers,
+    .odd-even-answers
+  ) button,
+  .colorMinigame .buble.ant-btn {
+    transition: none;
+  }
+}

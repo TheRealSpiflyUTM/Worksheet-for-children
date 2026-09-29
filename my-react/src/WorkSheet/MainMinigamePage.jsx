@@ -8,6 +8,7 @@ import SequenceMinigame from "./minigames/Sequencegame/SequenceMinigame.jsx";
 import HigherOrLowerMinigame from "./minigames/HigherOrLower/HigherOrLowergame.jsx";
 import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
+import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
 import { useState, useRef, useEffect } from "react";
 import { Button, message, Spin } from "antd";
 import {
@@ -25,6 +26,7 @@ import {
   getMiniGameDefinitions,
 } from "../api/worksheets.js";
 import "./MainMinigamePage.css";
+import "./PlayfulMinigames.css";
 // #endregion
 
 const MIN_TOOLS_WIDTH = 180;
@@ -285,6 +287,7 @@ function MainMinigamePage(params) {
             ...frontendGame,
             ...(item.configuration || {}),
             instanceId: crypto.randomUUID(),
+            decorationSeed: `worksheet-${worksheetId}-item-${item.id}`,
             itemId: item.id,
             miniGameId: item.miniGameId,
             orderIndex: item.orderIndex,
@@ -309,6 +312,7 @@ function MainMinigamePage(params) {
     const newGame = {
       ...game,
       instanceId: crypto.randomUUID(),
+      decorationSeed: crypto.randomUUID(),
       itemId: null,
       miniGameId: null,
       animals: game.animals
@@ -379,16 +383,15 @@ function MainMinigamePage(params) {
     Remove frontend-only fields before sending configuration to backend.
   */
   function getGameConfiguration(game) {
-    const {
-      id,
-      name,
-      img,
-      instanceId,
-      itemId,
-      miniGameId,
-      orderIndex,
-      ...configuration
-    } = game;
+    const configuration = { ...game };
+    delete configuration.id;
+    delete configuration.name;
+    delete configuration.img;
+    delete configuration.instanceId;
+    delete configuration.itemId;
+    delete configuration.miniGameId;
+    delete configuration.orderIndex;
+    delete configuration.decorationSeed;
     return configuration;
   }
 
@@ -572,8 +575,8 @@ function MainMinigamePage(params) {
                   <div
                     className={
                       selectedGameId === game.instanceId
-                        ? "worksheetGame addBorder selectedGame"
-                        : "worksheetGame addBorder"
+                        ? "worksheetGame selectedGame"
+                        : "worksheetGame "
                     }
                     key={game.instanceId}
                     ref={(element) => {
@@ -585,55 +588,58 @@ function MainMinigamePage(params) {
                     }}
                     onClick={() => setSelectedGameId(game.instanceId)}
                   >
-                    {game.id === "color-game" && (
-                      <ColorMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                    <WorksheetSprinkles seed={game.decorationSeed} />
+                    <div className="worksheetGameContent">
+                      {game.id === "color-game" && (
+                        <ColorMinigame
+                          isTeacher={params.isTeacher}
+                          game={game}
+                          onGameChange={(updatedGame) =>
+                            updateMinigame(game.instanceId, updatedGame)
+                          }
+                        />
+                      )}
 
-                    {game.id === "math-game" && (
-                      <MathMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                      {game.id === "math-game" && (
+                        <MathMinigame
+                          isTeacher={params.isTeacher}
+                          game={game}
+                          onGameChange={(updatedGame) =>
+                            updateMinigame(game.instanceId, updatedGame)
+                          }
+                        />
+                      )}
 
-                    {game.id === "sequence-game" && (
-                      <SequenceMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                      {game.id === "sequence-game" && (
+                        <SequenceMinigame
+                          isTeacher={params.isTeacher}
+                          game={game}
+                          onGameChange={(updatedGame) =>
+                            updateMinigame(game.instanceId, updatedGame)
+                          }
+                        />
+                      )}
 
-                    {game.id === "higher-lower-game" && (
-                      <HigherOrLowerMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                      {game.id === "higher-lower-game" && (
+                        <HigherOrLowerMinigame
+                          isTeacher={params.isTeacher}
+                          game={game}
+                          onGameChange={(updatedGame) =>
+                            updateMinigame(game.instanceId, updatedGame)
+                          }
+                        />
+                      )}
 
-                    {game.id === "odd-even-game" && (
-                      <OddOrEvenMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                      {game.id === "odd-even-game" && (
+                        <OddOrEvenMinigame
+                          isTeacher={params.isTeacher}
+                          game={game}
+                          onGameChange={(updatedGame) =>
+                            updateMinigame(game.instanceId, updatedGame)
+                          }
+                        />
+                      )}
+                    </div>
 
                     <div
                       className={`addMinigameSlot ${
@@ -675,6 +681,7 @@ function MainMinigamePage(params) {
               onPointerDown={startToolsResize}
             />
             <Button
+              className="saveWorksheetButton"
               type="primary"
               block
               icon={<SaveOutlined />}
@@ -721,26 +728,29 @@ function MainMinigamePage(params) {
           </div>
         )}
       {addedMinigames.map((game) => (
-        <div key={game.instanceId}>
-          {game.id === "color-game" && (
-            <ColorMinigame isTeacher={false} game={game} />
-          )}
+        <div className="worksheetGame worksheetGamePreview" key={game.instanceId}>
+          <WorksheetSprinkles seed={game.decorationSeed} />
+          <div className="worksheetGameContent">
+            {game.id === "color-game" && (
+              <ColorMinigame isTeacher={false} game={game} />
+            )}
 
-          {game.id === "math-game" && (
-            <MathMinigame isTeacher={false} game={game} />
-          )}
+            {game.id === "math-game" && (
+              <MathMinigame isTeacher={false} game={game} />
+            )}
 
-          {game.id === "sequence-game" && (
-            <SequenceMinigame isTeacher={false} game={game} />
-          )}
+            {game.id === "sequence-game" && (
+              <SequenceMinigame isTeacher={false} game={game} />
+            )}
 
-          {game.id === "higher-lower-game" && (
-            <HigherOrLowerMinigame isTeacher={false} game={game} />
-          )}
+            {game.id === "higher-lower-game" && (
+              <HigherOrLowerMinigame isTeacher={false} game={game} />
+            )}
 
-          {game.id === "odd-even-game" && (
-            <OddOrEvenMinigame isTeacher={false} game={game} />
-          )}
+            {game.id === "odd-even-game" && (
+              <OddOrEvenMinigame isTeacher={false} game={game} />
+            )}
+          </div>
         </div>
       ))}
     </main>
