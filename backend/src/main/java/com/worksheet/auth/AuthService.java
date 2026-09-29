@@ -27,7 +27,7 @@ public class AuthService {
         validatePassword(password);
         if (users.existsByEmail(normalizedEmail)) throw duplicateEmail();
         try {
-            UserRole requestedRole = role == null ? UserRole.USER : role;
+            UserRole requestedRole = role == null ? UserRole.TEACHER : role;
             if (requestedRole == UserRole.ADMIN) {
                 throw new ResponseStatusException(FORBIDDEN, "Administrator accounts cannot be created through public signup.");
             }
