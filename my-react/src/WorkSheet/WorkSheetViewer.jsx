@@ -29,6 +29,8 @@ import {
 } from "@ant-design/icons";
 
 import { useNavigate } from "react-router-dom";
+import { clickSoftSound } from "@/lib/click-soft";
+import { playSound } from "@/lib/sound-engine";
 import "./WorkSheetViewer.css";
 
 const { Text, Title } = Typography;
@@ -50,6 +52,12 @@ function WorkSheetViewer() {
   const [sharingWorkSheetId, setSharingWorkSheetId] = useState(null);
   const [shareCode, setShareCode] = useState("");
   const [isShareOpen, setIsShareOpen] = useState(false);
+
+  
+  // Helper Functions
+  function playClick() {
+  void playSound(clickSoftSound.dataUri);
+  }
 
   const [form] = Form.useForm();
 
@@ -221,11 +229,13 @@ function WorkSheetViewer() {
                 aria-label="Refresh worksheets"
               />
             </Tooltip>
+            <Button type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => {
+                setIsCreateOpen(true);
+                playClick();
+                }}
 
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setIsCreateOpen(true)}
             >
               New worksheet
             </Button>
