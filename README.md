@@ -1,98 +1,96 @@
 # Worksheet for kids
 
-A small learning project: HTML + CSS + JavaScript + React on the frontend,
-Java + Spring Boot on the backend. It shows one addition question.
-
-## Start The Server:
-1. cd my-react 
-npm run build
-2. cd backend
-.\mvnw.cmd spring-boot:run
-## Structure
-
-```text
-Project/
-|-- frontend/
-|   |-- index.html           HTML document that loads React
-|   |-- package.json         JavaScript libraries and commands
-|   |-- package-lock.json    Exact dependency versions
-|   |-- vite.config.js       Frontend tooling and API connection
-|   `-- src/
-|       |-- main.jsx         Starts React
-|       |-- App.jsx          Page markup and JavaScript interactions
-|       `-- style.css        Page appearance
-|-- pom.xml                 Java libraries and build settings
-|-- mvnw.cmd                Maven launcher for Windows
-|-- mvnw                    Maven launcher for macOS/Linux
-|-- .mvn/wrapper/           Maven download settings
-`-- src/main/
-    |-- java/com/worksheet/
-    |   |-- WorksheetApplication.java  Starts Spring Boot
-    |   `-- WorksheetController.java   Checks answers and returns JSON
-    `-- resources/application.properties  App settings
-```
-
-JSX (`.jsx`) is JavaScript with HTML-like markup used by React.
-Edit `App.jsx` for page content and interactions, and `style.css` for appearance.
-The `index.html` file is the small HTML shell that hosts React.
+A React frontend and Spring Boot backend for worksheets, mini-games, classrooms,
+assignments, and saved attempts. The backend requires PostgreSQL and applies Flyway
+migrations at startup.
 
 ## Requirements
 
 - Java JDK 25.
-- Node.js 24 LTS, which includes npm: https://nodejs.org/
+- Node.js 24 LTS and npm.
+- Docker Desktop running Linux containers (for the local PostgreSQL database and integration tests).
 
-Reopen your terminal after installing. Check `java -version`, `node -v`, and `npm -v`.
-Node builds the frontend. Java runs the backend. Vite is the frontend build tool.
-Maven is downloaded automatically by the wrapper.
+Check `java -version`, `node -v`, and `docker version`. Maven is downloaded by the backend wrapper.
 
-## Run the whole website on port 8080
+## Start the website
 
-Open a terminal in `Project`:
+From the repository root in PowerShell:
 
 ```powershell
-cd frontend
-npm install
+docker compose up -d postgres
+cd my-react
+npm ci
 npm run build
-cd ..
-.\mvnw.cmd clean package
-java -jar target/worksheet-0.0.1-SNAPSHOT.jar
+cd ../backend
+.\mvnw.cmd clean spring-boot:run
 ```
 
-Open http://localhost:8080. Stop the app with Ctrl+C.
-The first build needs internet to download dependencies.
-`npm run build` creates `frontend/dist`. Maven includes those files in the JAR.
-After changing frontend code, rebuild the frontend and JAR and restart the app.
-`node_modules`, `dist`, and `target` are generated folders; do not edit them.
+Open http://localhost:8080. Stop the backend with Ctrl+C.
+The frontend build writes to `backend/src/main/resources/static`, which Spring Boot serves.
+Rebuild the frontend and restart the backend after changing frontend code in this mode.
+
+PostgreSQL uses `localhost:5432`, database `worksheets`, username `postgres`, and
+password `postgres` by default. Its data persists in `database/postgres-data`.
+Use `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` to connect to a different database.
 
 ## Develop with automatic frontend updates
 
-Stop any existing app on port 8080 first.
-In a terminal in `Project`, start the backend:
+From the repository root, start PostgreSQL and the backend:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+docker compose up -d postgres
+cd backend
+.\mvnw.cmd clean spring-boot:run
 ```
 
-In a second terminal in `Project/frontend`, start the frontend:
+In a second terminal, from the repository root:
 
 ```powershell
-npm install
+cd my-react
+npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite (normally http://localhost:5173).
-Frontend edits appear automatically. Restart Spring Boot after Java changes.
-Vite forwards `/api` requests to Spring Boot on port 8080.
+Open http://localhost:5173. Vite forwards `/api` requests to the backend on port 8080.
 
-## Follow one answer through the code
+## Build and verify the backend
 
-1. `index.html` loads `main.jsx`, which displays `App`.
-2. React's `useState` remembers the answer, feedback, and loading state.
-3. Clicking **Check answer** calls the JavaScript `checkAnswer` function.
-4. `fetch` sends a request to `/api/check?answer=5`.
-5. Java's `WorksheetController.check` checks the number and returns JSON,
-   such as `{"message":"Well done! 2 + 3 = 5."}`.
-6. React reads that JSON and displays the message without reloading the page.
+With Docker Desktop running, from `backend`:
 
-There is no database. To change the question, update its label in `App.jsx`
-and the expected answer and feedback in `WorksheetController.java`.
+```powershell
+.\mvnw.cmd clean verify
+java -jar target/backend-0.0.1-SNAPSHOT.jar
+```
+
+The JAR requires a running PostgreSQL database. To include frontend changes, run
+`npm run build` in `my-react` before building the JAR.
+
+Regular tests catch duplicate migration versions without Docker. Full verification
+also checks migrations, upgrades with existing data, Hibernate mappings, and HTTP
+startup using disposable PostgreSQL containers. These PostgreSQL tests are skipped
+when Docker is unavailable, so a build with skipped tests is not full verification.
+
+## Migration startup troubleshooting
+
+The worksheet-sharing migration is V19; the task-image migration is V20. After
+pulling this correction, use `clean` in the Maven command so an old V19 task-image
+file cannot remain in `target/classes`.
+
+If startup reports a database connection error, check `docker compose ps` and
+`docker compose logs postgres`, and confirm the backend database settings.
+
+For migration history or checksum errors, inspect the database's
+`flyway_schema_history` before making changes. A database that previously ran the
+task-image feature branch with task images recorded as V19 needs separate
+reconciliation; do not delete the database or its migration history to bypass the error.
+
+## Structure
+
+- `backend/`: Spring Boot source, Flyway migrations, tests, and Maven wrapper.
+- `my-react/`: React source and Vite build configuration.
+- `docker-compose.yml`: local PostgreSQL service.
+- `database/postgres-data/`: local database files managed by PostgreSQL.
+- `Project/`: legacy build artifacts; use `backend` and `my-react` for current development.
+
+See [backend documentation](backend/README.md) for architecture, API configuration,
+and migration details, and [task image documentation](backend/TASK_IMAGES.md) for image APIs.

@@ -95,7 +95,7 @@ class PopulatedV13UpgradeIT {
                 row.next();
                 assertNotNull(row.getString(1));
             }
-            // V19 can link both historic draft items and backfilled revision items without changing content.
+            // V20 can link both historic draft items and backfilled revision items without changing content.
             sql.executeUpdate("INSERT INTO worksheet_item_image_asset VALUES (400, 900)");
             sql.executeUpdate("""
                 INSERT INTO worksheet_revision_item_image_asset (worksheet_revision_item_id, mini_game_asset_id)

@@ -191,7 +191,7 @@ Common responses: `400` invalid policy/configuration/file/choice; `401` no sessi
 other owner's deletion, or upload into a choice-only slot; `404` missing/inactive definition, missing
 slot or unavailable asset; `409` asset still in use. Servlet upload-size enforcement can return `413`.
 
-Migration `V19__track_task_image_assets.sql` adds indexed reference tables for draft and revision
+Migration `V20__track_task_image_assets.sql` adds indexed reference tables for draft and revision
 items. Existing definitions have no slots and need no data backfill. Asset rows are locked during
 reference creation/deletion to avoid deleting a file while another request saves a reference.
 Keep the asset directory on persistent storage and back it up with the database.
