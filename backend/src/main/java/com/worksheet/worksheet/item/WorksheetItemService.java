@@ -3,6 +3,7 @@ package com.worksheet.worksheet.item;
 import com.worksheet.minigame.MiniGameDefinition;
 import com.worksheet.minigame.MiniGameDefinitionRepository;
 import com.worksheet.minigame.JsonSchemaValidationService;
+import com.worksheet.minigame.asset.ImageSlotService;
 import com.worksheet.worksheet.Worksheet;
 import com.worksheet.worksheet.WorksheetRepository;
 import com.worksheet.worksheet.result.minigame.MiniGameResultRepository;
@@ -20,13 +21,15 @@ public class WorksheetItemService {
     private final MiniGameDefinitionRepository miniGameRepository;
     private final MiniGameResultRepository miniGameResultRepository;
     private final JsonSchemaValidationService schemaValidator;
+    private final ImageSlotService imageSlots;
 
-    public WorksheetItemService(WorksheetItemRepository repository, WorksheetRepository worksheetRepository, MiniGameDefinitionRepository miniGameRepository, MiniGameResultRepository miniGameResultRepository, JsonSchemaValidationService schemaValidator) {
+    public WorksheetItemService(WorksheetItemRepository repository, WorksheetRepository worksheetRepository, MiniGameDefinitionRepository miniGameRepository, MiniGameResultRepository miniGameResultRepository, JsonSchemaValidationService schemaValidator, ImageSlotService imageSlots) {
         this.repository = repository;
         this.worksheetRepository = worksheetRepository;
         this.miniGameRepository = miniGameRepository;
         this.miniGameResultRepository = miniGameResultRepository;
         this.schemaValidator = schemaValidator;
+        this.imageSlots = imageSlots;
     }
 
     @Transactional
@@ -38,7 +41,10 @@ public class WorksheetItemService {
         JsonNode configuration = request.configuration() != null ? request.configuration() : miniGame.getDefaultConfiguration().deepCopy();
         schemaValidator.validate(miniGame.getConfigurationSchema(), configuration, "Mini-game configuration");
 
-        WorksheetItem item = repository.save(new WorksheetItem(worksheet, miniGame, request.orderIndex(), configuration));
+        var imageAssets = imageSlots.resolve(miniGame, configuration, userId);
+        WorksheetItem item = new WorksheetItem(worksheet, miniGame, request.orderIndex(), configuration);
+        item.replaceImageAssets(imageAssets);
+        repository.save(item);
         return toResponse(item);
     }
 
@@ -59,6 +65,7 @@ public class WorksheetItemService {
         schemaValidator.validate(miniGame.getConfigurationSchema(), configuration, "Mini-game configuration");
 
         item.update(miniGame, request.orderIndex(), configuration);
+        item.replaceImageAssets(imageSlots.resolve(miniGame, configuration, userId));
         return toResponse(repository.save(item));
     }
 

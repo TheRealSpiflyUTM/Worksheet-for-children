@@ -3,6 +3,7 @@ package com.worksheet.minigame;
 import com.worksheet.auth.User;
 import com.worksheet.minigame.asset.MiniGameAsset;
 import com.worksheet.minigame.asset.MiniGameAssetService;
+import com.worksheet.minigame.asset.ImageSlotService;
 import com.worksheet.worksheet.item.WorksheetItemRepository;
 import com.worksheet.worksheet.revision.WorksheetRevisionItemRepository;
 import java.util.LinkedHashMap;
@@ -24,19 +25,21 @@ public class MiniGameDefinitionService {
     private final WorksheetRevisionItemRepository revisionItems;
     private final MiniGameAssetService assets;
     private final JsonSchemaValidationService schemaValidator;
+    private final ImageSlotService imageSlots;
 
     public MiniGameDefinitionService(MiniGameDefinitionRepository repository,
                                      MiniGameDefinitionAssetRepository definitionAssets,
                                      WorksheetItemRepository worksheetItems,
                                      WorksheetRevisionItemRepository revisionItems,
                                      MiniGameAssetService assets,
-                                     JsonSchemaValidationService schemaValidator) {
+                                     JsonSchemaValidationService schemaValidator, ImageSlotService imageSlots) {
         this.repository = repository;
         this.definitionAssets = definitionAssets;
         this.worksheetItems = worksheetItems;
         this.revisionItems = revisionItems;
         this.assets = assets;
         this.schemaValidator = schemaValidator;
+        this.imageSlots = imageSlots;
     }
 
     @Transactional(readOnly = true)
@@ -73,6 +76,7 @@ public class MiniGameDefinitionService {
         JsonNode resultSchema = schemaOrEmpty(request.resultSchema());
         JsonNode defaults = valueOrEmpty(request.defaultConfiguration());
         validateDefinition(configurationSchema, resultSchema, defaults);
+        imageSlots.validateDefinition(configurationSchema, defaults, request.assets());
 
         MiniGameDefinition definition = new MiniGameDefinition(name, type, version,
             configurationSchema, resultSchema, defaults, creator, true);
@@ -91,6 +95,7 @@ public class MiniGameDefinitionService {
         JsonNode resultSchema = schemaOrEmpty(request.resultSchema());
         JsonNode defaults = valueOrEmpty(request.defaultConfiguration());
         validateDefinition(configurationSchema, resultSchema, defaults);
+        imageSlots.validateDefinition(configurationSchema, defaults, request.assets());
         definition.update(name, configurationSchema, resultSchema, defaults);
         definition.updateCatalogMetadata(optionalText(request.description(), 500),
             optionalAsset(request.thumbnailAssetId()));
@@ -124,18 +129,20 @@ public class MiniGameDefinitionService {
 
     private void replaceAssetLinks(MiniGameDefinition definition, Map<String, Long> requested) {
         definitionAssets.deleteByDefinition_Id(definition.getId());
+        // Release unique keys before inserting a replacement catalog for an unused definition.
+        definitionAssets.flush();
         if (requested == null || requested.isEmpty()) return;
         List<MiniGameDefinitionAsset> links = requested.entrySet().stream().map(entry -> {
             String key = requireText(entry.getKey(), "Asset key", 100);
             if (!key.matches("[a-z0-9]+(?:[._-][a-z0-9]+)*")) throw badRequest("Asset keys must be stable lowercase identifiers.");
-            MiniGameAsset asset = assets.requireActive(entry.getValue());
+            MiniGameAsset asset = assets.lockActive(entry.getValue());
             return new MiniGameDefinitionAsset(definition, asset, key);
         }).toList();
         definitionAssets.saveAll(links);
     }
 
     private MiniGameAsset optionalAsset(Long id) {
-        return id == null ? null : assets.requireActive(id);
+        return id == null ? null : assets.lockActive(id);
     }
 
     private void validateDefinition(JsonNode configurationSchema, JsonNode resultSchema, JsonNode defaults) {

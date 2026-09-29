@@ -12,6 +12,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Testcontainers(disabledWithoutDocker = true)
 class PopulatedV13UpgradeIT {
@@ -94,6 +95,15 @@ class PopulatedV13UpgradeIT {
                 row.next();
                 assertNotNull(row.getString(1));
             }
+            // V19 can link both historic draft items and backfilled revision items without changing content.
+            sql.executeUpdate("INSERT INTO worksheet_item_image_asset VALUES (400, 900)");
+            sql.executeUpdate("""
+                INSERT INTO worksheet_revision_item_image_asset (worksheet_revision_item_id, mini_game_asset_id)
+                SELECT id, 900 FROM worksheet_revision_item WHERE source_worksheet_item_id = 400
+                """);
+            assertEquals(1, count(sql, "SELECT count(*) FROM worksheet_item_image_asset WHERE mini_game_asset_id = 900"));
+            assertEquals(1, count(sql, "SELECT count(*) FROM worksheet_revision_item_image_asset WHERE mini_game_asset_id = 900"));
+            assertThrows(java.sql.SQLException.class, () -> sql.executeUpdate("DELETE FROM mini_game_asset WHERE id = 900"));
             sql.executeUpdate("""
                 INSERT INTO auth_users (created_at, email, name, password_hash, role)
                 VALUES (CURRENT_TIMESTAMP, 'admin@upgrade.test', 'Admin', 'hash', 'ADMIN')

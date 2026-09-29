@@ -11,4 +11,5 @@ public interface WorksheetRevisionItemRepository extends JpaRepository<Worksheet
     Optional<WorksheetRevisionItem> findByIdAndRevision_Id(Long id, Long revisionId);
     long countByRevision_Id(Long revisionId);
     boolean existsByMiniGameDefinition_Id(Long definitionId);
+    boolean existsByImageAssets_Id(Long assetId);
 }
