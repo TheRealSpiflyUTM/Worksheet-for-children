@@ -18,6 +18,8 @@ MiniGameDefinition(type, version, JSON schemas) --< logical asset links >-- Asse
 
 Assignments and attempts reference immutable worksheet revisions. Editing a worksheet therefore cannot alter assigned content or completed history. New attempts have an explicit `IN_PROGRESS -> COMPLETED` lifecycle; classroom revocation changes unfinished assigned attempts to `ABANDONED`. The server validates item payloads and aggregates final totals.
 
+Worksheet share codes use the same lifecycle. Sharing pins an immutable revision; redeeming the code creates one per-user assignment to that revision. Editing the draft does not change an already shared worksheet. Rotating the code publishes the current draft and invalidates the previous code.
+
 Authentication uses one session system and roles. Spring Security centrally provides session authorization, credential CORS, CSRF protection, session fixation protection, and JSON `401/403` responses. Services enforce resource ownership and intentionally return `404` for cross-user identifiers.
 
 Dynamic mini-games share one catalog pipeline rather than one backend per game. Versioned definitions provide configuration/result JSON Schemas and logical asset references. Admins manage catalog versions; teachers build worksheets from approved active definitions. Legacy Minigame1 and Count & Match routes remain available as adapters.

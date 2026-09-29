@@ -41,7 +41,151 @@ body{
 .addMinigameButton.ant-btn{
     display: flex;
     margin: 1rem auto;
+    transform: translateY(0);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.addMinigameSlot {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+}
+.addMinigameSlotInner {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    background: #f5f8ff;
+}
+.addMinigameSlot:not(.isOpen) .addMinigameButton.ant-btn {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-16px);
+}
+.addMinigameSlot.isOpen {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+.addMinigameSlot.isOpen .addMinigameSlotInner {
+    border-top: 1px solid #d9e2f2;
+}
+.worksheetGame {
+    overflow: hidden;
+    border-radius: 15px;
+    background: white;
 }
 .AddGamesFromGameWindow{
     display: flex;
+}
+.mainMinigamePage {
+  width: 100%;
+}
+
+.worksheetEditorLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tools-width, 260px);
+  align-items: start;
+  gap: 24px;
+  width: 100%;
+}
+
+.worksheetCanvas {
+  min-width: 0;
+}
+
+.worksheetTools {
+  position: fixed;
+  top: 64px;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  width: var(--tools-width, 260px);
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  padding: 20px;
+  border-left: 1px solid #d9d9d9;
+  background: white;
+  box-shadow: -4px 0 14px rgba(0, 0, 0, 0.08);
+}
+
+.worksheetToolsTitle {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.worksheetToolsResizeHandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -6px;
+  z-index: 1;
+  width: 12px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.worksheetToolsResizeHandle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.worksheetToolsResizeHandle:hover::after {
+  background: rgb(14, 71, 161);
+}
+
+.previewToolsBar {
+  position: fixed;
+  top: 88px;
+  right: 24px;
+  z-index: 90;
+
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 900px) {
+  .worksheetEditorLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .worksheetTools {
+    position: static;
+    width: 100%;
+    height: auto;
+    border: 1px solid #d9d9d9;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  }
+
+  .previewToolsBar {
+    position: static;
+    margin-bottom: 20px;
+  }
+
+  .worksheetToolsResizeHandle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .addMinigameSlot,
+  .addMinigameButton.ant-btn {
+    transition: none;
+  }
 }

@@ -1,6 +1,9 @@
 package com.worksheet.worksheet.revision;
 
 import com.worksheet.minigame.MiniGameDefinition;
+import com.worksheet.minigame.asset.MiniGameAsset;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import com.worksheet.worksheet.item.WorksheetItem;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -33,6 +36,12 @@ public class WorksheetRevisionItem {
     @Column(nullable = false)
     private JsonNode configuration;
 
+    @ManyToMany
+    @JoinTable(name = "worksheet_revision_item_image_asset",
+        joinColumns = @JoinColumn(name = "worksheet_revision_item_id"),
+        inverseJoinColumns = @JoinColumn(name = "mini_game_asset_id"))
+    private Set<MiniGameAsset> imageAssets = new LinkedHashSet<>();
+
     protected WorksheetRevisionItem() {}
 
     public WorksheetRevisionItem(WorksheetRevision revision, WorksheetItem sourceItem) {
@@ -41,6 +50,7 @@ public class WorksheetRevisionItem {
         this.miniGameDefinition = sourceItem.getMiniGame();
         this.orderIndex = sourceItem.getOrderIndex();
         this.configuration = sourceItem.getConfiguration().deepCopy();
+        this.imageAssets.addAll(sourceItem.getImageAssets());
     }
 
     public Long getId() { return id; }
