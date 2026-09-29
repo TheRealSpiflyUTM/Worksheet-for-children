@@ -1,7 +1,14 @@
 package com.worksheet.minigame.asset;
 
 import com.worksheet.auth.User;
+import com.worksheet.auth.UserRole;
 import com.worksheet.minigame.MiniGameDefinitionAssetRepository;
+import com.worksheet.minigame.MiniGameDefinitionRepository;
+import com.worksheet.worksheet.item.WorksheetItemRepository;
+import com.worksheet.worksheet.revision.WorksheetRevisionItemRepository;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import com.worksheet.shared.storage.MiniGameAssetStorage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -18,29 +25,48 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @Transactional
 public class MiniGameAssetService {
-    private static final long MAX_SIZE = 10L * 1024 * 1024;
+    public static final long MAX_SIZE = 10L * 1024 * 1024;
     private final MiniGameAssetRepository repository;
     private final MiniGameDefinitionAssetRepository definitionAssets;
     private final MiniGameAssetStorage storage;
     private final AssetContentInspector inspector;
+    private final MiniGameDefinitionRepository definitions;
+    private final WorksheetItemRepository worksheetItems;
+    private final WorksheetRevisionItemRepository revisionItems;
 
     public MiniGameAssetService(MiniGameAssetRepository repository,
                                 MiniGameDefinitionAssetRepository definitionAssets,
-                                MiniGameAssetStorage storage, AssetContentInspector inspector) {
+                                MiniGameAssetStorage storage, AssetContentInspector inspector,
+                                MiniGameDefinitionRepository definitions, WorksheetItemRepository worksheetItems,
+                                WorksheetRevisionItemRepository revisionItems) {
         this.repository = repository;
         this.definitionAssets = definitionAssets;
         this.storage = storage;
         this.inspector = inspector;
+        this.definitions = definitions;
+        this.worksheetItems = worksheetItems;
+        this.revisionItems = revisionItems;
     }
 
     @Transactional
     public MiniGameAssetResponse store(User creator, MultipartFile file) {
+        return store(creator, file, false);
+    }
+
+    public MiniGameAssetResponse storeImage(User creator, MultipartFile file) {
+        return store(creator, file, true);
+    }
+
+    private MiniGameAssetResponse store(User creator, MultipartFile file, boolean imageOnly) {
         if (file == null || file.isEmpty()) throw badRequest("Asset file is required.");
         if (file.getSize() > MAX_SIZE) throw badRequest("Asset cannot exceed 10 MB.");
         byte[] bytes;
         try { bytes = file.getBytes(); }
         catch (IOException error) { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read asset file.", error); }
         AssetContentInspector.InspectedAsset inspected = inspector.inspect(bytes);
+        if (imageOnly && !inspected.contentType().startsWith("image/")) {
+            throw badRequest("Task uploads must be PNG, JPEG, GIF, or WebP images.");
+        }
         String key = UUID.randomUUID() + inspected.extension();
         storage.store(key, bytes);
         try {
@@ -63,11 +89,31 @@ public class MiniGameAssetService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found."));
     }
 
+    public MiniGameAsset lockActive(Long id) {
+        if (id == null || id < 1) throw badRequest("Asset ID must be a positive integer.");
+        return repository.lockByIdAndStatus(id, MiniGameAssetStatus.ACTIVE)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found."));
+    }
+
+    public record ImagePage(List<MiniGameAssetResponse> items, int page, int size, long totalElements) {}
+
+    @Transactional(readOnly = true)
+    public ImagePage listImages(Long ownerId, int page, int size) {
+        if (page < 0 || size < 1 || size > 100) throw badRequest("Page must be nonnegative and size between 1 and 100.");
+        var result = repository.findByOwner_IdAndStatusAndContentTypeStartingWith(ownerId,
+            MiniGameAssetStatus.ACTIVE, "image/", PageRequest.of(page, size, Sort.by("id").descending()));
+        return new ImagePage(result.stream().map(this::response).toList(), page, size, result.getTotalElements());
+    }
+
     @Transactional
-    public void delete(Long id) {
-        MiniGameAsset asset = requireActive(id);
-        if (definitionAssets.existsByAsset_Id(id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Asset is referenced by a mini-game definition.");
+    public void delete(Long id, User actor) {
+        MiniGameAsset asset = lockActive(id);
+        if (actor.getRole() != UserRole.ADMIN && !asset.getOwner().getId().equals(actor.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own uploads.");
+        }
+        if (definitionAssets.existsByAsset_Id(id) || definitions.existsByThumbnailAsset_Id(id)
+                || worksheetItems.existsByImageAssets_Id(id) || revisionItems.existsByImageAssets_Id(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Asset is referenced by a mini-game, worksheet task, or published revision.");
         }
         storage.delete(asset.getStorageKey());
         asset.markDeleted();
