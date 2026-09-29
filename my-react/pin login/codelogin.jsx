@@ -74,62 +74,90 @@ navigate(`/kids/${worksheetId}`);
 
 };
 
-return ( <div className="auth-container"> <div className="auth-form">
+return (
+  <main className="code-login-page">
+    <span className="page-doodle page-doodle-plus" aria-hidden="true">+</span>
+    <span className="page-doodle page-doodle-star" aria-hidden="true">★</span>
+    <span className="page-doodle page-doodle-circle" aria-hidden="true" />
 
-    <Input
-      maxLength={9}
-      placeholder="Worksheet code"
-      className="pin-input"
-      value={code}
-      onChange={(e) => {
-        setCode(e.target.value.toUpperCase());
-        setCodeError("");
-      }}
-      onPressEnter={onCodeSubmit}
-      disabled={codeVerified}
-    />
-
-    {codeError && (
-      <div className="pin-error">
-        {codeError}
+    <section className="code-login-shell">
+      <div className="code-login-copy">
+        <span className="code-login-eyebrow">CAIETUL CU JOCURI</span>
+        <h1>
+          Învățăm prin <span>joacă!</span>
+        </h1>
+        <p>
+          Exerciții colorate, provocări istețe și multă bucurie la fiecare
+          răspuns corect.
+        </p>
+        <div className="code-login-badges" aria-label="Avantajele platformei">
+          <span>🎮 Jocuri interactive</span>
+          <span>🇷🇴 În limba română</span>
+          <span>✨ Învățare cu zâmbet</span>
+        </div>
       </div>
-    )}
 
-    {!codeVerified && (
-      <Button
-        type="primary"
-        className="enter-button"
-        onClick={onCodeSubmit}
-        loading={isCheckingCode}
-      >
-        Check code
-      </Button>
-    )}
+      <div className="code-login-card">
+        <div className="code-login-card-icon" aria-hidden="true">🚀</div>
+        <h2>Ai primit un cod?</h2>
+        <p>Scrie-l mai jos și aventura poate începe.</p>
 
-    {codeVerified && (
-      <>
-        <Cascader
-          options={options}
-          onChange={onNameChange}
-          placeholder="Select your name"
-          className="name-select"
-          showSearch={{ filter }}
-        />
+        <div className="code-login-form">
+          <Input
+            maxLength={9}
+            placeholder="CODUL FIȘEI"
+            className="pin-input"
+            value={code}
+            aria-label="Codul fișei de lucru"
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setCodeError("");
+            }}
+            onPressEnter={onCodeSubmit}
+            disabled={codeVerified}
+          />
 
-        <Button
-          type="primary"
-          className="enter-button"
-          onClick={onEnter}
-          disabled={!studentId}
-        >
-          Enter
-        </Button>
-      </>
-    )}
+          {codeError && (
+            <div className="pin-error" role="alert">
+              {codeError}
+            </div>
+          )}
 
-  </div>
-</div>
+          {!codeVerified && (
+            <Button
+              type="primary"
+              className="enter-button"
+              onClick={onCodeSubmit}
+              loading={isCheckingCode}
+            >
+              Verifică codul
+            </Button>
+          )}
 
+          {codeVerified && (
+            <>
+              <Cascader
+                options={options}
+                onChange={onNameChange}
+                placeholder="Alege numele tău"
+                className="name-select"
+                showSearch={{ filter }}
+              />
+
+              <Button
+                type="primary"
+                className="enter-button"
+                onClick={onEnter}
+                disabled={!studentId}
+              >
+                Începe aventura
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
+  </main>
 );
 }
 

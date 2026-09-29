@@ -70,9 +70,22 @@ body{
     border-top: 1px solid #d9e2f2;
 }
 .worksheetGame {
+    position: relative;
+    isolation: isolate;
     overflow: hidden;
     border-radius: 15px;
     background: white;
+}
+.worksheetGameContent {
+    position: relative;
+    z-index: 2;
+}
+.worksheetGamePreview {
+    width: 100%;
+}
+.worksheetGame > .addMinigameSlot {
+    position: relative;
+    z-index: 4;
 }
 .AddGamesFromGameWindow{
     display: flex;
@@ -116,6 +129,12 @@ body{
 .worksheetToolsTitle {
   margin: 0 0 8px;
   font-size: 18px;
+}
+
+.saveWorksheetButton.ant-btn {
+  min-height: 48.4px;
+  padding-inline: 16.5px;
+  font-size: 1.1em;
 }
 
 .worksheetToolsResizeHandle {

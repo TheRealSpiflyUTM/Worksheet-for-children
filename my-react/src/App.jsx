@@ -24,7 +24,24 @@ return (
     <ConfigProvider
         theme={{
             token: {
-                colorPrimary: "rgb(14, 71, 161)",
+                colorPrimary: "#6c5ce7",
+                colorInfo: "#37a7e8",
+                colorSuccess: "#26b979",
+                colorWarning: "#ffb703",
+                colorError: "#f04472",
+                borderRadius: 14,
+                fontFamily: '"Geist Variable", "Trebuchet MS", sans-serif',
+            },
+            components: {
+                Button: {
+                    borderRadius: 14,
+                    controlHeight: 44,
+                    fontWeight: 700,
+                },
+                Input: {
+                    borderRadius: 14,
+                    controlHeight: 48,
+                },
             },
         }}
     >

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Checkbox, InputNumber } from "antd";
+import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
 import "./MathMinigame.css";
 
 function MathMinigame({ isTeacher, game, onGameChange }) {
@@ -24,6 +25,7 @@ function MathMinigame({ isTeacher, game, onGameChange }) {
   function checkAnswer(answer) {
     setSelectedAnswer(answer);
     if (answer === question.correctAnswer) {
+      celebrateCorrectAnswer();
       setScore((currentScore) => currentScore + 1);
     }
   }
