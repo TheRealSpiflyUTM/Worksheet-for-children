@@ -94,3 +94,15 @@ reconciliation; do not delete the database or its migration history to bypass th
 
 See [backend documentation](backend/README.md) for architecture, API configuration,
 and migration details, and [task image documentation](backend/TASK_IMAGES.md) for image APIs.
+
+## Frontend workflows and checks
+
+The Littleleaf interface supports English/Romanian, responsive teacher/student dashboards,
+worksheet authoring and preview, class membership, sharing and assignments, image uploads,
+and saved attempts/results. See [frontend documentation](my-react/README.md) for behavior,
+source organization, and browser-test setup.
+
+From `my-react`, run `npm run lint`, `npm test`, and `npm run build`.
+Run `npm run test:e2e` with the app running against a separate test database; browser tests
+create disposable accounts and worksheets. Production deep links are served by Spring Boot,
+while protected data remains behind authenticated `/api` routes.

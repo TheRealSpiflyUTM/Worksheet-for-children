@@ -224,3 +224,16 @@ PostgreSQL scripts, so duplicate versions and invalid filenames fail even withou
 Hibernate schema validation, HTTP startup, a populated V13-to-latest upgrade, and a populated
 V19-to-latest upgrade that preserves worksheet shares. PostgreSQL integration tests are
 skipped with an explicit JUnit skip when Docker is unavailable; start Docker to run all checks.
+
+## Frontend rendering metadata
+
+Authorized worksheet items (drafts and shared revisions) and attempt revision items now include
+an additive `definition` object with the existing catalog response shape: stable ID/type/version,
+configuration/result schemas, defaults, descriptive metadata, asset URLs, and active state.
+The nested definition is the referenced version, including inactive versions. Public catalog
+queries continue to hide inactive definitions; resource ownership and assignment checks are unchanged.
+This lets the frontend render historical content without substituting a newer catalog version.
+
+Explicit frontend GET routes are public HTML entry points so refreshes and deep links work with
+the session cookie scoped to `/api`. API authorization and CSRF protections remain enforced.
+No database migration is required for these response additions.

@@ -92,6 +92,27 @@ class WorksheetAttemptTests {
     }
 
     @Test
+    void pinnedDefinitionRemainsReadableAfterDeactivation() throws Exception {
+        Account owner = signup("Owner", "attempt.inactive@example.com");
+        Long worksheetId = createWorksheet(owner, "Pinned definition");
+        createItem(owner, worksheetId, 0);
+        MvcResult started = start(owner, worksheetId);
+        MiniGameDefinition definition = definitions.findById(definitionId).orElseThrow();
+        definition.deactivate();
+        definitions.save(definition);
+        mvc.perform(get("/api/attempts/{id}", number(started, "$.id")).session(owner.session()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[0].definition.id").value(definitionId))
+            .andExpect(jsonPath("$.items[0].definition.type").value("attempt-game"))
+            .andExpect(jsonPath("$.items[0].definition.version").value(1))
+            .andExpect(jsonPath("$.items[0].definition.active").value(false));
+        mvc.perform(get("/api/worksheets/{id}", worksheetId).session(owner.session()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[0].definition.type").value("attempt-game"));
+        mvc.perform(get("/api/minigames/{id}", definitionId)).andExpect(status().isNotFound());
+    }
+
+    @Test
     void savesIdempotentResultsAggregatesAndLocksCompletedAttempts() throws Exception {
         Account owner = signup("Owner", "attempt.score@example.com");
         Long worksheetId = createWorksheet(owner, "Scores");

@@ -30,6 +30,15 @@ class AuthTests {
 
     @BeforeEach void clearUsers() { users.deleteAll(); }
 
+    @Test void spaDeepLinksArePublicButApisStillRequireAuthentication() throws Exception {
+        for (String path : new String[] {"/login", "/signup", "/home", "/classes/12", "/teacher/4", "/kids/4", "/assignments/5", "/attempts/6"}) {
+            mvc.perform(get(path)).andExpect(status().isOk()).andExpect(forwardedUrl("/index.html"));
+        }
+        mvc.perform(get("/api/worksheets")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/attempts/6")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/unknown")).andExpect(status().isUnauthorized());
+    }
+
     @Test void signupStoresHashAndReturnsOnlyPublicFields() throws Exception {
         mvc.perform(post("/api/auth/signup").with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()).header("X-Auth-Request", "1")
                 .contentType("application/json").content(DETAILS))

@@ -1,2 +1,9 @@
 node_modules
 run.txt
+# Local verification output
+*-preview.log
+*-verification.log
+my-react/test-results/
+my-react/playwright-report/
+test-results/
+playwright-report/
