@@ -6,6 +6,7 @@ import java.util.Optional;
 
 public interface WorksheetItemRepository extends JpaRepository<WorksheetItem, Long> {
     boolean existsByMiniGame_Id(Long miniGameId);
+    boolean existsByImageAssets_Id(Long assetId);
     List<WorksheetItem> findByWorksheet_IdAndWorksheet_User_IdOrderByOrderIndex(Long worksheetId, Long userId);
     Optional<WorksheetItem> findByIdAndWorksheet_IdAndWorksheet_User_Id(Long id, Long worksheetId, Long userId);
     Optional<WorksheetItem> findByIdAndWorksheet_Id(Long id, Long worksheetId);

@@ -3,6 +3,8 @@ package com.worksheet.worksheet.revision;
 import com.worksheet.worksheet.Worksheet;
 import com.worksheet.worksheet.item.WorksheetItem;
 import com.worksheet.worksheet.item.WorksheetItemRepository;
+import com.worksheet.minigame.asset.MiniGameAssetService;
+import com.worksheet.minigame.asset.MiniGameAsset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,13 +19,15 @@ public class WorksheetRevisionService {
     private final WorksheetRevisionRepository revisions;
     private final WorksheetRevisionItemRepository revisionItems;
     private final WorksheetItemRepository worksheetItems;
+    private final MiniGameAssetService assets;
 
     public WorksheetRevisionService(WorksheetRevisionRepository revisions,
                                     WorksheetRevisionItemRepository revisionItems,
-                                    WorksheetItemRepository worksheetItems) {
+                                    WorksheetItemRepository worksheetItems, MiniGameAssetService assets) {
         this.revisions = revisions;
         this.revisionItems = revisionItems;
         this.worksheetItems = worksheetItems;
+        this.assets = assets;
     }
 
     @Transactional
@@ -53,6 +57,9 @@ public class WorksheetRevisionService {
     }
 
     private WorksheetRevision createRevision(Worksheet worksheet, List<WorksheetItem> items, String contentHash) {
+        // Protect snapshot references against concurrent draft edits followed by asset deletion.
+        items.stream().flatMap(item -> item.getImageAssets().stream()).map(MiniGameAsset::getId)
+            .distinct().sorted().forEach(assets::lockActive);
         int nextNumber = revisions.findFirstByWorksheet_IdOrderByRevisionNumberDesc(worksheet.getId())
             .map(value -> value.getRevisionNumber() + 1).orElse(1);
         WorksheetRevision revision = revisions.save(new WorksheetRevision(

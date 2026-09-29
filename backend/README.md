@@ -154,6 +154,11 @@ Assets are verified from magic bytes (not the submitted MIME header), limited to
 
 `minigame1` and `countmatch` are legacy adapters and remain behavior-compatible. New games use the dynamic catalog.
 
+Teacher-uploaded task images and selectable variants are opt-in through the root configuration-schema
+extension `x-image-slots`. See [Task image API and integration guide](TASK_IMAGES.md) for declarations,
+discovery, uploads, image libraries, task configuration and lifecycle rules. No frontend changes are required
+to existing games; an editor can integrate these APIs when it adds image fields.
+
 ## Configuration
 
 | Environment variable | Default | Purpose |
@@ -181,6 +186,7 @@ Flyway migrations are forward-only. Never rewrite V1–V13 or another migration 
 - V19 pins each share code to an immutable worksheet revision.
 - V16 creates attempts and item results and copies existing results while preserving their IDs and scores.
 - V17 adds catalog metadata, asset integrity/lifecycle fields, and relational definition asset keys.
+- V19 tracks task image references in worksheet drafts and immutable revisions.
 
 The V13 upgrade migration can only snapshot the worksheet content available at upgrade time because older edits were not historically stored. Existing result history is preserved and linked to that snapshot.
 

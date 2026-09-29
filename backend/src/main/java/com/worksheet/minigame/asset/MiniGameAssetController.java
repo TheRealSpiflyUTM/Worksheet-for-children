@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/minigame-assets")
@@ -45,7 +46,21 @@ public class MiniGameAssetController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, HttpServletRequest request) {
-        auth.requireRole(request, UserRole.ADMIN);
-        service.delete(id);
+        service.delete(id, requireCreator(request));
+    }
+
+    @GetMapping
+    public MiniGameAssetService.ImagePage myImages(@RequestParam(defaultValue = "0") int page,
+                                                    @RequestParam(defaultValue = "20") int size,
+                                                    HttpServletRequest request) {
+        return service.listImages(requireCreator(request).getId(), page, size);
+    }
+
+    private User requireCreator(HttpServletRequest request) {
+        User user = auth.requireUser(request);
+        if (user.getRole() != UserRole.TEACHER && user.getRole() != UserRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only teachers and admins can manage task images.");
+        }
+        return user;
     }
 }
