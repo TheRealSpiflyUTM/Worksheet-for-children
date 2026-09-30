@@ -1,13 +1,16 @@
 // K is for kids
 // T is for teacher
 // We will use this to switch between teacher and student version
+
 // #region Imports
 import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
 import MathMinigame from "./minigames/Mathgame/MathMinigame.jsx";
 import SequenceMinigame from "./minigames/Sequencegame/SequenceMinigame.jsx";
 import HigherOrLowerMinigame from "./minigames/HigherOrLower/HigherOrLowergame.jsx";
 import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
+import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
+import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
 import { useState, useRef, useEffect } from "react";
 import { Button, message, Spin } from "antd";
 import {
@@ -25,6 +28,7 @@ import {
   getMiniGameDefinitions,
 } from "../api/worksheets.js";
 import "./MainMinigamePage.css";
+import "./PlayfulMinigames.css";
 // #endregion
 
 const MIN_TOOLS_WIDTH = 180;
@@ -46,6 +50,7 @@ function MainMinigamePage(params) {
     sequence-game
     higher-lower-game
     odd-even-game
+    matching-game
   */
   const availableMinigames = [
     {
@@ -96,6 +101,11 @@ function MainMinigamePage(params) {
       img: "/img/OddEvenGame.png",
       maxNumber: 10,
     },
+    {
+      id: "matching-game",
+      name: "Match the Amounts",
+      img: "/img/MatchingGame.png",
+    },
   ];
 
   const [selectedGameId, setSelectedGameId] = useState(null);
@@ -132,6 +142,7 @@ function MainMinigamePage(params) {
 
     return DEFAULT_TOOLS_WIDTH;
   });
+
   /*
     Load the worksheet from the backend.
     This is only needed when a worksheetId exists.
@@ -165,10 +176,16 @@ function MainMinigamePage(params) {
       event.returnValue = true;
     }
 
-    window.addEventListener("beforeunload", warnAboutUnsavedChanges);
+    window.addEventListener(
+      "beforeunload",
+      warnAboutUnsavedChanges
+    );
 
     return () => {
-      window.removeEventListener("beforeunload", warnAboutUnsavedChanges);
+      window.removeEventListener(
+        "beforeunload",
+        warnAboutUnsavedChanges
+      );
     };
   }, [params.isTeacher, hasUnsavedChanges]);
 
@@ -215,42 +232,69 @@ function MainMinigamePage(params) {
     function stopResize() {
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousUserSelect;
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", stopResize);
-      window.removeEventListener("pointercancel", stopResize);
+
+      window.removeEventListener(
+        "pointermove",
+        handlePointerMove
+      );
+
+      window.removeEventListener(
+        "pointerup",
+        stopResize
+      );
+
+      window.removeEventListener(
+        "pointercancel",
+        stopResize
+      );
     }
 
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", stopResize);
-    window.addEventListener("pointercancel", stopResize);
+    window.addEventListener(
+      "pointermove",
+      handlePointerMove
+    );
+
+    window.addEventListener(
+      "pointerup",
+      stopResize
+    );
+
+    window.addEventListener(
+      "pointercancel",
+      stopResize
+    );
   }
 
   useEffect(() => {
     if (!worksheetId) {
       return;
     }
+
     loadWorksheet();
   }, [worksheetId]);
 
   async function loadWorksheet() {
     setIsLoading(true);
+
     try {
       /*
        * Get both:
        * 1. The worksheet
        * 2. The mini-game definitions
        */
-      const [worksheet, miniGameDefinitions] = await Promise.all([
-        getWorksheet(worksheetId),
-        getMiniGameDefinitions(),
-      ]);
+      const [worksheet, miniGameDefinitions] =
+        await Promise.all([
+          getWorksheet(worksheetId),
+          getMiniGameDefinitions(),
+        ]);
 
       setDefinitions(miniGameDefinitions);
 
       let worksheetItems = worksheet.items;
 
       if (!Array.isArray(worksheetItems)) {
-        worksheetItems = await getWorksheetItems(worksheetId);
+        worksheetItems =
+          await getWorksheetItems(worksheetId);
       }
 
       const sortedItems = [...worksheetItems].sort(
@@ -259,25 +303,31 @@ function MainMinigamePage(params) {
 
       const loadedGames = sortedItems
         .map((item) => {
-          const definition = miniGameDefinitions.find(
-            (miniGame) => miniGame.id === item.miniGameId
-          );
+          const definition =
+            miniGameDefinitions.find(
+              (miniGame) =>
+                miniGame.id === item.miniGameId
+            );
 
           if (!definition) {
             console.warn(
               `Mini-game with ID ${item.miniGameId} was not found on the server.`
             );
+
             return null;
           }
 
-          const frontendGame = availableMinigames.find(
-            (game) => game.id === definition.type
-          );
+          const frontendGame =
+            availableMinigames.find(
+              (game) =>
+                game.id === definition.type
+            );
 
           if (!frontendGame) {
             console.warn(
               `Mini-game type "${definition.type}" is not supported by the frontend.`
             );
+
             return null;
           }
 
@@ -285,6 +335,8 @@ function MainMinigamePage(params) {
             ...frontendGame,
             ...(item.configuration || {}),
             instanceId: crypto.randomUUID(),
+            decorationSeed:
+              `worksheet-${worksheetId}-item-${item.id}`,
             itemId: item.id,
             miniGameId: item.miniGameId,
             orderIndex: item.orderIndex,
@@ -295,8 +347,15 @@ function MainMinigamePage(params) {
       setAddedMinigames(loadedGames);
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error("Failed to load worksheet:", error);
-      message.error(error.message || "Failed to load the worksheet.");
+      console.error(
+        "Failed to load worksheet:",
+        error
+      );
+
+      message.error(
+        error.message ||
+          "Failed to load the worksheet."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -309,8 +368,10 @@ function MainMinigamePage(params) {
     const newGame = {
       ...game,
       instanceId: crypto.randomUUID(),
+      decorationSeed: crypto.randomUUID(),
       itemId: null,
       miniGameId: null,
+
       animals: game.animals
         ? game.animals.map((animal) => ({
             ...animal,
@@ -318,23 +379,33 @@ function MainMinigamePage(params) {
         : undefined,
     };
 
-    pendingScrollGameIdRef.current = newGame.instanceId;
+    pendingScrollGameIdRef.current =
+      newGame.instanceId;
 
     setAddedMinigames((currentGames) => {
       if (currentGames.length === 0) {
         return [newGame];
       }
 
-      const selectedIndex = currentGames.findIndex(
-        (currentGame) => currentGame.instanceId === selectedGameId
-      );
+      const selectedIndex =
+        currentGames.findIndex(
+          (currentGame) =>
+            currentGame.instanceId ===
+            selectedGameId
+        );
 
       if (selectedIndex === -1) {
         return [...currentGames, newGame];
       }
 
       const updatedGames = [...currentGames];
-      updatedGames.splice(selectedIndex + 1, 0, newGame);
+
+      updatedGames.splice(
+        selectedIndex + 1,
+        0,
+        newGame
+      );
+
       return updatedGames;
     });
 
@@ -344,19 +415,22 @@ function MainMinigamePage(params) {
   };
 
   useEffect(() => {
-    const gameId = pendingScrollGameIdRef.current;
+    const gameId =
+      pendingScrollGameIdRef.current;
 
     if (!gameId) {
       return;
     }
 
-    const gameElement = gameElementRefs.current.get(gameId);
+    const gameElement =
+      gameElementRefs.current.get(gameId);
 
     if (!gameElement) {
       return;
     }
 
     pendingScrollGameIdRef.current = null;
+
     gameElement.scrollIntoView({
       behavior: "smooth",
       block: "center",
@@ -366,29 +440,39 @@ function MainMinigamePage(params) {
   /*
     Update a mini-game configuration.
   */
-  function updateMinigame(instanceId, updatedGame) {
+  function updateMinigame(
+    instanceId,
+    updatedGame
+  ) {
     setAddedMinigames((currentGames) =>
       currentGames.map((game) =>
-        game.instanceId === instanceId ? updatedGame : game
+        game.instanceId === instanceId
+          ? updatedGame
+          : game
       )
     );
+
     setHasUnsavedChanges(true);
   }
 
   /*
-    Remove frontend-only fields before sending configuration to backend.
+    Remove frontend-only fields before sending
+    configuration to backend.
   */
   function getGameConfiguration(game) {
-    const {
-      id,
-      name,
-      img,
-      instanceId,
-      itemId,
-      miniGameId,
-      orderIndex,
-      ...configuration
-    } = game;
+    const configuration = {
+      ...game,
+    };
+
+    delete configuration.id;
+    delete configuration.name;
+    delete configuration.img;
+    delete configuration.instanceId;
+    delete configuration.itemId;
+    delete configuration.miniGameId;
+    delete configuration.orderIndex;
+    delete configuration.decorationSeed;
+
     return configuration;
   }
 
@@ -404,40 +488,55 @@ function MainMinigamePage(params) {
       message.error("Worksheet ID is missing.");
       return;
     }
+
     setIsSaving(true);
 
     try {
-      const itemsToSave = addedMinigames.map((game, index) => {
-        const definition = definitions.find(
-          (miniGame) => miniGame.type === game.id
-        );
+      const itemsToSave =
+        addedMinigames.map((game, index) => {
+          const definition =
+            definitions.find(
+              (miniGame) =>
+                miniGame.type === game.id
+            );
 
-        if (!definition) {
-          throw new Error(
-            `Mini-game type "${game.id}" was not found on the server.`
-          );
-        }
+          if (!definition) {
+            throw new Error(
+              `Mini-game type "${game.id}" was not found on the server.`
+            );
+          }
 
-        return {
-          game,
-          item: {
-            miniGameId: definition.id,
-            orderIndex: index,
-            configuration: getGameConfiguration(game),
-          },
-        };
-      });
+          return {
+            game,
+
+            item: {
+              miniGameId: definition.id,
+              orderIndex: index,
+              configuration:
+                getGameConfiguration(game),
+            },
+          };
+        });
 
       const existingItems = itemsToSave
         .filter(({ game }) => game.itemId)
-        .sort((first, second) =>
-          second.item.orderIndex - first.item.orderIndex
+        .sort(
+          (first, second) =>
+            second.item.orderIndex -
+            first.item.orderIndex
         );
 
-      // Move existing items from bottom to top so each destination index is
-      // free before a newly inserted item is created there.
+      /*
+       * Move existing items from bottom to top so
+       * each destination index is free before a
+       * newly inserted item is created there.
+       */
       for (const { game, item } of existingItems) {
-        await updateWorksheetItem(worksheetId, game.itemId, item);
+        await updateWorksheetItem(
+          worksheetId,
+          game.itemId,
+          item
+        );
       }
 
       for (const { game, item } of itemsToSave) {
@@ -445,18 +544,28 @@ function MainMinigamePage(params) {
           continue;
         }
 
-        const createdItem = await createWorksheetItem(worksheetId, item);
+        const createdItem =
+          await createWorksheetItem(
+            worksheetId,
+            item
+          );
 
-        // Store each new database ID immediately. If a later request fails,
-        // retrying the save updates this item instead of creating it twice.
+        /*
+         * Store each new database ID immediately.
+         * If a later request fails, retrying the save
+         * updates this item instead of creating it twice.
+         */
         setAddedMinigames((currentGames) =>
           currentGames.map((currentGame) =>
-            currentGame.instanceId === game.instanceId
+            currentGame.instanceId ===
+            game.instanceId
               ? {
                   ...currentGame,
                   itemId: createdItem.id,
-                  miniGameId: createdItem.miniGameId,
-                  orderIndex: createdItem.orderIndex,
+                  miniGameId:
+                    createdItem.miniGameId,
+                  orderIndex:
+                    createdItem.orderIndex,
                 }
               : currentGame
           )
@@ -469,20 +578,32 @@ function MainMinigamePage(params) {
           orderIndex: index,
         }))
       );
+
       setHasUnsavedChanges(false);
-      message.success("Worksheet saved successfully.");
+
+      message.success(
+        "Worksheet saved successfully."
+      );
     } catch (error) {
-      console.error("Failed to save worksheet:", error);
-      message.error(error.message || "Failed to save worksheet.");
+      console.error(
+        "Failed to save worksheet:",
+        error
+      );
+
+      message.error(
+        error.message ||
+          "Failed to save worksheet."
+      );
     } finally {
       setIsSaving(false);
     }
   }
 
   useEffect(() => {
-    saveWorksheetShortcutRef.current = params.isTeacher
-      ? saveWorksheet
-      : null;
+    saveWorksheetShortcutRef.current =
+      params.isTeacher
+        ? saveWorksheet
+        : null;
   });
 
   useEffect(() => {
@@ -492,7 +613,10 @@ function MainMinigamePage(params) {
         !event.altKey &&
         event.key.toLowerCase() === "s";
 
-      if (!isSaveShortcut || !saveWorksheetShortcutRef.current) {
+      if (
+        !isSaveShortcut ||
+        !saveWorksheetShortcutRef.current
+      ) {
         return;
       }
 
@@ -503,37 +627,55 @@ function MainMinigamePage(params) {
       }
     }
 
-    window.addEventListener("keydown", handleSaveShortcut);
+    window.addEventListener(
+      "keydown",
+      handleSaveShortcut
+    );
 
     return () => {
-      window.removeEventListener("keydown", handleSaveShortcut);
+      window.removeEventListener(
+        "keydown",
+        handleSaveShortcut
+      );
     };
   }, []);
 
   /*
-    Close selection when clicking outside the game area.
+    Close selection when clicking outside
+    the game area.
   */
   useEffect(() => {
     function handleClickAway(event) {
       if (isAddMinigameOpen) {
         return;
       }
+
       if (
         selectedAreaRef.current &&
-        !selectedAreaRef.current.contains(event.target)
+        !selectedAreaRef.current.contains(
+          event.target
+        )
       ) {
         setSelectedGameId(null);
       }
     }
-    document.addEventListener("pointerdown", handleClickAway);
+
+    document.addEventListener(
+      "pointerdown",
+      handleClickAway
+    );
 
     return () => {
-      document.removeEventListener("pointerdown", handleClickAway);
+      document.removeEventListener(
+        "pointerdown",
+        handleClickAway
+      );
     };
   }, [isAddMinigameOpen]);
 
   /*
-    Show a loading state while the worksheet is being loaded.
+    Show a loading state while the worksheet
+    is being loaded.
   */
   if (isLoading) {
     return (
@@ -542,7 +684,6 @@ function MainMinigamePage(params) {
       </main>
     );
   }
-
 
   // #endregion
 
@@ -553,7 +694,9 @@ function MainMinigamePage(params) {
       <main className="mainMinigamePage">
         <div
           className="worksheetEditorLayout"
-          style={{ "--tools-width": `${toolsWidth}px` }}
+          style={{
+            "--tools-width": `${toolsWidth}px`,
+          }}
         >
           <section className="worksheetCanvas">
             {addedMinigames.length === 0 ? (
@@ -562,84 +705,169 @@ function MainMinigamePage(params) {
                 type="primary"
                 size="large"
                 icon={<PlusOutlined />}
-                onClick={() => setIsAddMinigameOpen(true)}
+                onClick={() =>
+                  setIsAddMinigameOpen(true)
+                }
               >
                 Add Minigame
               </Button>
             ) : (
-              <div className="addedGames" ref={selectedAreaRef}>
+              <div
+                className="addedGames"
+                ref={selectedAreaRef}
+              >
                 {addedMinigames.map((game) => (
                   <div
                     className={
-                      selectedGameId === game.instanceId
-                        ? "worksheetGame addBorder selectedGame"
-                        : "worksheetGame addBorder"
+                      selectedGameId ===
+                      game.instanceId
+                        ? "worksheetGame selectedGame"
+                        : "worksheetGame "
                     }
                     key={game.instanceId}
                     ref={(element) => {
                       if (element) {
-                        gameElementRefs.current.set(game.instanceId, element);
+                        gameElementRefs.current.set(
+                          game.instanceId,
+                          element
+                        );
                       } else {
-                        gameElementRefs.current.delete(game.instanceId);
+                        gameElementRefs.current.delete(
+                          game.instanceId
+                        );
                       }
                     }}
-                    onClick={() => setSelectedGameId(game.instanceId)}
+                    onClick={() =>
+                      setSelectedGameId(
+                        game.instanceId
+                      )
+                    }
                   >
-                    {game.id === "color-game" && (
-                      <ColorMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                    <WorksheetSprinkles
+                      seed={game.decorationSeed}
+                    />
 
-                    {game.id === "math-game" && (
-                      <MathMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                    <div className="worksheetGameContent">
+                      {game.id ===
+                        "color-game" && (
+                        <ColorMinigame
+                          isTeacher={
+                            params.isTeacher
+                          }
+                          game={game}
+                          onGameChange={(
+                            updatedGame
+                          ) =>
+                            updateMinigame(
+                              game.instanceId,
+                              updatedGame
+                            )
+                          }
+                        />
+                      )}
 
-                    {game.id === "sequence-game" && (
-                      <SequenceMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                      {game.id ===
+                        "math-game" && (
+                        <MathMinigame
+                          isTeacher={
+                            params.isTeacher
+                          }
+                          game={game}
+                          onGameChange={(
+                            updatedGame
+                          ) =>
+                            updateMinigame(
+                              game.instanceId,
+                              updatedGame
+                            )
+                          }
+                        />
+                      )}
 
-                    {game.id === "higher-lower-game" && (
-                      <HigherOrLowerMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                      {game.id ===
+                        "sequence-game" && (
+                        <SequenceMinigame
+                          isTeacher={
+                            params.isTeacher
+                          }
+                          game={game}
+                          onGameChange={(
+                            updatedGame
+                          ) =>
+                            updateMinigame(
+                              game.instanceId,
+                              updatedGame
+                            )
+                          }
+                        />
+                      )}
 
-                    {game.id === "odd-even-game" && (
-                      <OddOrEvenMinigame
-                        isTeacher={params.isTeacher}
-                        game={game}
-                        onGameChange={(updatedGame) =>
-                          updateMinigame(game.instanceId, updatedGame)
-                        }
-                      />
-                    )}
+                      {game.id ===
+                        "higher-lower-game" && (
+                        <HigherOrLowerMinigame
+                          isTeacher={
+                            params.isTeacher
+                          }
+                          game={game}
+                          onGameChange={(
+                            updatedGame
+                          ) =>
+                            updateMinigame(
+                              game.instanceId,
+                              updatedGame
+                            )
+                          }
+                        />
+                      )}
+
+                      {game.id ===
+                        "odd-even-game" && (
+                        <OddOrEvenMinigame
+                          isTeacher={
+                            params.isTeacher
+                          }
+                          game={game}
+                          onGameChange={(
+                            updatedGame
+                          ) =>
+                            updateMinigame(
+                              game.instanceId,
+                              updatedGame
+                            )
+                          }
+                        />
+                      )}
+
+                      {game.id ===
+                        "matching-game" && (
+                        <MatchingMinigame
+                          isTeacher={
+                            params.isTeacher
+                          }
+                          game={game}
+                          onGameChange={(
+                            updatedGame
+                          ) =>
+                            updateMinigame(
+                              game.instanceId,
+                              updatedGame
+                            )
+                          }
+                        />
+                      )}
+                    </div>
 
                     <div
                       className={`addMinigameSlot ${
-                        selectedGameId === game.instanceId ? "isOpen" : ""
+                        selectedGameId ===
+                        game.instanceId
+                          ? "isOpen"
+                          : ""
                       }`}
-                      aria-hidden={selectedGameId !== game.instanceId}
+                      aria-hidden={
+                        selectedGameId !==
+                        game.instanceId
+                      }
                     >
                       <div className="addMinigameSlotInner">
                         <Button
@@ -647,11 +875,17 @@ function MainMinigamePage(params) {
                           type="primary"
                           icon={<PlusOutlined />}
                           tabIndex={
-                            selectedGameId === game.instanceId ? 0 : -1
+                            selectedGameId ===
+                            game.instanceId
+                              ? 0
+                              : -1
                           }
                           onClick={(event) => {
                             event.stopPropagation();
-                            setIsAddMinigameOpen(true);
+
+                            setIsAddMinigameOpen(
+                              true
+                            );
                           }}
                         >
                           Add Minigame
@@ -663,23 +897,34 @@ function MainMinigamePage(params) {
               </div>
             )}
           </section>
+
           <aside className="worksheetTools">
             <div
               className="worksheetToolsResizeHandle"
               role="separator"
               aria-label="Resize worksheet tools"
               aria-orientation="vertical"
-              aria-valuemin={MIN_TOOLS_WIDTH}
-              aria-valuemax={MAX_TOOLS_WIDTH}
+              aria-valuemin={
+                MIN_TOOLS_WIDTH
+              }
+              aria-valuemax={
+                MAX_TOOLS_WIDTH
+              }
               aria-valuenow={toolsWidth}
-              onPointerDown={startToolsResize}
+              onPointerDown={
+                startToolsResize
+              }
             />
+
             <Button
+              className="saveWorksheetButton"
               type="primary"
               block
               icon={<SaveOutlined />}
               loading={isSaving}
-              disabled={addedMinigames.length === 0}
+              disabled={
+                addedMinigames.length === 0
+              }
               onClick={saveWorksheet}
             >
               Save Worksheet
@@ -688,8 +933,12 @@ function MainMinigamePage(params) {
             <Button
               block
               icon={<EyeOutlined />}
-              disabled={addedMinigames.length === 0}
-              onClick={() => setIsPreviewing(true)}
+              disabled={
+                addedMinigames.length === 0
+              }
+              onClick={() =>
+                setIsPreviewing(true)
+              }
             >
               Preview as Kid
             </Button>
@@ -698,53 +947,93 @@ function MainMinigamePage(params) {
 
         <AddMinigameWindow
           open={isAddMinigameOpen}
-          closeFuntion={() => setIsAddMinigameOpen(false)}
+          closeFuntion={() =>
+            setIsAddMinigameOpen(false)
+          }
           games={availableMinigames}
           addMinigame={addMinigameFunction}
         />
       </main>
     );
   }
+
   // #endregion
 
   // #region Children
+
   return (
     <main className="mainMinigamePage">
       {isPreviewing && (
-          <div className="previewToolsBar">
-            <Button
-              icon={<ArrowLeftOutlined/>}
-              onClick={() => setIsPreviewing(false)}
-            >
-              Back To Editor
-            </Button>
-          </div>
-        )}
+        <div className="previewToolsBar">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() =>
+              setIsPreviewing(false)
+            }
+          >
+            Back To Editor
+          </Button>
+        </div>
+      )}
+
       {addedMinigames.map((game) => (
-        <div key={game.instanceId}>
-          {game.id === "color-game" && (
-            <ColorMinigame isTeacher={false} game={game} />
-          )}
+        <div
+          className="worksheetGame worksheetGamePreview"
+          key={game.instanceId}
+        >
+          <WorksheetSprinkles
+            seed={game.decorationSeed}
+          />
 
-          {game.id === "math-game" && (
-            <MathMinigame isTeacher={false} game={game} />
-          )}
+          <div className="worksheetGameContent">
+            {game.id === "color-game" && (
+              <ColorMinigame
+                isTeacher={false}
+                game={game}
+              />
+            )}
 
-          {game.id === "sequence-game" && (
-            <SequenceMinigame isTeacher={false} game={game} />
-          )}
+            {game.id === "math-game" && (
+              <MathMinigame
+                isTeacher={false}
+                game={game}
+              />
+            )}
 
-          {game.id === "higher-lower-game" && (
-            <HigherOrLowerMinigame isTeacher={false} game={game} />
-          )}
+            {game.id === "sequence-game" && (
+              <SequenceMinigame
+                isTeacher={false}
+                game={game}
+              />
+            )}
 
-          {game.id === "odd-even-game" && (
-            <OddOrEvenMinigame isTeacher={false} game={game} />
-          )}
+            {game.id ===
+              "higher-lower-game" && (
+              <HigherOrLowerMinigame
+                isTeacher={false}
+                game={game}
+              />
+            )}
+
+            {game.id === "odd-even-game" && (
+              <OddOrEvenMinigame
+                isTeacher={false}
+                game={game}
+              />
+            )}
+
+            {game.id === "matching-game" && (
+              <MatchingMinigame
+                isTeacher={false}
+                game={game}
+              />
+            )}
+          </div>
         </div>
       ))}
     </main>
   );
+
   // #endregion
 }
 

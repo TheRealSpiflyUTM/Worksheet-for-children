@@ -1,4 +1,3 @@
-import React from "react";
 import { Button, Layout, theme } from "antd";
 import { useNavigate } from "react-router-dom";
 import { HomeOutlined } from "@ant-design/icons";
@@ -33,7 +32,7 @@ return (
             icon={<HomeOutlined />}
             onClick={() => navigate("/")}
         >
-            
+            <span className="home-button-label">Joacă</span>
         </Button>
 
         {/* Login and Sign Up buttons */}

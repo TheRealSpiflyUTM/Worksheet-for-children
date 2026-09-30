@@ -14,7 +14,14 @@
 }
 
 :root{
-  --background-color: rgb(245, 245, 245);
+  --background-color: #fffaf0;
+  --play-ink: #20345b;
+  --play-purple: #6c5ce7;
+  --play-blue: #37a7e8;
+  --play-pink: #f04472;
+  --play-yellow: #ffca3a;
+  --play-green: #26b979;
+  --play-cream: #fffaf0;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -51,6 +58,7 @@
 
 body{
   background-color: var(--background-color);
+  color: var(--play-ink);
 }
 
 @theme inline {

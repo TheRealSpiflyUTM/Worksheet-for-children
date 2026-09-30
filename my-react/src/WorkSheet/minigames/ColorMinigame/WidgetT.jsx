@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button, Image, Input } from 'antd';
+import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
 import "./WidgetT.css"
 function Widget (params){
 
@@ -15,14 +16,16 @@ function Widget (params){
   }
 
   function bubleVerification(index) {
-    console.log(params.name[index]);
     if(bubles[index]) return;
 
-    const currentLetter = params.name[index];
+    const currentLetter = Array.from(params.name)[index];
+    if(!currentLetter || /\s/u.test(currentLetter)) return;
+
     const isMatch = currentLetter.toLowerCase() === params.letter.toLowerCase();
     
     if(isMatch){
       playCorrectSFX();
+      celebrateCorrectAnswer();
       // b for bubbles
       setBuble(b => {
         const updatedBubbles = [...b];
@@ -46,16 +49,16 @@ function Widget (params){
       />
       
       <div className='bubles'>
-        {bubles.map((buble, index)=> {
-          const isSpace = params.name[index] === " ";
+        {Array.from(params.name).map((character, index)=> {
+          if(/\s/u.test(character)) return null;
+
+          const buble = bubles[index] ?? false;
           return(
             <Button
               key={index} 
               type={buble ? "primary" : "default"}
               shape="circle"
-              className={`${
-                buble ? "bubleActive" : "buble"} ${
-                isSpace ? "bubbleSpace" : ""}`}  
+              className={buble ? "bubleActive" : "buble"}
               onClick={() => bubleVerification(index)}
               aria-label={`Litera ${index + 1} din ${params.name}`}
               aria-pressed={buble}

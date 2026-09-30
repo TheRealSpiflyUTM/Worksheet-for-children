@@ -37,6 +37,7 @@ const SignUp = () => {
                     name,
                     email,
                     password,
+                    role: "TEACHER",
                 }),
             });
 
