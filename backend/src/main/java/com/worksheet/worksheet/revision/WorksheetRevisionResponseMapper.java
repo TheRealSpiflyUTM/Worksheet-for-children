@@ -1,5 +1,6 @@
 package com.worksheet.worksheet.revision;
 
+import com.worksheet.minigame.MiniGameDefinitionService;
 import com.worksheet.worksheet.Worksheet;
 import com.worksheet.worksheet.WorksheetResponse;
 import com.worksheet.worksheet.item.WorksheetItemResponse;
@@ -8,9 +9,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class WorksheetRevisionResponseMapper {
+    private final MiniGameDefinitionService definitions;
     private final WorksheetRevisionItemRepository revisionItems;
 
-    public WorksheetRevisionResponseMapper(WorksheetRevisionItemRepository revisionItems) {
+    public WorksheetRevisionResponseMapper(WorksheetRevisionItemRepository revisionItems,
+                                           MiniGameDefinitionService definitions) {
+        this.definitions = definitions;
         this.revisionItems = revisionItems;
     }
 
@@ -19,7 +23,8 @@ public class WorksheetRevisionResponseMapper {
         List<WorksheetItemResponse> items = revisionItems
             .findByRevision_IdOrderByOrderIndex(revision.getId()).stream()
             .map(item -> new WorksheetItemResponse(item.getId(), worksheet.getId(),
-                item.getMiniGameDefinition().getId(), item.getOrderIndex(), item.getConfiguration()))
+                item.getMiniGameDefinition().getId(), item.getOrderIndex(), item.getConfiguration(),
+                definitions.toResponse(item.getMiniGameDefinition())))
             .toList();
 
         return new WorksheetResponse(worksheet.getId(), revision.getNameSnapshot(),

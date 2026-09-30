@@ -79,15 +79,15 @@ class TeacherArchitectureTests {
     void supportsRolesAndEnforcesTeacherOnlyActions() throws Exception {
         Account defaultTeacher = signup("Default Teacher", "default.teacher@example.com", null);
         Account teacher = signup("Teacher", "teacher.roles@example.com", "TEACHER");
-        Account user = signup("Student", "student.roles@example.com", "USER");
+        Account student = signup("Student", "student.roles@example.com", "USER");
 
         mvc.perform(get("/api/auth/me").session(defaultTeacher.session()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.role").value("TEACHER"));
         mvc.perform(get("/api/auth/me").session(teacher.session()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.role").value("TEACHER"));
-        mvc.perform(get("/api/auth/me").session(user.session()))
+        mvc.perform(get("/api/auth/me").session(student.session()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.role").value("USER"));
-        mvc.perform(post("/api/classes").session(user.session()).contentType("application/json")
+        mvc.perform(post("/api/classes").session(student.session()).contentType("application/json")
                 .content("{\"name\":\"Forbidden\"}"))
             .andExpect(status().isForbidden());
         mvc.perform(post("/api/classes/join").session(teacher.session()).contentType("application/json")

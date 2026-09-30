@@ -3,16 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 import {
     HomeOutlined,
-    AreaChartOutlined,
     SettingOutlined,
-    BarsOutlined,
-    AppstoreOutlined,
     ReadOutlined,
     SolutionOutlined,
-    UserOutlined,
     TeamOutlined,
-    SmileOutlined,
-    ManOutlined,
 } from "@ant-design/icons";
 
 function MenuList() {
@@ -74,6 +68,22 @@ function MenuList() {
                     onClick={() => navigate("/sheets")}
                 >
                     WorkSheets
+                </Menu.Item>
+
+                <Menu.Item
+                    key="classes"
+                    icon={<TeamOutlined />}
+                    onClick={() => navigate("/classes")}
+                >
+                    Classes
+                </Menu.Item>
+
+                <Menu.Item
+                    key="assignments"
+                    icon={<SolutionOutlined />}
+                    onClick={() => navigate("/assignments")}
+                >
+                    Assignments
                 </Menu.Item>
 
                 <Menu.Item

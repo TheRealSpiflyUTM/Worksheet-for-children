@@ -92,7 +92,9 @@ const MatchingMinigame = ({
       : clonePairs(DEFAULT_PAIRS);
 
   const [pairs, setPairs] = useState(initialPairs);
-  const [shuffledPairs, setShuffledPairs] = useState([]);
+  const [shuffledPairs, setShuffledPairs] = useState(() =>
+    isTeacher ? [] : shuffleArray(initialPairs)
+  );
   const [matches, setMatches] = useState({});
   const [checked, setChecked] = useState(false);
   const [score, setScore] = useState(0);
@@ -131,54 +133,6 @@ const MatchingMinigame = ({
       setDragSource(null);
     }
   }, [game?.pairs]);
-
-  useEffect(() => {
-    if (isTeacher) {
-      return;
-    }
-
-    const sourcePairs =
-      Array.isArray(game?.pairs) &&
-      game.pairs.length > 0
-        ? clonePairs(game.pairs)
-        : clonePairs(DEFAULT_PAIRS);
-
-    setPairs(sourcePairs);
-    setShuffledPairs(
-      shuffleArray(sourcePairs)
-    );
-
-    setMatches({});
-    setChecked(false);
-    setScore(0);
-    setDraggedNumber(null);
-    setDragSource(null);
-  }, [isTeacher]);
-
-  useEffect(() => {
-    if (isTeacher) {
-      return;
-    }
-
-    if (
-      Array.isArray(game?.pairs) &&
-      game.pairs.length > 0
-    ) {
-      const sourcePairs =
-        clonePairs(game.pairs);
-
-      setPairs(sourcePairs);
-      setShuffledPairs(
-        shuffleArray(sourcePairs)
-      );
-
-      setMatches({});
-      setChecked(false);
-      setScore(0);
-      setDraggedNumber(null);
-      setDragSource(null);
-    }
-  }, [game?.pairs, isTeacher]);
 
   const updateConfiguration = (newPairs) => {
     const normalizedPairs =
