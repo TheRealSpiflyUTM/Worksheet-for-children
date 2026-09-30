@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Button,
   Card,
@@ -10,7 +10,7 @@ import {
   Modal,
   Popconfirm,
   Popover,
-  Typography,
+  Typography,   
   message,
 } from "antd";
 import {
@@ -61,6 +61,7 @@ function getLowestTestName(tests) {
 
 function ClassPage() {
   const params = useParams();
+  const navigate = useNavigate();
   const className = params.className;
 
   const [students, setStudents] = useState([]);
@@ -185,7 +186,15 @@ function ClassPage() {
       <List.Item key={s.id} className="student-list-item">
         <Card className="student-block" size="small">
           <div className="student-grid">
-            <Button type="text" className="table-button student-name-button">
+            <Button
+              type="text"
+              className="table-button student-name-button"
+              onClick={function () {
+                navigate(
+                  "/home/" + className + "/" + encodeURIComponent(s.name)
+                );
+              }}
+            >
               {s.name}
             </Button>
 

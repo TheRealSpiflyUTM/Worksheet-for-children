@@ -13,6 +13,7 @@ import SignUp from "./Auth/SignUp.jsx";
 
 import MenuClass from "./Home/Menu.jsx";
 import ClassPage from "./Home/ClassPage.jsx";
+import KidPage from "./Home/kids/KidPage.jsx";
 
 function App() {
 const location = useLocation();
@@ -84,6 +85,17 @@ return (
                     <ClassPage />
                 </LeftSidebar>
             }
+        />
+
+
+        <Route
+        path="/home/:className/:kidName"
+        element={
+            <LeftSidebar>
+            <Avatar />
+            <KidPage />
+            </LeftSidebar>
+        }
         />
 
         {/* <Route
