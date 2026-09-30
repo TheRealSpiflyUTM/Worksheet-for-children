@@ -1,4 +1,5 @@
-.test-grid {
+.test-grid,
+.question-grid {
   display: grid;
   grid-template-columns:
     minmax(220px, 3fr)
@@ -10,7 +11,8 @@
 }
 
 @media (max-width: 700px) {
-  .test-grid {
+  .test-grid,
+  .question-grid {
     grid-template-columns:
       minmax(150px, 2fr)
       minmax(80px, 1fr)

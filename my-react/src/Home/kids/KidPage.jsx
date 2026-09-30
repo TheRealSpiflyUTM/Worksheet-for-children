@@ -1,5 +1,5 @@
-import { useParams } from "react-router-dom";
-import { Button, Card, ConfigProvider, Flex, List, Typography } from "antd";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button, Card, ConfigProvider, Flex, Typography } from "antd";
 import "../Menu.css";
 import "../ClassPage.css";
 import "./KidPage.css";
@@ -25,14 +25,29 @@ function formatDate(date) {
 
 function KidPage() {
   const params = useParams();
+  const navigate = useNavigate();
+  const className = params.className;
   const kidName = params.kidName;
 
   function renderTest(t) {
     return (
-      <List.Item key={t.id} className="student-list-item">
+      <div key={t.id} className="student-list-item">
         <Card className="student-block" size="small">
           <div className="test-grid">
-            <Button type="text" className="table-button student-name-button">
+            <Button
+              type="text"
+              className="table-button student-name-button"
+              onClick={function () {
+                navigate(
+                  "/home/" +
+                    className +
+                    "/" +
+                    encodeURIComponent(kidName) +
+                    "/" +
+                    t.id
+                );
+              }}
+            >
               {t.name}
             </Button>
 
@@ -47,7 +62,7 @@ function KidPage() {
             <span />
           </div>
         </Card>
-      </List.Item>
+      </div>
     );
   }
 
@@ -89,12 +104,11 @@ function KidPage() {
             </div>
           )}
 
-          <List
-            split={false}
-            dataSource={TESTS}
-            locale={{ emptyText: EMPTY_TEXT }}
-            renderItem={renderTest}
-          />
+          {TESTS.length === 0 ? (
+            <p className="class-menu__empty">{EMPTY_TEXT}</p>
+          ) : (
+            TESTS.map(renderTest)
+          )}
         </Card>
       </ConfigProvider>
     </section>

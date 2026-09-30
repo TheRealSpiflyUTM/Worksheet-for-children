@@ -14,6 +14,7 @@ import SignUp from "./Auth/SignUp.jsx";
 import MenuClass from "./Home/Menu.jsx";
 import ClassPage from "./Home/ClassPage.jsx";
 import KidPage from "./Home/kids/KidPage.jsx";
+import TestPage from "./Home/kidstests/TestPage.jsx";
 
 function App() {
 const location = useLocation();
@@ -94,6 +95,15 @@ return (
             <LeftSidebar>
             <Avatar />
             <KidPage />
+            </LeftSidebar>
+        }  
+        />
+        <Route
+        path="/home/:className/:kidName/:testId"
+        element={
+            <LeftSidebar>
+            <Avatar />
+            <TestPage />
             </LeftSidebar>
         }
         />
