@@ -1,6 +1,7 @@
 package com.worksheet.worksheet.item;
 
 import com.worksheet.minigame.MiniGameDefinition;
+import com.worksheet.minigame.MiniGameDefinitionService;
 import com.worksheet.minigame.MiniGameDefinitionRepository;
 import com.worksheet.minigame.JsonSchemaValidationService;
 import com.worksheet.minigame.asset.ImageSlotService;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @Service
 public class WorksheetItemService {
+    private final MiniGameDefinitionService definitions;
     private final WorksheetItemRepository repository;
     private final WorksheetRepository worksheetRepository;
     private final MiniGameDefinitionRepository miniGameRepository;
@@ -23,7 +25,8 @@ public class WorksheetItemService {
     private final JsonSchemaValidationService schemaValidator;
     private final ImageSlotService imageSlots;
 
-    public WorksheetItemService(WorksheetItemRepository repository, WorksheetRepository worksheetRepository, MiniGameDefinitionRepository miniGameRepository, MiniGameResultRepository miniGameResultRepository, JsonSchemaValidationService schemaValidator, ImageSlotService imageSlots) {
+    public WorksheetItemService(WorksheetItemRepository repository, WorksheetRepository worksheetRepository, MiniGameDefinitionRepository miniGameRepository, MiniGameResultRepository miniGameResultRepository, JsonSchemaValidationService schemaValidator, ImageSlotService imageSlots, MiniGameDefinitionService definitions) {
+        this.definitions = definitions;
         this.repository = repository;
         this.worksheetRepository = worksheetRepository;
         this.miniGameRepository = miniGameRepository;
@@ -90,6 +93,7 @@ public class WorksheetItemService {
     }
 
     private WorksheetItemResponse toResponse(WorksheetItem item) {
-        return new WorksheetItemResponse(item.getId(), item.getWorksheet().getId(), item.getMiniGame().getId(), item.getOrderIndex(), item.getConfiguration());
+        return new WorksheetItemResponse(item.getId(), item.getWorksheet().getId(), item.getMiniGame().getId(),
+            item.getOrderIndex(), item.getConfiguration(), definitions.toResponse(item.getMiniGame()));
     }
 }

@@ -1,5 +1,5 @@
 import { ConfigProvider } from "antd";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
 import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
@@ -11,9 +11,21 @@ import LeftSidebar from "./Leftsidebar/LeftSideBar.jsx";
 import Avatar from "./Avatar/Avatar.jsx";
 import SignUp from "./Auth/SignUp.jsx";
 
-import MenuClass from "./Home/Menu.jsx";
-import ClassPage from "./Home/ClassPage.jsx";
 import KidPage from "./Home/kids/KidPage.jsx";
+import { PlatformProvider } from "./platform/PlatformContext.jsx";
+import { RequireSession } from "./platform/PlatformUI.jsx";
+import {
+    AssignmentsPage,
+    AssignmentDetailPage,
+    AccountPage,
+    ClassesPage,
+    ClassDetailPage,
+    DashboardPage,
+    LanguageButton,
+    LegacyWorksheetEntry,
+} from "./platform/PlatformPages.jsx";
+import AttemptPage from "./platform/AttemptPage.jsx";
+import "./platform/Platform.css";
 
 function App() {
 const location = useLocation();
@@ -22,6 +34,7 @@ const showPinLogin = location.pathname === "/";
 const showAuthButtons = location.pathname !== "/account";
 
 return (
+    <PlatformProvider>
     <ConfigProvider
         theme={{
             token: {
@@ -72,19 +85,14 @@ return (
             element={ 
                 <LeftSidebar>
                     <Avatar />
-                    <MenuClass />
+                    <RequireSession><DashboardPage /></RequireSession>
                 </LeftSidebar> 
                    
             }
         />
         <Route
             path="/home/:className"
-            element={
-                <LeftSidebar>
-                    <Avatar />
-                    <ClassPage />
-                </LeftSidebar>
-            }
+            element={<Navigate to="/classes" replace />}
         />
 
 
@@ -114,6 +122,7 @@ return (
                 element={
                     <LeftSidebar>
                         <Avatar />
+                        <RequireSession><AccountPage /></RequireSession>
                     </LeftSidebar>
                 }
             />
@@ -146,14 +155,41 @@ return (
                 element={ 
                     <LeftSidebar> 
                         <Avatar /> 
-                        <MainMinigamePage isTeacher={false} /> 
+                        <RequireSession><LegacyWorksheetEntry /></RequireSession>
                     </LeftSidebar>
                 }
             />
 
+            <Route
+                path="/classes"
+                element={<LeftSidebar><Avatar /><RequireSession><ClassesPage /></RequireSession></LeftSidebar>}
+            />
+
+            <Route
+                path="/classes/:id"
+                element={<LeftSidebar><Avatar /><RequireSession><ClassDetailPage /></RequireSession></LeftSidebar>}
+            />
+
+            <Route
+                path="/assignments"
+                element={<LeftSidebar><Avatar /><RequireSession><AssignmentsPage /></RequireSession></LeftSidebar>}
+            />
+
+            <Route
+                path="/assignments/:id"
+                element={<LeftSidebar><Avatar /><RequireSession><AssignmentDetailPage /></RequireSession></LeftSidebar>}
+            />
+
+            <Route
+                path="/attempts/:id"
+                element={<LeftSidebar><Avatar /><RequireSession><AttemptPage /></RequireSession></LeftSidebar>}
+            />
+
 
         </Routes>
+        <LanguageButton />
     </ConfigProvider>
+    </PlatformProvider>
 );
 
 }

@@ -5,6 +5,7 @@ import com.worksheet.assignment.WorksheetAssignmentRepository;
 import com.worksheet.auth.User;
 import com.worksheet.auth.UserRole;
 import com.worksheet.minigame.JsonSchemaValidationService;
+import com.worksheet.minigame.MiniGameDefinitionService;
 import com.worksheet.worksheet.Worksheet;
 import com.worksheet.worksheet.WorksheetRepository;
 import com.worksheet.worksheet.revision.WorksheetRevision;
@@ -21,6 +22,7 @@ import tools.jackson.databind.node.JsonNodeFactory;
 
 @Service
 public class WorksheetAttemptService {
+    private final MiniGameDefinitionService definitions;
     private final WorksheetAttemptRepository attempts;
     private final WorksheetAttemptItemResultRepository results;
     private final WorksheetRepository worksheets;
@@ -35,7 +37,9 @@ public class WorksheetAttemptService {
                                    WorksheetAssignmentRepository assignments,
                                    WorksheetRevisionService revisionService,
                                    WorksheetRevisionItemRepository revisionItems,
-                                   JsonSchemaValidationService schemaValidator) {
+                                   JsonSchemaValidationService schemaValidator,
+                                   MiniGameDefinitionService definitions) {
+        this.definitions = definitions;
         this.attempts = attempts;
         this.results = results;
         this.worksheets = worksheets;
@@ -183,7 +187,8 @@ public class WorksheetAttemptService {
         List<AttemptRevisionItemResponse> itemResponses = revisionItems
             .findByRevision_IdOrderByOrderIndex(attempt.getRevision().getId()).stream()
             .map(item -> new AttemptRevisionItemResponse(item.getId(), item.getMiniGameDefinition().getId(),
-                item.getOrderIndex(), item.getConfiguration())).toList();
+                item.getOrderIndex(), item.getConfiguration(), definitions.toResponse(item.getMiniGameDefinition())))
+            .toList();
         List<AttemptItemResultResponse> resultResponses = results
             .findByAttempt_IdOrderByRevisionItem_OrderIndex(attempt.getId()).stream()
             .map(this::resultResponse).toList();

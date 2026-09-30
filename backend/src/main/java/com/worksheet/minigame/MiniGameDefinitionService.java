@@ -168,7 +168,7 @@ public class MiniGameDefinitionService {
         return trimmed;
     }
 
-    private MiniGameDefinitionResponse toResponse(MiniGameDefinition definition) {
+    public MiniGameDefinitionResponse toResponse(MiniGameDefinition definition) {
         Map<String, String> assetUrls = new LinkedHashMap<>();
         definitionAssets.findByDefinition_IdOrderByAssetKey(definition.getId()).forEach(link ->
             assetUrls.put(link.getAssetKey(), "/api/minigame-assets/" + link.getAsset().getId() + "/content"));

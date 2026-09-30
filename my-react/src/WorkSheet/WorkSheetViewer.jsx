@@ -18,20 +18,25 @@ import {
   createWorksheet,
   deleteWorksheet,
   getWorksheets,
+  renameWorksheet,
   shareWorksheet,
 } from "../api/worksheets.js";
 
 import {
   CloseOutlined,
+  EditOutlined,
   PlusOutlined,
   ReloadOutlined,
   ShareAltOutlined,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 
 import { useNavigate } from "react-router-dom";
 import { clickSoftSound } from "@/lib/click-soft";
 import { playSound } from "@/lib/sound-engine";
 import "./WorkSheetViewer.css";
+import { platformApi } from "../api/platform.js";
+import { AssignWorksheetModal } from "../platform/WorksheetActions.jsx";
 
 const { Text, Title } = Typography;
 
@@ -47,11 +52,18 @@ function WorkSheetViewer() {
   const [createError, setCreateError] = useState("");
 
   const [deletingWorkSheetId, setDeletingWorkSheetId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameError, setRenameError] = useState("");
 
   // Share state
   const [sharingWorkSheetId, setSharingWorkSheetId] = useState(null);
   const [shareCode, setShareCode] = useState("");
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [activeShareWorksheetId, setActiveShareWorksheetId] = useState(null);
+  const [assignWorksheetId, setAssignWorksheetId] = useState(null);
 
   
   // Helper Functions
@@ -76,7 +88,7 @@ function WorkSheetViewer() {
   }
 
   useEffect(() => {
-    loadWorkSheets();
+    void Promise.resolve().then(loadWorkSheets);
   }, []);
 
   async function createWorkSheet({ name }) {
@@ -135,6 +147,41 @@ function WorkSheetViewer() {
     }
   }
 
+  function openRename(sheet) {
+    setRenameTarget(sheet);
+    setRenameValue(sheet.name);
+    setRenameError("");
+  }
+
+  function closeRename() {
+    if (isRenaming) return;
+    setRenameTarget(null);
+    setRenameValue("");
+    setRenameError("");
+  }
+
+  async function submitRename() {
+    const name = renameValue.trim();
+    if (!renameTarget || !name) {
+      setRenameError("Enter a worksheet name.");
+      return;
+    }
+    setIsRenaming(true);
+    setRenameError("");
+    try {
+      const updated = await renameWorksheet(renameTarget.id, name);
+      setWorkSheets((current) => current.map((sheet) => sheet.id === updated.id ? updated : sheet));
+      closeRename();
+      setRenameTarget(null);
+      setRenameValue("");
+      message.success("Worksheet renamed.");
+    } catch (requestError) {
+      setRenameError(requestError.message);
+    } finally {
+      setIsRenaming(false);
+    }
+  }
+
   async function handleShare(workSheetId) {
     setSharingWorkSheetId(workSheetId);
 
@@ -142,6 +189,7 @@ function WorkSheetViewer() {
       const response = await shareWorksheet(workSheetId);
 
       setShareCode(response.code);
+      setActiveShareWorksheetId(workSheetId);
       setIsShareOpen(true);
     } catch (requestError) {
       message.error(requestError.message);
@@ -163,6 +211,21 @@ function WorkSheetViewer() {
   function closeShareModal() {
     setIsShareOpen(false);
     setShareCode("");
+    setActiveShareWorksheetId(null);
+  }
+
+  async function rotateShareCode() {
+    if (!activeShareWorksheetId) return;
+    setSharingWorkSheetId(activeShareWorksheetId);
+    try {
+      const response = await platformApi.share(activeShareWorksheetId, true);
+      setShareCode(response.shareCode || response.code);
+      message.success("The latest worksheet snapshot is now published.");
+    } catch (requestError) {
+      message.error(requestError.message);
+    } finally {
+      setSharingWorkSheetId(null);
+    }
   }
 
   function handleWorkSheetKeyDown(event, worksheetId) {
@@ -242,8 +305,17 @@ function WorkSheetViewer() {
           </Flex>
         </Flex>
 
+        <Input.Search
+          allowClear
+          aria-label="Search worksheets"
+          placeholder="Search worksheets"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          style={{ maxWidth: 420, marginTop: 20 }}
+        />
+
         <List
-          dataSource={workSheets}
+          dataSource={workSheets.filter((sheet) => sheet.name.toLowerCase().includes(search.trim().toLowerCase()))}
           locale={{
             emptyText:
               "No worksheets yet. Create your first worksheet to begin.",
@@ -286,6 +358,28 @@ function WorkSheetViewer() {
                   </div>
 
                   <Flex gap="small">
+                    <Tooltip title="Rename worksheet">
+                      <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        aria-label={`Rename ${sheet.name}`}
+                        onClick={(event) => {
+                          preventCardOpen(event);
+                          openRename(sheet);
+                        }}
+                      />
+                    </Tooltip>
+                    <Tooltip title="Assign worksheet">
+                      <Button
+                        type="text"
+                        icon={<UsergroupAddOutlined />}
+                        aria-label={`Assign ${sheet.name}`}
+                        onClick={(event) => {
+                          preventCardOpen(event);
+                          setAssignWorksheetId(sheet.id);
+                        }}
+                      />
+                    </Tooltip>
                     <Tooltip
                       title="Share worksheet"
                       placement="top"
@@ -360,7 +454,7 @@ function WorkSheetViewer() {
           style={{ padding: "20px 0" }}
         >
           <Text type="secondary">
-            Give this code to the student:
+            This code opens the currently published worksheet snapshot.
           </Text>
 
           <Title
@@ -374,10 +468,40 @@ function WorkSheetViewer() {
           </Title>
 
           <Text type="secondary">
-            The student can enter this code to open
-            your worksheet.
+            Later edits do not change this code until you publish the latest snapshot.
           </Text>
+
+          <Button
+            loading={sharingWorkSheetId === activeShareWorksheetId}
+            onClick={rotateShareCode}
+          >
+            Publish latest and replace code
+          </Button>
         </Flex>
+      </Modal>
+
+      <AssignWorksheetModal
+        worksheetId={assignWorksheetId}
+        open={Boolean(assignWorksheetId)}
+        onClose={() => setAssignWorksheetId(null)}
+      />
+
+      <Modal
+        title="Rename worksheet"
+        open={Boolean(renameTarget)}
+        onCancel={closeRename}
+        confirmLoading={isRenaming}
+        okText="Save name"
+        onOk={submitRename}
+      >
+        <Input
+          autoFocus
+          maxLength={150}
+          value={renameValue}
+          onChange={(event) => setRenameValue(event.target.value)}
+          onPressEnter={submitRename}
+        />
+        {renameError && <Alert type="error" message={renameError} showIcon style={{ marginTop: 12 }} />}
       </Modal>
 
       <Modal

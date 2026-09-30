@@ -1,29 +1,14 @@
 import React from "react";
-import { Input, Button, Cascader } from "antd";
+import { Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../src/api/client.js";
 import "./login.css";
-
-// Replace with the actual list of students for the class
-const options = [
-{ value: "1", label: "Student Name 1" },
-{ value: "2", label: "Student Name 2" },
-{ value: "3", label: "Student Name 3" },
-];
-
-const filter = (inputValue, path) =>
-path.some((option) =>
-option.label.toLowerCase().includes(inputValue.toLowerCase())
-);
 
 function CodeLogin() {
 const navigate = useNavigate();
 
 const [code, setCode] = React.useState("");
-const [codeVerified, setCodeVerified] = React.useState(false);
 const [codeError, setCodeError] = React.useState("");
-const [studentId, setStudentId] = React.useState(null);
-const [worksheetId, setWorksheetId] = React.useState(null);
 const [isCheckingCode, setIsCheckingCode] = React.useState(false);
 
 const onCodeSubmit = async () => {
@@ -48,29 +33,21 @@ try {
     }),
   });
 
-  setWorksheetId(worksheet.id);
-  setCodeVerified(true);
+  sessionStorage.removeItem("pending-worksheet-code");
   setCodeError("");
+  navigate(`/assignments/${worksheet.assignmentId}`);
 } catch (requestError) {
+  if (requestError.status === 401) {
+    sessionStorage.setItem("pending-worksheet-code", cleanCode);
+    navigate("/login");
+    return;
+  }
   setCodeError(
     requestError.message || "Worksheet code not found"
   );
 } finally {
   setIsCheckingCode(false);
 }
-
-};
-
-const onNameChange = (value) => {
-setStudentId(value);
-};
-
-const onEnter = () => {
-if (!worksheetId || !studentId) {
-return;
-}
-
-navigate(`/kids/${worksheetId}`);
 
 };
 
@@ -114,7 +91,6 @@ return (
               setCodeError("");
             }}
             onPressEnter={onCodeSubmit}
-            disabled={codeVerified}
           />
 
           {codeError && (
@@ -123,37 +99,14 @@ return (
             </div>
           )}
 
-          {!codeVerified && (
-            <Button
-              type="primary"
-              className="enter-button"
-              onClick={onCodeSubmit}
-              loading={isCheckingCode}
-            >
-              Verifică codul
-            </Button>
-          )}
-
-          {codeVerified && (
-            <>
-              <Cascader
-                options={options}
-                onChange={onNameChange}
-                placeholder="Alege numele tău"
-                className="name-select"
-                showSearch={{ filter }}
-              />
-
-              <Button
-                type="primary"
-                className="enter-button"
-                onClick={onEnter}
-                disabled={!studentId}
-              >
-                Începe aventura
-              </Button>
-            </>
-          )}
+          <Button
+            type="primary"
+            className="enter-button"
+            onClick={onCodeSubmit}
+            loading={isCheckingCode}
+          >
+            Verifică și începe
+          </Button>
         </div>
       </div>
     </section>
