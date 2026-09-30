@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
-import { Button, Card, ConfigProvider, Flex, List, Typography } from "antd";
+import { Button, Card, ConfigProvider, Flex, Typography } from "antd";
+import PathBreadcrumb from "../PathBreadcrumb.jsx";
 import "../Menu.css";
 import "../ClassPage.css";
 import "../kids/KidPage.css";
@@ -33,6 +34,8 @@ function formatScore(q) {
 
 function TestPage() {
   const params = useParams();
+  const className = params.className;
+  const kidName = params.kidName;
   const testId = params.testId;
 
   const testName = TEST_NAMES[testId] || "Test";
@@ -40,7 +43,7 @@ function TestPage() {
 
   function renderQuestion(q, index) {
     return (
-      <List.Item key={q.id} className="student-list-item">
+      <div key={q.id} className="student-list-item">
         <Card className="student-block" size="small">
           <div className="question-grid">
             <Button type="text" className="table-button student-name-button">
@@ -58,12 +61,28 @@ function TestPage() {
             <span />
           </div>
         </Card>
-      </List.Item>
+      </div>
     );
   }
 
   return (
     <section className="class-menu">
+      <PathBreadcrumb
+        items={[
+          { label: "Clasa", to: "/home" },
+          { label: "Elevi", to: "/home/" + encodeURIComponent(className) },
+          {
+            label: "Teste",
+            to:
+              "/home/" +
+              encodeURIComponent(className) +
+              "/" +
+              encodeURIComponent(kidName),
+          },
+          { label: "Intrebari" },
+        ]}
+      />
+
       <ConfigProvider
         theme={{
           components: {
@@ -100,12 +119,11 @@ function TestPage() {
             </div>
           )}
 
-          <List
-            split={false}
-            dataSource={questions}
-            locale={{ emptyText: EMPTY_TEXT }}
-            renderItem={renderQuestion}
-          />
+          {questions.length === 0 ? (
+            <p className="class-menu__empty">{EMPTY_TEXT}</p>
+          ) : (
+            questions.map(renderQuestion)
+          )}
         </Card>
       </ConfigProvider>
     </section>

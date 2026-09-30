@@ -96,3 +96,6 @@
     font-size: 0.75rem;
   }
 }
+.student-list-item {
+  padding: 6px 0;
+}

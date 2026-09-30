@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, Card, ConfigProvider, Flex, Typography } from "antd";
+import PathBreadcrumb from "../PathBreadcrumb.jsx";
 import "../Menu.css";
 import "../ClassPage.css";
 import "./KidPage.css";
@@ -40,7 +41,7 @@ function KidPage() {
               onClick={function () {
                 navigate(
                   "/home/" +
-                    className +
+                    encodeURIComponent(className) +
                     "/" +
                     encodeURIComponent(kidName) +
                     "/" +
@@ -68,6 +69,14 @@ function KidPage() {
 
   return (
     <section className="class-menu">
+      <PathBreadcrumb
+        items={[
+          { label: "Clasa", to: "/home" },
+          { label: "Elevi", to: "/home/" + encodeURIComponent(className) },
+          { label: "Teste" },
+        ]}
+      />
+
       <ConfigProvider
         theme={{
           components: {

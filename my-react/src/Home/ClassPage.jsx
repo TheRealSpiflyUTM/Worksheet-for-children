@@ -6,11 +6,10 @@ import {
   ConfigProvider,
   Flex,
   Input,
-  List,
   Modal,
   Popconfirm,
   Popover,
-  Typography,   
+  Typography,
   message,
 } from "antd";
 import {
@@ -18,14 +17,25 @@ import {
   DeleteOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
+import PathBreadcrumb from "./PathBreadcrumb.jsx";
 import "./Menu.css";
 import "./ClassPage.css";
 
 const { Title } = Typography;
 
 const ADD_BUTTON_LABEL = "Adauga Elev";
+const START_TEST_LABEL = "Start a test";
 const EMPTY_TEXT = "Nu-i nimic aici";
+const NO_TESTS_TEXT = "Aici nu-s inca teste";
 const NO_DATA = "-";
+
+// Temporary data: replace with your real worksheets (e.g. fetched from the backend).
+// Set it to [] to see the "Aici nu-s inca teste" message.
+const AVAILABLE_WORKSHEETS = [
+  { id: 1, name: "Easy Math" },
+  { id: 2, name: "Number Sequence" },
+  { id: 3, name: "Odd or Even" },
+];
 
 function getLastTest(tests) {
   if (!tests || tests.length === 0) {
@@ -70,10 +80,17 @@ function ClassPage() {
   const [editingId, setEditingId] = useState(null);
   const [nameInput, setNameInput] = useState("");
 
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [testSearch, setTestSearch] = useState("");
+
   const sortedStudents = students.slice().sort(function (a, b) {
     return a.name.localeCompare(b.name, "ro", {
       sensitivity: "base",
     });
+  });
+
+  const filteredWorksheets = AVAILABLE_WORKSHEETS.filter(function (w) {
+    return w.name.toLowerCase().includes(testSearch.trim().toLowerCase());
   });
 
   function openAddModal() {
@@ -153,6 +170,26 @@ function ClassPage() {
     setNameInput(e.target.value);
   }
 
+  function openTestModal() {
+    setTestSearch("");
+    setIsTestModalOpen(true);
+  }
+
+  function closeTestModal() {
+    setIsTestModalOpen(false);
+    setTestSearch("");
+  }
+
+  function handleTestSearchChange(e) {
+    setTestSearch(e.target.value);
+  }
+
+  function handleStartTest(worksheet) {
+    // TODO: start the test for this class (call your backend / navigate).
+    message.success("Test selectat: " + worksheet.name);
+    closeTestModal();
+  }
+
   function renderStudent(s) {
     const menuContent = (
       <Flex gap="small">
@@ -183,7 +220,7 @@ function ClassPage() {
     );
 
     return (
-      <List.Item key={s.id} className="student-list-item">
+      <div key={s.id} className="student-list-item">
         <Card className="student-block" size="small">
           <div className="student-grid">
             <Button
@@ -191,7 +228,10 @@ function ClassPage() {
               className="table-button student-name-button"
               onClick={function () {
                 navigate(
-                  "/home/" + className + "/" + encodeURIComponent(s.name)
+                  "/home/" +
+                    encodeURIComponent(className) +
+                    "/" +
+                    encodeURIComponent(s.name)
                 );
               }}
             >
@@ -223,12 +263,16 @@ function ClassPage() {
             </Popover>
           </div>
         </Card>
-      </List.Item>
+      </div>
     );
   }
 
   return (
     <section className="class-menu">
+      <PathBreadcrumb
+        items={[{ label: "Clasa", to: "/home" }, { label: "Elevi" }]}
+      />
+
       <ConfigProvider
         theme={{
           components: {
@@ -251,9 +295,13 @@ function ClassPage() {
               {className}
             </Title>
 
-            <Button type="primary" onClick={openAddModal}>
-              {ADD_BUTTON_LABEL}
-            </Button>
+            <Flex gap="small" wrap>
+              <Button onClick={openTestModal}>{START_TEST_LABEL}</Button>
+
+              <Button type="primary" onClick={openAddModal}>
+                {ADD_BUTTON_LABEL}
+              </Button>
+            </Flex>
           </Flex>
 
           {sortedStudents.length > 0 && (
@@ -278,14 +326,14 @@ function ClassPage() {
             </div>
           )}
 
-          <List
-            split={false}
-            dataSource={sortedStudents}
-            locale={{ emptyText: EMPTY_TEXT }}
-            renderItem={renderStudent}
-          />
+          {sortedStudents.length === 0 ? (
+            <p className="class-menu__empty">{EMPTY_TEXT}</p>
+          ) : (
+            sortedStudents.map(renderStudent)
+          )}
         </Card>
 
+        {/* ADD / RENAME STUDENT */}
         <Modal
           title={modalMode === "add" ? "Elev nou" : "Renumeste"}
           open={isModalOpen}
@@ -300,6 +348,44 @@ function ClassPage() {
             onPressEnter={handleModalOk}
             autoFocus
           />
+        </Modal>
+
+        {/* START A TEST */}
+        <Modal
+          title={START_TEST_LABEL}
+          open={isTestModalOpen}
+          onCancel={closeTestModal}
+          footer={null}
+        >
+          <Input.Search
+            placeholder="Cauta un test"
+            value={testSearch}
+            onChange={handleTestSearchChange}
+            allowClear
+            autoFocus
+          />
+
+          <div style={{ marginTop: 16 }}>
+            {filteredWorksheets.length === 0 ? (
+              <p className="class-menu__empty">{NO_TESTS_TEXT}</p>
+            ) : (
+              <Flex vertical gap="small">
+                {filteredWorksheets.map(function (w) {
+                  return (
+                    <Button
+                      key={w.id}
+                      block
+                      onClick={function () {
+                        handleStartTest(w);
+                      }}
+                    >
+                      {w.name}
+                    </Button>
+                  );
+                })}
+              </Flex>
+            )}
+          </div>
         </Modal>
       </ConfigProvider>
     </section>
