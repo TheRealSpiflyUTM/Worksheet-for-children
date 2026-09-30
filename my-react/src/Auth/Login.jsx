@@ -28,6 +28,13 @@ const Login = () => {
 
         try{
             const user = await login(email , password);
+            window.dispatchEvent(new Event("session-updated"));
+
+            const pendingCode = sessionStorage.getItem("pending-worksheet-code");
+            if (pendingCode && user.role === "USER") {
+                navigate("/assignments?join=1");
+                return;
+            }
 
             if(user.role === "TEACHER"){
                 navigate("/sheets");

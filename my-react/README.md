@@ -1,4 +1,26 @@
-# React + Vite
+# Worksheet for children frontend
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+The Spring Boot API is expected on `http://localhost:8080` during development.
+
+## Verification
+
+```bash
+npm test
+npm run lint
+npm run build
+npm run test:e2e
+```
+
+Install the Playwright browser once with `npx playwright install chromium`. The end-to-end suite starts Vite automatically and expects the backend to be running. Run tests that create accounts, classes, assignments, or attempts only against an isolated test database because those workflows persist data.
+
+## React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

@@ -55,6 +55,9 @@ public class SecurityConfig {
         }
         http.authorizeHttpRequests(auth -> auth
             .requestMatchers("/", "/index.html", "/assets/**", "/img/**", "/sounds/**", "/error").permitAll()
+            .requestMatchers(HttpMethod.GET, "/login", "/signup", "/home", "/home/*", "/account", "/sheets",
+                "/teacher", "/teacher/*", "/kids", "/kids/*", "/classes", "/classes/*",
+                "/assignments", "/assignments/*", "/attempts/*").permitAll()
             .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/csrf").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/minigames", "/api/minigames/*").permitAll()
             .requestMatchers("/api/minigame1/**", "/api/count-match/**").permitAll()

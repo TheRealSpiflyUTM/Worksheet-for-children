@@ -7,7 +7,7 @@ const AvatarExample = () => {
   const navigate = useNavigate();
 
   const handleAvatarClick = () => {
-    navigate('/auth');
+    navigate('/account');
   };
 
   return (
@@ -15,7 +15,9 @@ const AvatarExample = () => {
       size={50}
       className="avatar-top-right"
       icon={<UserOutlined />}
-      
+      onClick={handleAvatarClick}
+      role="button"
+      tabIndex={0}
     />
   );
 };
