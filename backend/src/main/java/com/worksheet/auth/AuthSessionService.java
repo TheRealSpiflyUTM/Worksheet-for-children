@@ -4,6 +4,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -41,5 +45,19 @@ public class AuthSessionService {
 
     public void setUserId(HttpServletRequest request, Long userId) {
         request.getSession().setAttribute(USER_ID, userId);
+    }
+
+    public void startSession(HttpServletRequest request, UserResponse user) {
+        request.getSession();
+        request.changeSessionId();
+        request.getSession().setAttribute(USER_ID, user.id());
+        request.getSession().setMaxInactiveInterval(30 * 60);
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(
+            user.id().toString(), null, List.of(new SimpleGrantedAuthority("ROLE_" + user.role().name())));
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+        request.getSession().setAttribute(
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
     }
 }

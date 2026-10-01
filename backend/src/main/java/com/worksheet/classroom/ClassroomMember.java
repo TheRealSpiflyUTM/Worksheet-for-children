@@ -25,6 +25,9 @@ public class ClassroomMember {
     @Column(name = "left_at")
     private Instant leftAt;
 
+    @Column(name = "student_code", unique = true, length = 8)
+    private String studentCode;
+
     protected ClassroomMember() {}
 
     public ClassroomMember(Classroom classroom, User user) {
@@ -38,6 +41,8 @@ public class ClassroomMember {
     public User getUser() { return user; }
     public Instant getJoinedAt() { return joinedAt; }
     public Instant getLeftAt() { return leftAt; }
+    public String getStudentCode() { return studentCode; }
+    public void setStudentCode(String studentCode) { this.studentCode = studentCode; }
 
     public void rejoin() {
         this.joinedAt = Instant.now();

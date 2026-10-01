@@ -126,13 +126,6 @@ body{
   box-shadow: -4px 0 14px rgba(0, 0, 0, 0.08);
 }
 
-.advancedConfiguration { margin-top: 8px; }
-.advancedField { display: grid; gap: 6px; margin: 10px 0; font-weight: 700; }
-.advancedArrayItem { margin: 10px 0; padding: 10px; border: 1px solid #d9e2f2; border-radius: 12px; }
-.advancedImageGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-block: 16px; }
-.advancedImageGrid button { padding: 6px; border: 2px solid #d9e2f2; border-radius: 12px; background: white; }
-.advancedImageSlot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
-
 .worksheetToolsTitle {
   margin: 0 0 8px;
   font-size: 18px;

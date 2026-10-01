@@ -1,104 +1,87 @@
-import { useParams } from "react-router-dom";
-import { Button, Card, ConfigProvider, Flex, List, Typography } from "antd";
+import { Link, useParams } from "react-router-dom";
+import { Card, Typography } from "antd";
+import { platformApi } from "../../api/platform.js";
+import { useResource } from "../../platform/useResource.js";
+import { EmptyPanel, Resource } from "../../platform/PlatformUI.jsx";
+import PathBreadcrumb from "../PathBreadcrumb.jsx";
 import "../Menu.css";
-import "../ClassPage.css";
+import "../Classpage.css";
 import "./KidPage.css";
 
-const { Title } = Typography;
-
-const EMPTY_TEXT = "Nu-i nimic aici";
-const NO_DATA = "-";
-
-const TESTS = [
-  { id: 1, name: "Easy Math", percent: 80, date: "2026-09-20" },
-  { id: 2, name: "Number Sequence", percent: 60, date: "2026-09-24" },
-  { id: 3, name: "Odd or Even", percent: null, date: null },
-];
-
-function formatPercent(percent) {
-  return percent === null || percent === undefined ? NO_DATA : percent + "%";
-}
-
-function formatDate(date) {
-  return date ? new Date(date).toLocaleDateString("ro") : NO_DATA;
-}
-
-function KidPage() {
-  const params = useParams();
-  const kidName = params.kidName;
-
-  function renderTest(t) {
-    return (
-      <List.Item key={t.id} className="student-list-item">
-        <Card className="student-block" size="small">
-          <div className="test-grid">
-            <Button type="text" className="table-button student-name-button">
-              {t.name}
-            </Button>
-
-            <Button type="text" className="table-button">
-              {formatPercent(t.percent)}
-            </Button>
-
-            <Button type="text" className="table-button">
-              {formatDate(t.date)}
-            </Button>
-
-            <span />
-          </div>
-        </Card>
-      </List.Item>
-    );
-  }
+export default function KidPage() {
+  const { id, userId } = useParams();
+  const resource = useResource(async () => {
+    const [classroom, students, tests] = await Promise.all([
+      platformApi.classroom(id),
+      platformApi.members(id),
+      platformApi.studentTests(id, userId),
+    ]);
+    const student = students.find((entry) => entry.userId === Number(userId));
+    if (!student) throw new Error("Elevul nu mai este în această clasă.");
+    return { classroom, student, tests };
+  }, [id, userId]);
 
   return (
     <section className="class-menu">
-      <ConfigProvider
-        theme={{
-          components: {
-            Button: {
-              colorText: "var(--cm-text)",
-              colorTextHover: "var(--cm-hover)",
-              borderRadius: 8,
-            },
-          },
-        }}
-      >
-        <Card>
-          <Flex justify="space-between" align="center" gap="middle" wrap>
-            <Title level={2} style={{ margin: 0 }}>
-              {kidName}
-            </Title>
-          </Flex>
-
-          {TESTS.length > 0 && (
-            <div className="test-grid student-head">
-              <Button type="text" className="table-button">
-                Test Name
-              </Button>
-
-              <Button type="text" className="table-button">
-                Result
-              </Button>
-
-              <Button type="text" className="table-button">
-                Date
-              </Button>
-
-              <span />
-            </div>
-          )}
-
-          <List
-            split={false}
-            dataSource={TESTS}
-            locale={{ emptyText: EMPTY_TEXT }}
-            renderItem={renderTest}
-          />
-        </Card>
-      </ConfigProvider>
+      <PathBreadcrumb
+        items={[
+          { label: "Clase", to: "/classes" },
+          { label: "Elevi", to: `/classes/${id}` },
+          { label: "Teste" },
+        ]}
+      />
+      <Resource resource={resource}>
+        {({ classroom, student, tests }) => (
+          <Card>
+            <Typography.Title level={2}>{student.name}</Typography.Title>
+            <p>{classroom.name}</p>
+            {tests.length ? (
+              <>
+                <div className="test-grid student-head">
+                  <span>Test</span>
+                  <span>Rezultat</span>
+                  <span>Data</span>
+                  <span>Stare</span>
+                </div>
+                {tests.map((test) => (
+                  <Card
+                    className="student-block"
+                    size="small"
+                    key={test.attemptId}
+                  >
+                    <div className="test-grid">
+                      <Link
+                        to={`/classes/${id}/children/${userId}/tests/${test.attemptId}`}
+                      >
+                        {test.name}
+                      </Link>
+                      <span>
+                        {test.status === "COMPLETED"
+                          ? `${test.totalScore} / ${test.maxScore}`
+                          : "—"}
+                      </span>
+                      <span>
+                        {new Date(
+                          test.completedAt || test.startedAt,
+                        ).toLocaleDateString("ro-RO")}
+                      </span>
+                      <span>
+                        {test.status === "COMPLETED"
+                          ? "Finalizat"
+                          : test.status === "IN_PROGRESS"
+                            ? "În desfășurare"
+                            : "Oprit"}
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </>
+            ) : (
+              <EmptyPanel description="Elevul nu a început încă niciun test." />
+            )}
+          </Card>
+        )}
+      </Resource>
     </section>
   );
 }
-
-export default KidPage;

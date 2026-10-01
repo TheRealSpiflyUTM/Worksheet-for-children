@@ -1,3 +1,4 @@
+import ChildMinigame from "./ChildMinigame.jsx";
 // K is for kids
 // T is for teacher
 // We will use this to switch between teacher and student version
@@ -11,16 +12,10 @@ import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
 import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
-import AdvancedConfiguration from "../platform/AdvancedConfiguration.jsx";
-import {
-  AssignWorksheetModal,
-  ShareWorksheetModal,
-} from "../platform/WorksheetActions.jsx";
 import { useState, useRef, useEffect } from "react";
-import { Button, message, Spin } from "antd";
+import { Button, message, Progress, Spin } from "antd";
 import {
   ArrowLeftOutlined,
-  DeleteOutlined,
   EyeOutlined,
   PlusOutlined,
   SaveOutlined,
@@ -30,7 +25,6 @@ import {
   getWorksheet,
   getWorksheetItems,
   createWorksheetItem,
-  deleteWorksheetItem,
   updateWorksheetItem,
   getMiniGameDefinitions,
 } from "../api/worksheets.js";
@@ -46,6 +40,7 @@ const TOOLS_WIDTH_STORAGE_KEY = "worksheet-tools-width";
 function MainMinigamePage(params) {
   // #region Values
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const { worksheetId } = useParams();
 
   /*
@@ -122,8 +117,6 @@ function MainMinigamePage(params) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [worksheetAction, setWorksheetAction] = useState(null);
-  const [removedItemIds, setRemovedItemIds] = useState([]);
   const selectedAreaRef = useRef(null);
   const saveWorksheetShortcutRef = useRef(null);
   const pendingScrollGameIdRef = useRef(null);
@@ -274,6 +267,14 @@ function MainMinigamePage(params) {
     );
   }
 
+  useEffect(() => {
+    if (!worksheetId) {
+      return;
+    }
+
+    loadWorksheet();
+  }, [worksheetId]);
+
   async function loadWorksheet() {
     setIsLoading(true);
 
@@ -346,7 +347,6 @@ function MainMinigamePage(params) {
         .filter(Boolean);
 
       setAddedMinigames(loadedGames);
-      setRemovedItemIds([]);
       setHasUnsavedChanges(false);
     } catch (error) {
       console.error(
@@ -362,15 +362,6 @@ function MainMinigamePage(params) {
       setIsLoading(false);
     }
   }
-
-  useEffect(() => {
-    if (!worksheetId) {
-      return;
-    }
-    void Promise.resolve().then(loadWorksheet);
-    // loadWorksheet intentionally reloads only when the route ID changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [worksheetId]);
 
   /*
     Add a new mini-game to the worksheet.
@@ -466,27 +457,6 @@ function MainMinigamePage(params) {
     setHasUnsavedChanges(true);
   }
 
-  function removeSelectedMinigame() {
-    if (!selectedGameId) return;
-    const selectedIndex = addedMinigames.findIndex(
-      (game) => game.instanceId === selectedGameId
-    );
-    const selectedGame = addedMinigames[selectedIndex];
-    if (!selectedGame) return;
-    if (selectedGame.itemId) {
-      setRemovedItemIds((currentIds) => [...currentIds, selectedGame.itemId]);
-    }
-    const remainingGames = addedMinigames.filter(
-      (game) => game.instanceId !== selectedGameId
-    );
-    setAddedMinigames(remainingGames);
-    setSelectedGameId(
-      remainingGames[Math.min(selectedIndex, remainingGames.length - 1)]
-        ?.instanceId || null
-    );
-    setHasUnsavedChanges(true);
-  }
-
   /*
     Remove frontend-only fields before sending
     configuration to backend.
@@ -550,45 +520,19 @@ function MainMinigamePage(params) {
           };
         });
 
-      for (const itemId of removedItemIds) {
-        await deleteWorksheetItem(worksheetId, itemId);
-        setRemovedItemIds((currentIds) =>
-          currentIds.filter((currentId) => currentId !== itemId)
-        );
-      }
-
       const existingItems = itemsToSave
-        .filter(({ game }) => game.itemId);
-      const isReordering = existingItems.some(
-        ({ game, item }) => game.orderIndex !== item.orderIndex
-      );
+        .filter(({ game }) => game.itemId)
+        .sort(
+          (first, second) =>
+            second.item.orderIndex -
+            first.item.orderIndex
+        );
 
-      // Temporarily move persisted rows beyond every occupied index. This
-      // prevents PostgreSQL's unique worksheet/order constraint from failing
-      // during swaps, and each successful move remains safe to retry.
-      if (isReordering) {
-        const temporaryStart =
-          Math.max(
-            itemsToSave.length,
-            ...existingItems.map(({ game }) => game.orderIndex || 0)
-          ) + 1;
-        for (let index = 0; index < existingItems.length; index += 1) {
-          const { game, item } = existingItems[index];
-          const temporarilySaved = await updateWorksheetItem(
-            worksheetId,
-            game.itemId,
-            { ...item, orderIndex: temporaryStart + index }
-          );
-          setAddedMinigames((currentGames) =>
-            currentGames.map((currentGame) =>
-              currentGame.instanceId === game.instanceId
-                ? { ...currentGame, orderIndex: temporarilySaved.orderIndex }
-                : currentGame
-            )
-          );
-        }
-      }
-
+      /*
+       * Move existing items from bottom to top so
+       * each destination index is free before a
+       * newly inserted item is created there.
+       */
       for (const { game, item } of existingItems) {
         await updateWorksheetItem(
           worksheetId,
@@ -638,12 +582,20 @@ function MainMinigamePage(params) {
       );
 
       setHasUnsavedChanges(false);
-      message.success("Worksheet saved successfully.");
-      return true;
+
+      message.success(
+        "Worksheet saved successfully."
+      );
     } catch (error) {
-      console.error("Failed to save worksheet:", error);
-      message.error(error.message || "Failed to save worksheet.");
-      return false;
+      console.error(
+        "Failed to save worksheet:",
+        error
+      );
+
+      message.error(
+        error.message ||
+          "Failed to save worksheet."
+      );
     } finally {
       setIsSaving(false);
     }
@@ -740,24 +692,6 @@ function MainMinigamePage(params) {
   // #region Teacher
 
   if (params.isTeacher && !isPreviewing) {
-    const selectedGame = addedMinigames.find(
-      (game) => game.instanceId === selectedGameId
-    );
-    const selectedDefinition = selectedGame
-      ? definitions.find(
-          (definition) =>
-            definition.id === selectedGame.miniGameId ||
-            definition.type === selectedGame.id
-        )
-      : null;
-
-    async function openWorksheetAction(action) {
-      if (hasUnsavedChanges && !(await saveWorksheet())) {
-        return;
-      }
-      setWorksheetAction(action);
-    }
-
     return (
       <main className="mainMinigamePage">
         <div
@@ -1004,49 +938,13 @@ function MainMinigamePage(params) {
               disabled={
                 addedMinigames.length === 0
               }
-              onClick={() =>
-                setIsPreviewing(true)
-              }
+              onClick={() => {
+                setPreviewIndex(0);
+                setIsPreviewing(true);
+              }}
             >
               Preview as Kid
             </Button>
-
-            <Button
-              disabled={addedMinigames.length === 0}
-              onClick={() => openWorksheetAction("share")}
-            >
-              Share worksheet
-            </Button>
-
-            <Button
-              disabled={addedMinigames.length === 0}
-              onClick={() => openWorksheetAction("assign")}
-            >
-              Assign worksheet
-            </Button>
-
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              disabled={!selectedGame}
-              onClick={removeSelectedMinigame}
-            >
-              Remove selected activity
-            </Button>
-
-            {selectedGame && selectedDefinition && (
-              <AdvancedConfiguration
-                definition={selectedDefinition}
-                configuration={getGameConfiguration(selectedGame)}
-                canUpload
-                onChange={(configuration) =>
-                  updateMinigame(selectedGame.instanceId, {
-                    ...selectedGame,
-                    ...configuration,
-                  })
-                }
-              />
-            )}
           </aside>
         </div>
 
@@ -1057,16 +955,6 @@ function MainMinigamePage(params) {
           }
           games={availableMinigames}
           addMinigame={addMinigameFunction}
-        />
-        <ShareWorksheetModal
-          worksheetId={worksheetId}
-          open={worksheetAction === "share"}
-          onClose={() => setWorksheetAction(null)}
-        />
-        <AssignWorksheetModal
-          worksheetId={worksheetId}
-          open={worksheetAction === "assign"}
-          onClose={() => setWorksheetAction(null)}
         />
       </main>
     );
@@ -1091,60 +979,29 @@ function MainMinigamePage(params) {
         </div>
       )}
 
-      {addedMinigames.map((game) => (
-        <div
-          className="worksheetGame worksheetGamePreview"
-          key={game.instanceId}
-        >
-          <WorksheetSprinkles
-            seed={game.decorationSeed}
-          />
-
-          <div className="worksheetGameContent">
-            {game.id === "color-game" && (
-              <ColorMinigame
-                isTeacher={false}
-                game={game}
+      {isPreviewing ? (
+        <>
+          <Progress percent={Math.round(previewIndex / addedMinigames.length * 100)} showInfo={false} strokeColor="#6c5ce7" />
+          {addedMinigames[previewIndex] ? (
+            <>
+              <ChildMinigame
+                key={addedMinigames[previewIndex].instanceId}
+                game={addedMinigames[previewIndex]}
+                onComplete={() => setPreviewIndex(current => current + 1)}
               />
-            )}
-
-            {game.id === "math-game" && (
-              <MathMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "sequence-game" && (
-              <SequenceMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id ===
-              "higher-lower-game" && (
-              <HigherOrLowerMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "odd-even-game" && (
-              <OddOrEvenMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "matching-game" && (
-              <MatchingMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-          </div>
-        </div>
+              <div className="childGameActions">
+                <Button onClick={() => setPreviewIndex(current => current + 1)}>Skip activity</Button>
+              </div>
+            </>
+          ) : (
+            <div className="childGameActions">
+              <p>Ai terminat toate activitățile!</p>
+              <Button onClick={() => setPreviewIndex(0)}>Joacă din nou</Button>
+            </div>
+          )}
+        </>
+      ) : addedMinigames.map((game) => (
+        <ChildMinigame key={game.instanceId} game={game} />
       ))}
     </main>
   );

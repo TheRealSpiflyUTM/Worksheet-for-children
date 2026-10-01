@@ -4,6 +4,8 @@ import com.worksheet.assignment.WorksheetAssignment;
 import com.worksheet.assignment.WorksheetAssignmentRepository;
 import com.worksheet.auth.User;
 import com.worksheet.auth.UserRole;
+import com.worksheet.classroom.ClassroomMember;
+import com.worksheet.classroom.ClassroomMemberRepository;
 import com.worksheet.shared.codes.JoinCodeGenerator;
 import com.worksheet.worksheet.revision.WorksheetRevision;
 import com.worksheet.worksheet.revision.WorksheetRevisionItemRepository;
@@ -25,19 +27,21 @@ public class WorksheetShareService {
     private final WorksheetRevisionItemRepository revisionItems;
     private final WorksheetRevisionResponseMapper responseMapper;
     private final JoinCodeGenerator codes;
+    private final ClassroomMemberRepository members;
 
     public WorksheetShareService(WorksheetRepository worksheets,
                                  WorksheetAssignmentRepository assignments,
                                  WorksheetRevisionService revisions,
                                  WorksheetRevisionItemRepository revisionItems,
                                  WorksheetRevisionResponseMapper responseMapper,
-                                 JoinCodeGenerator codes) {
+                                 JoinCodeGenerator codes, ClassroomMemberRepository members) {
         this.worksheets = worksheets;
         this.assignments = assignments;
         this.revisions = revisions;
         this.revisionItems = revisionItems;
         this.responseMapper = responseMapper;
         this.codes = codes;
+        this.members = members;
     }
 
     public String share(Long worksheetId, User teacher) {
@@ -64,9 +68,35 @@ public class WorksheetShareService {
 
     public JoinWorksheetResponse join(String rawCode, User user) {
         requireRole(user, UserRole.USER);
+        return join(rawCode, user, null);
+    }
+
+    public JoinWorksheetResponse joinForStudent(String rawCode, ClassroomMember member) {
+        requireRole(member.getUser(), UserRole.USER);
+        return join(rawCode, member.getUser(), member);
+    }
+
+    public String shareCurrent(Long worksheetId, User teacher) {
+        requireRole(teacher, UserRole.TEACHER);
+        Worksheet worksheet = requireOwned(worksheetId, teacher.getId());
+        String code = worksheet.getShareCode() == null ? nextCode() : worksheet.getShareCode();
+        worksheet.share(code, publishNonEmpty(worksheet));
+        worksheets.save(worksheet);
+        return code;
+    }
+
+    private JoinWorksheetResponse join(String rawCode, User user, ClassroomMember member) {
         String code = normalize(rawCode);
         Worksheet worksheet = worksheets.findByShareCode(code)
             .orElseThrow(this::codeNotFound);
+        if (member == null && members.existsByUser_IdAndStudentCodeIsNotNull(user.getId())) {
+            member = members.findFirstByUser_IdAndClassroom_Teacher_IdAndStudentCodeIsNotNullAndLeftAtIsNull(
+                user.getId(), worksheet.getUser().getId()).orElseThrow(this::codeNotFound);
+        }
+        if (member != null && (member.getLeftAt() != null
+            || !worksheet.getUser().getId().equals(member.getClassroom().getTeacher().getId()))) {
+            throw codeNotFound();
+        }
 
         // V18 codes predate revision pinning. Pin them once on first use.
         WorksheetRevision revision = worksheet.getShareRevision();
@@ -77,11 +107,16 @@ public class WorksheetShareService {
         }
 
         WorksheetRevision pinnedRevision = revision;
-        WorksheetAssignment assignment = assignments
-            .findFirstByWorksheetRevision_IdAndUser_IdAndRevokedAtIsNullOrderByAssignedAtDesc(
+        ClassroomMember recipient = member;
+        var existing = recipient == null
+            ? assignments.findFirstByWorksheetRevision_IdAndUser_IdAndRevokedAtIsNullOrderByAssignedAtDesc(
                 pinnedRevision.getId(), user.getId())
+            : assignments.findFirstByWorksheetRevision_IdAndUser_IdAndClassroom_IdAndRevokedAtIsNullOrderByAssignedAtDesc(
+                pinnedRevision.getId(), user.getId(), recipient.getClassroom().getId());
+        WorksheetAssignment assignment = existing
             .orElseGet(() -> assignments.save(
-                new WorksheetAssignment(UUID.randomUUID(), pinnedRevision, null, user)));
+                new WorksheetAssignment(UUID.randomUUID(), pinnedRevision,
+                    recipient == null ? null : recipient.getClassroom(), user)));
 
         return JoinWorksheetResponse.from(responseMapper.toResponse(pinnedRevision), assignment.getId());
     }

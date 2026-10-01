@@ -1,0 +1,223 @@
+import { test, expect } from "@playwright/test";
+
+const teacher = {
+  id: 1,
+  name: "Teacher",
+  role: "TEACHER",
+  email: "teacher@example.com",
+};
+const child = { id: 2, name: "Ana", role: "USER", email: null };
+const classroom = {
+  id: 10,
+  name: "Clasa A",
+  teacherId: 1,
+  teacherName: "Teacher",
+};
+const worksheet = { id: 20, name: "Odd or even", items: [{ id: 30 }] };
+const item = {
+  id: 30,
+  orderIndex: 0,
+  definition: { type: "odd-even-game", name: "Odd or even" },
+  configuration: { exerciseCount: 1, maxNumber: 1 },
+};
+
+test("children enter codes, resume unfinished work and finish without signup", async ({
+  page,
+}, testInfo) => {
+  let user = null;
+  let starts = 0;
+  const attempt = {
+    id: 40,
+    assignmentId: 50,
+    status: "IN_PROGRESS",
+    totalScore: 0,
+    maxScore: 0,
+    items: [item],
+    results: [],
+  };
+  await page.route(
+    (url) => url.pathname.startsWith("/api/"),
+    async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const method = route.request().method();
+      const reply = (json, status = 200) => route.fulfill({ status, json });
+      if (path === "/api/auth/csrf")
+        return reply({ headerName: "X-XSRF-TOKEN", token: "test" });
+      if (path === "/api/auth/me")
+        return user ? reply(user) : reply({ message: "Please log in." }, 401);
+      if (path === "/api/play/join") {
+        expect(route.request().postDataJSON()).toEqual({
+          studentCode: "ABCD2345",
+          worksheetCode: "EFGH6789",
+        });
+        user = child;
+        return reply({ user, assignmentId: 50 });
+      }
+      if (path === "/api/assignments/50/attempts") {
+        if (method === "POST") starts++;
+        return reply(method === "POST" ? attempt : [attempt]);
+      }
+      if (path === "/api/attempts/40/items/30/result") {
+        const result = {
+          ...route.request().postDataJSON(),
+          revisionItemId: 30,
+        };
+        attempt.results = [result];
+        return reply(result);
+      }
+      if (path === "/api/attempts/40/complete") {
+        attempt.status = "COMPLETED";
+        attempt.totalScore = 1;
+        attempt.maxScore = 1;
+        return reply(attempt);
+      }
+      if (path === "/api/attempts/40") return reply(attempt);
+      return reply({ message: `Unexpected API request: ${path}` }, 404);
+    },
+  );
+  await page.goto("/");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: testInfo.outputPath("code-entry-mobile.png"),
+    fullPage: true,
+  });
+  await page.getByLabel("Codul elevului").fill("abcd2345");
+  await page.getByLabel("Codul fișei de lucru").fill("efgh6789");
+  await page.getByRole("button", { name: "Verifică și începe" }).click();
+  await expect(page).toHaveURL(/\/attempts\/40$/);
+  expect(starts).toBe(0);
+  await expect(
+    page.getByText("Exercițiul 1 / 1", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Impar", exact: true }).click();
+  await page.getByRole("button", { name: "Finalizează" }).click();
+  await page.getByRole("button", { name: "Continuă" }).click();
+  await page.getByRole("button", { name: "Finish worksheet" }).click();
+  await expect(page.getByRole("heading", { name: "Well done!" })).toBeVisible();
+  await expect(page.getByText("1 / 1", { exact: true }).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Well done!" })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth + 1,
+    ),
+  ).toBe(true);
+});
+
+test("teachers manage child codes, start tests and navigate real results", async ({
+  page,
+}, testInfo) => {
+  let students = [];
+  const tests = [
+    {
+      attemptId: 40,
+      assignmentId: 50,
+      name: "Odd or even",
+      status: "COMPLETED",
+      totalScore: 1,
+      maxScore: 1,
+      startedAt: "2026-10-01T08:00:00Z",
+      completedAt: "2026-10-01T08:01:00Z",
+    },
+  ];
+  await page.route(
+    (url) => url.pathname.startsWith("/api/"),
+    async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const method = route.request().method();
+      const reply = (json, status = 200) => route.fulfill({ status, json });
+      if (path === "/api/auth/csrf")
+        return reply({ headerName: "X-XSRF-TOKEN", token: "test" });
+      if (path === "/api/auth/me") return reply(teacher);
+      if (path === "/api/classes/10") return reply(classroom);
+      if (path === "/api/worksheets") return reply([worksheet]);
+      if (path === "/api/classes/10/members") {
+        if (method === "POST") {
+          students = [
+            {
+              userId: 2,
+              name: route.request().postDataJSON().name,
+              studentCode: "ABCD2345",
+              lastTestPercent: 100,
+              averagePercent: 100,
+              worstTest: "Odd or even",
+            },
+          ];
+          return reply(students[0], 201);
+        }
+        return reply(students);
+      }
+      if (path === "/api/classes/10/members/2") {
+        if (method === "DELETE") {
+          students = [];
+          return route.fulfill({ status: 204 });
+        }
+        students[0].name = route.request().postDataJSON().name;
+        return reply(students[0]);
+      }
+      if (path === "/api/classes/10/tests") {
+        expect(route.request().postDataJSON()).toEqual({ worksheetId: 20 });
+        return reply({ code: "EFGH6789" }, 201);
+      }
+      if (path === "/api/classes/10/members/2/tests") return reply(tests);
+      if (path === "/api/attempts/40")
+        return reply({
+          id: 40,
+          status: "COMPLETED",
+          totalScore: 1,
+          maxScore: 1,
+          items: [item],
+          results: [
+            { revisionItemId: 30, score: 1, maxScore: 1, outcome: "COMPLETED" },
+          ],
+        });
+      return reply({ message: `Unexpected API request: ${path}` }, 404);
+    },
+  );
+  await page.goto("/classes/10");
+  await page.getByRole("button", { name: "Adaugă elev" }).click();
+  await page.getByLabel("Numele elevului").fill("Ana");
+  await page.getByRole("button", { name: "Salvează" }).click();
+  await expect(page.getByText("ABCD2345", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("link", { name: "Ana", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Redenumește" }).click();
+  await page.getByLabel("Numele elevului").fill("Ana Maria");
+  await page.getByRole("button", { name: "Salvează" }).click();
+  await expect(
+    page.getByRole("link", { name: "Ana Maria", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Începe un test" }).click();
+  await page.getByRole("button", { name: "Odd or even", exact: true }).click();
+  await expect(page.getByText("EFGH6789", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Ana Maria", exact: true }).click();
+  await page.getByRole("link", { name: "Odd or even", exact: true }).click();
+  await expect(page.getByText("Întrebarea 1", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 / 1", { exact: true }).last()).toBeVisible();
+  await page.getByRole("link", { name: "Elevi", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByRole("link", { name: "Ana Maria", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("class-roster-mobile.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Șterge", exact: true }).click();
+  await page.getByRole("button", { name: "OK", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "Ana Maria", exact: true }),
+  ).toHaveCount(0);
+});

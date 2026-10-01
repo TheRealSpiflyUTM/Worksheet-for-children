@@ -37,10 +37,11 @@ export function EmptyPanel({ description }) {
   return <div className="platformPanel"><Empty description={description} /></div>;
 }
 
-export function RequireSession({ children }) {
+export function RequireSession({ children, entry = "/login", teacherOnly = false }) {
   const { user, loading, sessionError, loadSession } = usePlatform();
   if (loading) return <div className="platformLoading"><Spin size="large" /></div>;
   if (sessionError) return <ErrorNotice error={sessionError} retry={loadSession} />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={entry} replace />;
+  if (teacherOnly && user.role !== "TEACHER") return <Navigate to="/" replace />;
   return children;
 }

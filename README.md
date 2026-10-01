@@ -53,6 +53,20 @@ npm run dev
 
 Open http://localhost:5173. Vite forwards `/api` requests to the backend on port 8080.
 
+## Children play with codes
+
+Teachers sign up, create a class, and add children by name using **Adaugă elev**.
+Each child receives a personal code; no child email, password, or signup is required.
+For existing class members, use **Generează cod** to enable code entry.
+
+Use **Începe un test** in the class to select a worksheet and obtain its code.
+Children enter their personal code and the worksheet code on the public home page.
+Unfinished attempts resume, and completed scores are saved under the child in the class.
+Click a child's name, then a test, to see question results; breadcrumbs return to the class.
+Removing a child revokes access while retaining results for the teacher.
+
+Restart the backend after updating so Flyway applies V21, which adds personal access codes.
+
 ## Build and verify the backend
 
 With Docker Desktop running, from `backend`:
