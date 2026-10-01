@@ -1,21 +1,17 @@
-.test-grid {
+.test-grid, .question-grid {
   display: grid;
   grid-template-columns:
-    minmax(220px, 3fr)
+    minmax(120px, 2fr)
+    minmax(90px, 1fr)
     minmax(100px, 1fr)
-    minmax(120px, 1fr)
-    40px;
+    minmax(100px, 1fr);
   align-items: center;
   gap: 12px;
 }
 
 @media (max-width: 700px) {
-  .test-grid {
-    grid-template-columns:
-      minmax(150px, 2fr)
-      minmax(80px, 1fr)
-      minmax(100px, 1fr)
-      32px;
+  .test-grid, .question-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
   }
 }

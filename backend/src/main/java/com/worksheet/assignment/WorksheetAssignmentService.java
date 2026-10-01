@@ -78,7 +78,7 @@ public class WorksheetAssignmentService {
             if(membership.getUser().getRole() != UserRole.USER) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only USER accounts can receive assignments.");
             }
-            created = List.of(new WorksheetAssignment(batchId, revision, null, membership.getUser()));
+            created = List.of(new WorksheetAssignment(batchId, revision, membership.getClassroom(), membership.getUser()));
         }
         return assignments.saveAll(created).stream().map(this::toResponse).toList();
     }

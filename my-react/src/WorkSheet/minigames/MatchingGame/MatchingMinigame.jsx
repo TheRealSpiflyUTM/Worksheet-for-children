@@ -84,6 +84,8 @@ const MatchingMinigame = ({
   isTeacher = false,
   game = {},
   onGameChange,
+  onComplete,
+  onReset,
 }) => {
   const initialPairs =
     Array.isArray(game?.pairs) &&
@@ -415,6 +417,7 @@ const MatchingMinigame = ({
     }));
 
     setChecked(false);
+    onReset?.();
     setDraggedNumber(null);
     setDragSource(null);
   };
@@ -452,6 +455,7 @@ const MatchingMinigame = ({
     });
 
     setChecked(false);
+    onReset?.();
     setDraggedNumber(null);
     setDragSource(null);
   };
@@ -467,6 +471,7 @@ const MatchingMinigame = ({
       }
     });
 
+    onComplete?.({ score: correct, maxScore: pairs.length });
     setScore(correct);
     setChecked(true);
   };
@@ -474,6 +479,7 @@ const MatchingMinigame = ({
   const resetAnswers = () => {
     setMatches({});
     setChecked(false);
+    onReset?.();
     setScore(0);
     setDraggedNumber(null);
     setDragSource(null);
@@ -486,6 +492,7 @@ const MatchingMinigame = ({
 
     setMatches({});
     setChecked(false);
+    onReset?.();
     setScore(0);
     setDraggedNumber(null);
     setDragSource(null);

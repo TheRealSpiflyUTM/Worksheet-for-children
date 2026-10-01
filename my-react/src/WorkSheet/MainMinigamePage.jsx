@@ -1,3 +1,4 @@
+import ChildMinigame from "./ChildMinigame.jsx";
 // K is for kids
 // T is for teacher
 // We will use this to switch between teacher and student version
@@ -12,7 +13,7 @@ import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
 import { useState, useRef, useEffect } from "react";
-import { Button, message, Spin } from "antd";
+import { Button, message, Progress, Spin } from "antd";
 import {
   ArrowLeftOutlined,
   EyeOutlined,
@@ -39,6 +40,7 @@ const TOOLS_WIDTH_STORAGE_KEY = "worksheet-tools-width";
 function MainMinigamePage(params) {
   // #region Values
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const { worksheetId } = useParams();
 
   /*
@@ -936,9 +938,10 @@ function MainMinigamePage(params) {
               disabled={
                 addedMinigames.length === 0
               }
-              onClick={() =>
-                setIsPreviewing(true)
-              }
+              onClick={() => {
+                setPreviewIndex(0);
+                setIsPreviewing(true);
+              }}
             >
               Preview as Kid
             </Button>
@@ -976,60 +979,29 @@ function MainMinigamePage(params) {
         </div>
       )}
 
-      {addedMinigames.map((game) => (
-        <div
-          className="worksheetGame worksheetGamePreview"
-          key={game.instanceId}
-        >
-          <WorksheetSprinkles
-            seed={game.decorationSeed}
-          />
-
-          <div className="worksheetGameContent">
-            {game.id === "color-game" && (
-              <ColorMinigame
-                isTeacher={false}
-                game={game}
+      {isPreviewing ? (
+        <>
+          <Progress percent={Math.round(previewIndex / addedMinigames.length * 100)} showInfo={false} strokeColor="#6c5ce7" />
+          {addedMinigames[previewIndex] ? (
+            <>
+              <ChildMinigame
+                key={addedMinigames[previewIndex].instanceId}
+                game={addedMinigames[previewIndex]}
+                onComplete={() => setPreviewIndex(current => current + 1)}
               />
-            )}
-
-            {game.id === "math-game" && (
-              <MathMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "sequence-game" && (
-              <SequenceMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id ===
-              "higher-lower-game" && (
-              <HigherOrLowerMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "odd-even-game" && (
-              <OddOrEvenMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "matching-game" && (
-              <MatchingMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-          </div>
-        </div>
+              <div className="childGameActions">
+                <Button onClick={() => setPreviewIndex(current => current + 1)}>Skip activity</Button>
+              </div>
+            </>
+          ) : (
+            <div className="childGameActions">
+              <p>Ai terminat toate activitățile!</p>
+              <Button onClick={() => setPreviewIndex(0)}>Joacă din nou</Button>
+            </div>
+          )}
+        </>
+      ) : addedMinigames.map((game) => (
+        <ChildMinigame key={game.instanceId} game={game} />
       ))}
     </main>
   );

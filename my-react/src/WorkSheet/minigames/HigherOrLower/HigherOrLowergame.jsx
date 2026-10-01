@@ -3,7 +3,7 @@ import { InputNumber, Button } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
 import "./HigherOrLowerMinigame.css";
 
-function HigherOrLowerMinigame({ isTeacher, game, onGameChange }) {
+function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
   const [question, setQuestion] = useState(() =>
     generateQuestion(game.maxNumber)
   );
@@ -15,6 +15,7 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange }) {
   function getNewQuestion() {
     if (exerciseNumber >= (game.exerciseCount || 10)) {
       setFinished(true);
+      onComplete?.({ score, maxScore: game.exerciseCount || 10 });
       return;
     }
     setExerciseNumber((currentNumber) => currentNumber + 1);
@@ -23,6 +24,7 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange }) {
   }
 
   function checkAnswer(answer) {
+    if (selectedAnswer !== null) return;
     setSelectedAnswer(answer);
     if (answer === question.correctAnswer) {
       celebrateCorrectAnswer();
@@ -155,7 +157,7 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange }) {
 }
 
 function generateQuestion(maxNumber) {
-  const safeMaxNumber = Number(maxNumber) || 10;
+  const safeMaxNumber = Math.max(2, Number(maxNumber) || 10);
   const firstNumber = Math.floor(Math.random() * safeMaxNumber) + 1;
   let secondNumber;
   

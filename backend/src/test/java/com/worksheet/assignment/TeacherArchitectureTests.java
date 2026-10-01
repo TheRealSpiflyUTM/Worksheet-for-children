@@ -29,6 +29,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,6 +55,7 @@ class TeacherArchitectureTests {
     @Autowired WorksheetRepository worksheets;
     @Autowired MiniGameDefinitionRepository miniGames;
     @Autowired UserRepository users;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private Long miniGameId;
 
@@ -65,6 +68,7 @@ class TeacherArchitectureTests {
         assignments.deleteAll();
         members.deleteAll();
         classrooms.deleteAll();
+        jdbc.update("UPDATE worksheet SET share_revision_id = NULL");
         revisionItems.deleteAll();
         revisions.deleteAll();
         worksheetItems.deleteAll();
@@ -229,6 +233,138 @@ class TeacherArchitectureTests {
             .andExpect(status().isNotFound());
         mvc.perform(get("/api/attempts/{id}", attemptId).session(teacher.session()))
             .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ABANDONED"));
+    }
+
+    @Test
+    void childrenPlayByCodesAndKeepClassResultsWithoutSigningUp() throws Exception {
+        Account teacher = signup("Teacher", "teacher.codes@example.com", "TEACHER");
+        Long classroomId = idFrom(createClassroom(teacher, "Code class"));
+        MvcResult child = mvc.perform(post("/api/classes/{id}/members", classroomId).session(teacher.session())
+                .contentType("application/json").content("{\"name\":\"Ana\"}"))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.name").value("Ana"))
+            .andExpect(jsonPath("$.email").value((Object) null)).andReturn();
+        Long childId = ((Number) JsonPath.read(body(child), "$.userId")).longValue();
+        String childCode = JsonPath.read(body(child), "$.studentCode");
+        Long worksheetId = createWorksheet(teacher, "Code worksheet");
+        createItem(teacher, worksheetId);
+        MvcResult started = mvc.perform(post("/api/classes/{id}/tests", classroomId).session(teacher.session())
+                .contentType("application/json").content("{\"worksheetId\":" + worksheetId + "}"))
+            .andExpect(status().isCreated()).andReturn();
+        String worksheetCode = JsonPath.read(body(started), "$.code");
+
+        MvcResult joined = mvc.perform(post("/api/play/join").contentType("application/json")
+                .content(entryBody(" " + childCode.toLowerCase() + " ", " " + worksheetCode.toLowerCase() + " ")))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.user.id").value(childId))
+            .andExpect(jsonPath("$.user.email").value((Object) null)).andReturn();
+        MockHttpSession childSession = (MockHttpSession) joined.getRequest().getSession(false);
+        Long assignmentId = ((Number) JsonPath.read(body(joined), "$.assignmentId")).longValue();
+        mvc.perform(get("/api/auth/me").session(childSession)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(childId)).andExpect(jsonPath("$.email").value((Object) null));
+        mvc.perform(post("/api/classes/join").session(childSession).contentType("application/json")
+                .content("{\"joinCode\":\"" + classrooms.findById(classroomId).orElseThrow().getJoinCode() + "\"}"))
+            .andExpect(status().isForbidden());
+        mvc.perform(get("/api/assignments").session(childSession)).andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1))).andExpect(jsonPath("$[0].classroomId").value(classroomId));
+        MvcResult attempt = mvc.perform(post("/api/assignments/{id}/attempts", assignmentId).session(childSession))
+            .andExpect(status().isCreated()).andReturn();
+        Long attemptId = idFrom(attempt);
+        Long revisionItemId = ((Number) JsonPath.read(body(attempt), "$.items[0].id")).longValue();
+        mvc.perform(put("/api/attempts/{id}/items/{item}/result", attemptId, revisionItemId).session(childSession)
+                .contentType("application/json").content("{\"outcome\":\"COMPLETED\",\"score\":3,\"maxScore\":5,\"timeSeconds\":10,\"details\":{}}"))
+            .andExpect(status().isOk());
+        mvc.perform(post("/api/attempts/{id}/complete", attemptId).session(childSession))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.totalScore").value(3));
+        mvc.perform(get("/api/classes/{id}/members", classroomId).session(teacher.session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[0].lastTestPercent").value(60))
+            .andExpect(jsonPath("$[0].averagePercent").value(60))
+            .andExpect(jsonPath("$[0].worstTest").value("Code worksheet"));
+        mvc.perform(get("/api/classes/{id}/members/{user}/tests", classroomId, childId).session(teacher.session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[0].attemptId").value(attemptId));
+        mvc.perform(patch("/api/classes/{id}/members/{user}", classroomId, childId).session(teacher.session())
+                .contentType("application/json").content("{\"name\":\"Ana Maria\"}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.studentCode").value(childCode));
+        mvc.perform(post("/api/play/join").contentType("application/json").content(entryBody(childCode, worksheetCode)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.user.name").value("Ana Maria"))
+            .andExpect(jsonPath("$.assignmentId").value(assignmentId));
+
+        mvc.perform(delete("/api/classes/{id}/members/{user}", classroomId, childId).session(teacher.session()))
+            .andExpect(status().isNoContent());
+        mvc.perform(post("/api/play/join").contentType("application/json").content(entryBody(childCode, worksheetCode)))
+            .andExpect(status().isNotFound());
+        mvc.perform(post("/api/worksheets/join").session(childSession).contentType("application/json")
+                .content("{\"code\":\"" + worksheetCode + "\"}"))
+            .andExpect(status().isNotFound());
+        mvc.perform(get("/api/attempts/{id}", attemptId).session(childSession)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/attempts/{id}", attemptId).session(teacher.session())).andExpect(status().isOk())
+            .andExpect(jsonPath("$.results[0].score").value(3));
+    }
+
+    @Test
+    void childCodesProtectTeacherBoundariesAndFailedEntryKeepsExistingSession() throws Exception {
+        Account teacher = signup("Teacher", "teacher.boundary@example.com", "TEACHER");
+        Account other = signup("Other", "other.boundary@example.com", "TEACHER");
+        Long classroomId = idFrom(createClassroom(teacher, "Private roster"));
+        mvc.perform(post("/api/classes/{id}/members", classroomId).session(other.session())
+                .contentType("application/json").content("{\"name\":\"Ana\"}"))
+            .andExpect(status().isNotFound());
+        mvc.perform(post("/api/classes/{id}/members", classroomId).session(teacher.session())
+                .contentType("application/json").content("{\"name\":\"   \"}"))
+            .andExpect(status().isBadRequest());
+        MvcResult child = mvc.perform(post("/api/classes/{id}/members", classroomId).session(teacher.session())
+                .contentType("application/json").content("{\"name\":\"Ana\"}"))
+            .andExpect(status().isCreated()).andReturn();
+        Long childId = ((Number) JsonPath.read(body(child), "$.userId")).longValue();
+        String childCode = JsonPath.read(body(child), "$.studentCode");
+        Long worksheetId = createWorksheet(other, "Other teacher worksheet");
+        createItem(other, worksheetId);
+        MvcResult share = mvc.perform(post("/api/worksheets/{id}/share", worksheetId).session(other.session()))
+            .andExpect(status().isOk()).andReturn();
+        String code = JsonPath.read(body(share), "$.code");
+        mvc.perform(post("/api/play/join").session(teacher.session()).contentType("application/json")
+                .content(entryBody(childCode, code))).andExpect(status().isNotFound());
+        mvc.perform(get("/api/auth/me").session(teacher.session())).andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(teacher.id()));
+        mvc.perform(post("/api/play/join").contentType("application/json").content(entryBody("UNKNOWN", code)))
+            .andExpect(status().isNotFound());
+        mvc.perform(get("/api/classes/{id}/members/{user}/tests", classroomId, childId).session(other.session()))
+            .andExpect(status().isNotFound());
+        mvc.perform(patch("/api/classes/{id}/members/{user}", classroomId, childId).session(other.session())
+                .contentType("application/json").content("{\"name\":\"Changed\"}"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void existingStudentsCanUseCodesForTheCorrectClass() throws Exception {
+        Account teacher = signup("Teacher", "teacher.legacy@example.com", "TEACHER");
+        Account student = signup("Student", "student.legacy@example.com", "USER");
+        Long firstClass = idFrom(joinClass(teacher, student, "First class"));
+        Long secondClass = idFrom(joinClass(teacher, student, "Second class"));
+        String firstCode = JsonPath.read(body(mvc.perform(post("/api/classes/{id}/members/{user}/code", firstClass, student.id())
+                .session(teacher.session())).andExpect(status().isOk()).andReturn()), "$.studentCode");
+        String secondCode = JsonPath.read(body(mvc.perform(post("/api/classes/{id}/members/{user}/code", secondClass, student.id())
+                .session(teacher.session())).andExpect(status().isOk()).andReturn()), "$.studentCode");
+        mvc.perform(post("/api/classes/{id}/members/{user}/code", firstClass, student.id()).session(teacher.session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.studentCode").value(firstCode));
+        Long worksheetId = createWorksheet(teacher, "Shared worksheet");
+        createItem(teacher, worksheetId);
+        String worksheetCode = JsonPath.read(body(mvc.perform(post("/api/worksheets/{id}/share", worksheetId)
+                .session(teacher.session())).andExpect(status().isOk()).andReturn()), "$.code");
+        for (var entry : java.util.Map.of(firstCode, firstClass, secondCode, secondClass).entrySet()) {
+            MvcResult joined = mvc.perform(post("/api/play/join").contentType("application/json")
+                    .content(entryBody(entry.getKey(), worksheetCode))).andExpect(status().isOk()).andReturn();
+            Long assignmentId = ((Number) JsonPath.read(body(joined), "$.assignmentId")).longValue();
+            mvc.perform(get("/api/assignments/{id}", assignmentId).session(teacher.session()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.classroomId").value(entry.getValue()));
+        }
+        var promoted = users.findById(student.id()).orElseThrow();
+        promoted.changeRole(com.worksheet.auth.UserRole.ADMIN);
+        users.saveAndFlush(promoted);
+        mvc.perform(post("/api/play/join").contentType("application/json").content(entryBody(firstCode, worksheetCode)))
+            .andExpect(status().isForbidden());
+    }
+
+    private String entryBody(String studentCode, String worksheetCode) {
+        return "{\"studentCode\":\"" + studentCode + "\",\"worksheetCode\":\"" + worksheetCode + "\"}";
     }
 
     private Account signup(String name, String email, String role) throws Exception {

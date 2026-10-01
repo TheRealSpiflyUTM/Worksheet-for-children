@@ -44,7 +44,8 @@ public class AuthService {
         String normalizedEmail = normalizeEmail(email);
         validatePassword(password);
         var user = users.findByEmail(normalizedEmail);
-        boolean valid = passwords.matches(password, user.map(User::getPasswordHash).orElse(dummyHash));
+        String hash = user.map(User::getPasswordHash).filter(value -> !value.equals("!")).orElse(dummyHash);
+        boolean valid = passwords.matches(password, hash) && user.map(value -> !value.getPasswordHash().equals("!")).orElse(false);
         if (user.isEmpty() || !valid) {
             throw new ResponseStatusException(UNAUTHORIZED, "Email or password is incorrect.");
         }

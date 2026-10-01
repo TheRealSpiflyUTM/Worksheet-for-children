@@ -8,15 +8,17 @@ test("public entry, login and signup routes render without horizontal overflow",
     expect(overflow).toBe(false);
   }
   await page.goto("/signup");
-  await expect(page.getByText("Teacher", { exact: true })).toBeVisible();
-  await expect(page.getByText("Student", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cont pentru profesori" })).toBeVisible();
+  await expect(page.getByText("Student", { exact: true })).toHaveCount(0);
 });
 
 test("protected workflow routes redirect an anonymous visitor to login", async ({ page }) => {
-  for (const path of ["/classes", "/assignments", "/attempts/1"]) {
+  for (const path of ["/classes", "/assignments", "/classes/1/children/2", "/classes/1/children/2/tests/3"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
   }
+  await page.goto("/attempts/1");
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test("language preference persists locally", async ({ page }) => {

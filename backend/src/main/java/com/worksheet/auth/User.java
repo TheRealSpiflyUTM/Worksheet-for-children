@@ -43,4 +43,5 @@ public class User {
     public UserRole getRole() { return role; }
     public Instant getCreatedAt() { return createdAt; }
     public void changeRole(UserRole role) { this.role = role; }
+    public void rename(String name) { this.name = name; }
 }

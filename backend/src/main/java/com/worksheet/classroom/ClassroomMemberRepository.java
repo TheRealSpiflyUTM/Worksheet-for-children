@@ -5,6 +5,10 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ClassroomMemberRepository extends JpaRepository<ClassroomMember, Long> {
+    Optional<ClassroomMember> findByStudentCodeAndLeftAtIsNull(String studentCode);
+    boolean existsByStudentCode(String studentCode);
+    boolean existsByUser_IdAndStudentCodeIsNotNull(Long userId);
+    Optional<ClassroomMember> findFirstByUser_IdAndClassroom_Teacher_IdAndStudentCodeIsNotNullAndLeftAtIsNull(Long userId, Long teacherId);
     List<ClassroomMember> findByUser_IdAndLeftAtIsNullOrderByJoinedAtDesc(Long userId);
     List<ClassroomMember> findByClassroom_IdAndLeftAtIsNullOrderByJoinedAt(Long classroomId);
     Optional<ClassroomMember> findByClassroom_IdAndUser_Id(Long classroomId, Long userId);
