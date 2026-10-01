@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
-  Button,
-  Card,
-  InputNumber,
-  Popover,
-  Space,
-  Tag,
-  Typography,
+Alert,
+Button,
+Card,
+InputNumber,
+Popover,
+Space,
+Tag,
+Typography,
 } from "antd";
 import {
-  CheckOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  ReloadOutlined,
+CheckOutlined,
+DeleteOutlined,
+PlusOutlined,
+ReloadOutlined,
 } from "@ant-design/icons";
 import { EMOJI_CATEGORIES } from "./emojis.js";
 import "./MatchingMinigame.css";
@@ -21,883 +21,907 @@ import "./MatchingMinigame.css";
 const { Text, Title } = Typography;
 
 const DEFAULT_PAIRS = [
-  {
-    id: "one",
-    number: 1,
-    emoji: "🍎",
-  },
-  {
-    id: "two",
-    number: 2,
-    emoji: "🍊",
-  },
-  {
-    id: "three",
-    number: 3,
-    emoji: "🍌",
-  },
+{
+id: "one",
+number: 1,
+emoji: "🍎",
+},
+{
+id: "two",
+number: 2,
+emoji: "🍊",
+},
+{
+id: "three",
+number: 3,
+emoji: "🍌",
+},
 ];
 
 const createPairId = () => {
-  if (
-    typeof crypto !== "undefined" &&
-    crypto.randomUUID
-  ) {
-    return crypto.randomUUID();
-  }
+if (
+typeof crypto !== "undefined" &&
+crypto.randomUUID
+) {
+return crypto.randomUUID();
+}
 
-  return `pair-${Date.now()}-${Math.random()
+return `pair-${Date.now()}-${Math.random()
     .toString(36)
     .substring(2, 9)}`;
 };
 
 const clonePairs = (source) => {
-  return source.map((pair) => ({
-    id: pair.id || createPairId(),
-    number: Number(pair.number) || 1,
-    emoji: pair.emoji || "🍎",
-  }));
+return source.map((pair) => ({
+id: pair.id || createPairId(),
+number: Number(pair.number) || 1,
+emoji: pair.emoji || "🍎",
+}));
 };
 
 const shuffleArray = (array) => {
-  const shuffled = [...array];
+const shuffled = [...array];
 
-  for (
-    let index = shuffled.length - 1;
-    index > 0;
-    index -= 1
-  ) {
-    const randomIndex = Math.floor(
-      Math.random() * (index + 1)
-    );
+for (
+let index = shuffled.length - 1;
+index > 0;
+index -= 1
+) {
+const randomIndex = Math.floor(
+Math.random() * (index + 1)
+);
 
-    [shuffled[index], shuffled[randomIndex]] = [
-      shuffled[randomIndex],
-      shuffled[index],
-    ];
-  }
 
-  return shuffled;
+[shuffled[index], shuffled[randomIndex]] = [
+  shuffled[randomIndex],
+  shuffled[index],
+];
+
+
+}
+
+return shuffled;
 };
 
 const MatchingMinigame = ({
-  isTeacher = false,
-  game = {},
-  onGameChange,
+isTeacher = false,
+game = {},
+onGameChange,
 }) => {
-  const initialPairs =
-    Array.isArray(game?.pairs) &&
-    game.pairs.length > 0
-      ? clonePairs(game.pairs)
-      : clonePairs(DEFAULT_PAIRS);
+const initialPairs =
+Array.isArray(game?.pairs) &&
+game.pairs.length > 0
+? clonePairs(game.pairs)
+: clonePairs(DEFAULT_PAIRS);
 
-  const [pairs, setPairs] = useState(initialPairs);
-  const [shuffledPairs, setShuffledPairs] = useState(() =>
-    isTeacher ? [] : shuffleArray(initialPairs)
-  );
-  const [matches, setMatches] = useState({});
-  const [checked, setChecked] = useState(false);
-  const [score, setScore] = useState(0);
-  const [draggedNumber, setDraggedNumber] =
-    useState(null);
-  const [dragSource, setDragSource] =
-    useState(null);
+const [pairs, setPairs] = useState(initialPairs);
+const [shuffledPairs, setShuffledPairs] = useState(() =>
+isTeacher ? [] : shuffleArray(initialPairs)
+);
+const [matches, setMatches] = useState({});
+const [checked, setChecked] = useState(false);
+const [score, setScore] = useState(0);
+const [draggedNumber, setDraggedNumber] = useState(null);
+const [dragSource, setDragSource] = useState(null);
 
-  const lastParentConfiguration = useRef(
-    JSON.stringify(initialPairs)
-  );
+const lastParentConfiguration = useRef(
+JSON.stringify(initialPairs)
+);
 
-  useEffect(() => {
-    const parentPairs =
-      Array.isArray(game?.pairs) &&
-      game.pairs.length > 0
-        ? clonePairs(game.pairs)
-        : clonePairs(DEFAULT_PAIRS);
+useEffect(() => {
+const parentPairs =
+Array.isArray(game?.pairs) &&
+game.pairs.length > 0
+? clonePairs(game.pairs)
+: clonePairs(DEFAULT_PAIRS);
 
-    const parentConfiguration =
-      JSON.stringify(parentPairs);
 
-    if (
-      parentConfiguration !==
-      lastParentConfiguration.current
-    ) {
-      setPairs(parentPairs);
+const parentConfiguration =
+  JSON.stringify(parentPairs);
 
-      lastParentConfiguration.current =
-        parentConfiguration;
+if (
+  parentConfiguration !==
+  lastParentConfiguration.current
+) {
+  setPairs(parentPairs);
+  lastParentConfiguration.current =
+    parentConfiguration;
+  setMatches({});
+  setChecked(false);
+  setScore(0);
+  setDraggedNumber(null);
+  setDragSource(null);
+}
 
-      setMatches({});
-      setChecked(false);
-      setScore(0);
-      setDraggedNumber(null);
-      setDragSource(null);
-    }
-  }, [game?.pairs]);
 
-  const updateConfiguration = (newPairs) => {
-    const normalizedPairs =
-      clonePairs(newPairs);
+}, [game?.pairs]);
 
-    setPairs(normalizedPairs);
+const updateConfiguration = (newPairs) => {
+const normalizedPairs = clonePairs(newPairs);
 
-    lastParentConfiguration.current =
-      JSON.stringify(normalizedPairs);
 
-    setChecked(false);
+setPairs(normalizedPairs);
 
-    if (onGameChange) {
-      onGameChange({
-        ...game,
-        pairs: normalizedPairs,
-      });
-    }
+lastParentConfiguration.current =
+  JSON.stringify(normalizedPairs);
+
+setChecked(false);
+
+if (onGameChange) {
+  onGameChange({
+    ...game,
+    pairs: normalizedPairs,
+  });
+}
+
+
+};
+
+const updatePair = (
+pairId,
+field,
+value
+) => {
+const newPairs = pairs.map((pair) => {
+if (pair.id !== pairId) {
+return pair;
+}
+
+
+  return {
+    ...pair,
+    [field]:
+      field === "number"
+        ? Number(value) || 1
+        : value,
   };
+});
 
-  const updatePair = (
-    pairId,
-    field,
-    value
-  ) => {
-    const newPairs = pairs.map((pair) => {
-      if (pair.id !== pairId) {
-        return pair;
-      }
+updateConfiguration(newPairs);
 
-      return {
-        ...pair,
-        [field]:
-          field === "number"
-            ? Number(value) || 1
-            : value,
-      };
-    });
 
-    updateConfiguration(newPairs);
-  };
+};
 
-  const addPair = () => {
-    if (pairs.length >= 6) {
-    return;
-  }
-    const usedNumbers = new Set(
-      pairs.map((pair) =>
-        Number(pair.number)
-      )
-    );
+const addPair = () => {
+if (pairs.length >= 6) {
+return;
+}
 
-    let nextNumber = 1;
 
-    while (usedNumbers.has(nextNumber)) {
-      nextNumber += 1;
-    }
+const usedNumbers = new Set(
+  pairs.map((pair) => Number(pair.number))
+);
 
-    const allEmojis = Object.values(
-      EMOJI_CATEGORIES
-    ).flat();
+let nextNumber = 1;
 
-    const usedEmojis = new Set(
-      pairs.map((pair) => pair.emoji)
-    );
+while (usedNumbers.has(nextNumber)) {
+  nextNumber += 1;
+}
 
-    const firstUnusedEmoji =
-      allEmojis.find(
-        (emoji) =>
-          !usedEmojis.has(emoji)
-      ) || "🍎";
+const allEmojis = Object.values(
+  EMOJI_CATEGORIES
+).flat();
 
-    const newPair = {
-      id: createPairId(),
-      number: nextNumber,
-      emoji: firstUnusedEmoji,
-    };
+const usedEmojis = new Set(
+  pairs.map((pair) => pair.emoji)
+);
 
-    updateConfiguration([
-      ...pairs,
-      newPair,
-    ]);
-  };
+const firstUnusedEmoji =
+  allEmojis.find(
+    (emoji) => !usedEmojis.has(emoji)
+  ) || "🍎";
 
-  const removePair = (pairId) => {
-    if (pairs.length <= 1) {
-      return;
-    }
+const newPair = {
+  id: createPairId(),
+  number: nextNumber,
+  emoji: firstUnusedEmoji,
+};
 
-    const newPairs = pairs.filter(
-      (pair) => pair.id !== pairId
-    );
+updateConfiguration([
+  ...pairs,
+  newPair,
+]);
 
-    updateConfiguration(newPairs);
 
-    setMatches((previous) => {
-      const next = { ...previous };
+};
 
-      delete next[pairId];
+const removePair = (pairId) => {
+if (pairs.length <= 1) {
+return;
+}
 
-      return next;
-    });
-  };
 
-  const objectGroups = useMemo(() => {
-    const source =
-      shuffledPairs.length === 0
-        ? pairs
-        : shuffledPairs;
+const newPairs = pairs.filter(
+  (pair) => pair.id !== pairId
+);
 
-    return source.map((pair) => ({
-      ...pair,
-      objects: Array.from(
-        {
-          length: Math.max(
-            1,
-            Number(pair.number) || 1
-          ),
-        },
-        (_, index) =>
-          `${pair.id}-${index}`
+updateConfiguration(newPairs);
+
+setMatches((previous) => {
+  const next = { ...previous };
+  delete next[pairId];
+  return next;
+});
+
+
+};
+
+const objectGroups = useMemo(() => {
+const source =
+shuffledPairs.length === 0
+? pairs
+: shuffledPairs;
+
+
+return source.map((pair) => ({
+  ...pair,
+  objects: Array.from(
+    {
+      length: Math.max(
+        1,
+        Number(pair.number) || 1
       ),
-    }));
-  }, [pairs, shuffledPairs]);
+    },
+    (_, index) =>
+      `${pair.id}-${index}`
+  ),
+}));
 
-  const isNumberUsed = (number) => {
-    return Object.values(
-      matches
-    ).includes(number);
-  };
 
-  const handleNumberDragStart = (
-    event,
-    pair
-  ) => {
-    if (isNumberUsed(pair.number)) {
-      event.preventDefault();
-      return;
-    }
+}, [pairs, shuffledPairs]);
 
-    setDraggedNumber(pair.number);
-    setDragSource("left");
+const isNumberUsed = (number) => {
+return Object.values(matches).includes(number);
+};
 
-    event.dataTransfer.effectAllowed =
-      "move";
+const handleNumberDragStart = (
+event,
+pair
+) => {
+if (isNumberUsed(pair.number)) {
+event.preventDefault();
+return;
+}
 
-    event.dataTransfer.setData(
-      "text/plain",
-      String(pair.number)
-    );
 
-    event.dataTransfer.setData(
-      "application/x-matching-source",
-      "left"
-    );
-  };
+setDraggedNumber(pair.number);
+setDragSource("left");
 
-  const handlePlacedNumberDragStart = (
-    event,
-    number
-  ) => {
-    setDraggedNumber(number);
-    setDragSource("right");
+event.dataTransfer.effectAllowed = "move";
 
-    event.dataTransfer.effectAllowed =
-      "move";
+event.dataTransfer.setData(
+  "text/plain",
+  String(pair.number)
+);
 
-    event.dataTransfer.setData(
-      "text/plain",
-      String(number)
-    );
+event.dataTransfer.setData(
+  "application/x-matching-source",
+  "left"
+);
 
-    event.dataTransfer.setData(
-      "application/x-matching-source",
-      "right"
-    );
-  };
+};
 
-  const handleDragEnd = () => {
-    setDraggedNumber(null);
-    setDragSource(null);
-  };
+const handlePlacedNumberDragStart = (
+event,
+number
+) => {
+setDraggedNumber(number);
+setDragSource("right");
 
-  const handleDragOver = (event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect =
-      "move";
-  };
 
-  const handleLeftColumnDragOver = (
-    event
-  ) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect =
-      "move";
-  };
+event.dataTransfer.effectAllowed = "move";
 
-  const handleDrop = (
-    event,
-    targetPair
-  ) => {
-    event.preventDefault();
+event.dataTransfer.setData(
+  "text/plain",
+  String(number)
+);
 
-    const rawNumber =
-      event.dataTransfer.getData(
-        "text/plain"
-      );
+event.dataTransfer.setData(
+  "application/x-matching-source",
+  "right"
+);
 
-    if (!rawNumber) {
-      setDraggedNumber(null);
-      setDragSource(null);
-      return;
-    }
 
-    const number = Number(rawNumber);
+};
 
-    if (isNumberUsed(number)) {
-      setDraggedNumber(null);
-      setDragSource(null);
-      return;
-    }
+const handleDragEnd = () => {
+setDraggedNumber(null);
+setDragSource(null);
+};
 
-    if (
-      matches[targetPair.id] !== undefined
-    ) {
-      setDraggedNumber(null);
-      setDragSource(null);
-      return;
-    }
+const handleDragOver = (event) => {
+event.preventDefault();
+event.dataTransfer.dropEffect = "move";
+};
 
-    setMatches((previous) => ({
-      ...previous,
-      [targetPair.id]: number,
-    }));
+const handleLeftColumnDragOver = (
+event
+) => {
+event.preventDefault();
+event.dataTransfer.dropEffect = "move";
+};
 
-    setChecked(false);
-    setDraggedNumber(null);
-    setDragSource(null);
-  };
+const handleDrop = (
+event,
+targetPair
+) => {
+event.preventDefault();
 
-  const handleDropBackToLeft = (
-    event
-  ) => {
-    event.preventDefault();
 
-    const rawNumber =
-      event.dataTransfer.getData(
-        "text/plain"
-      );
+const rawNumber =
+  event.dataTransfer.getData(
+    "text/plain"
+  );
 
-    if (!rawNumber) {
-      setDraggedNumber(null);
-      setDragSource(null);
-      return;
-    }
+if (!rawNumber) {
+  setDraggedNumber(null);
+  setDragSource(null);
+  return;
+}
 
-    const number = Number(rawNumber);
+const number = Number(rawNumber);
 
-    setMatches((previous) => {
-      const next = { ...previous };
+if (isNumberUsed(number)) {
+  setDraggedNumber(null);
+  setDragSource(null);
+  return;
+}
 
-      Object.keys(next).forEach(
-        (targetId) => {
-          if (next[targetId] === number) {
-            delete next[targetId];
-          }
-        }
-      );
+if (
+  matches[targetPair.id] !== undefined
+) {
+  setDraggedNumber(null);
+  setDragSource(null);
+  return;
+}
 
-      return next;
-    });
+setMatches((previous) => ({
+  ...previous,
+  [targetPair.id]: number,
+}));
 
-    setChecked(false);
-    setDraggedNumber(null);
-    setDragSource(null);
-  };
+setChecked(false);
+setDraggedNumber(null);
+setDragSource(null);
 
-  const checkAnswers = () => {
-    let correct = 0;
 
-    pairs.forEach((pair) => {
-      if (
-        matches[pair.id] === pair.number
-      ) {
-        correct += 1;
+};
+
+const handleDropBackToLeft = (
+event
+) => {
+event.preventDefault();
+
+
+const rawNumber =
+  event.dataTransfer.getData(
+    "text/plain"
+  );
+
+if (!rawNumber) {
+  setDraggedNumber(null);
+  setDragSource(null);
+  return;
+}
+
+const number = Number(rawNumber);
+
+setMatches((previous) => {
+  const next = { ...previous };
+
+  Object.keys(next).forEach(
+    (targetId) => {
+      if (next[targetId] === number) {
+        delete next[targetId];
       }
-    });
-
-    setScore(correct);
-    setChecked(true);
-  };
-
-  const resetAnswers = () => {
-    setMatches({});
-    setChecked(false);
-    setScore(0);
-    setDraggedNumber(null);
-    setDragSource(null);
-  };
-
-  const shuffleForNewAttempt = () => {
-    setShuffledPairs(
-      shuffleArray(pairs)
-    );
-
-    setMatches({});
-    setChecked(false);
-    setScore(0);
-    setDraggedNumber(null);
-    setDragSource(null);
-  };
-
-  const getTargetStatus = (pair) => {
-    if (!checked) {
-      return "neutral";
     }
+  );
 
-    if (
-      matches[pair.id] === pair.number
-    ) {
-      return "correct";
-    }
+  return next;
+});
 
-    if (
-      matches[pair.id] !== undefined
-    ) {
-      return "incorrect";
-    }
+setChecked(false);
+setDraggedNumber(null);
+setDragSource(null);
 
-    return "neutral";
-  };
 
-  const getNumberStatus = (number) => {
-    if (!checked) {
-      return "neutral";
-    }
+};
 
-    const targetPair = pairs.find(
-      (pair) =>
-        matches[pair.id] === number
-    );
+const checkAnswers = () => {
+let correct = 0;
 
-    if (!targetPair) {
-      return "neutral";
-    }
 
-    if (targetPair.number === number) {
-      return "correct";
-    }
+pairs.forEach((pair) => {
+  if (
+    matches[pair.id] === pair.number
+  ) {
+    correct += 1;
+  }
+});
 
-    return "incorrect";
-  };
+setScore(correct);
+setChecked(true);
 
-  const renderEmojiPicker = (pair) => {
-    return (
-      <div className="matching-emoji-picker">
-        <div className="matching-emoji-picker-title">
-          Choose an emoji
-        </div>
 
-        {Object.entries(
-          EMOJI_CATEGORIES
-        ).map(
-          ([categoryName, emojis]) => (
-            <div
-              className="matching-emoji-category"
-              key={categoryName}
-            >
-              <div className="matching-emoji-category-title">
-                {categoryName}
-              </div>
+};
 
-              <div className="matching-emoji-grid">
-                {emojis.map(
-                  (emoji) => (
-                    <button
-                      type="button"
-                      key={emoji}
-                      className={`matching-emoji-button ${
-                        pair.emoji ===
-                        emoji
-                          ? "matching-emoji-button-selected"
-                          : ""
-                      }`}
-                      onClick={() => {
-                        updatePair(
-                          pair.id,
-                          "emoji",
-                          emoji
-                        );
-                      }}
-                    >
-                      {emoji}
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-          )
-        )}
-      </div>
-    );
-  };
+const resetAnswers = () => {
+setMatches({});
+setChecked(false);
+setScore(0);
+setDraggedNumber(null);
+setDragSource(null);
+};
 
-  const renderTeacherSettings = () => {
-    if (!isTeacher) {
-      return null;
-    }
+const shuffleForNewAttempt = () => {
+setShuffledPairs(
+shuffleArray(pairs)
+);
 
-    return (
-      <Card
-        className="matching-settings-card"
-        title="Match the Amounts"
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={addPair}
-          >
-            Add Pair
-          </Button>
-        }
-      >
-        <Space
-          direction="vertical"
-          size={12}
-          className="matching-settings-list"
+
+setMatches({});
+setChecked(false);
+setScore(0);
+setDraggedNumber(null);
+setDragSource(null);
+
+
+};
+
+const getTargetStatus = (pair) => {
+if (!checked) {
+return "neutral";
+}
+
+
+if (
+  matches[pair.id] === pair.number
+) {
+  return "correct";
+}
+
+if (
+  matches[pair.id] !== undefined
+) {
+  return "incorrect";
+}
+
+return "neutral";
+
+
+};
+
+const getNumberStatus = (number) => {
+if (!checked) {
+return "neutral";
+}
+
+
+const targetPair = pairs.find(
+  (pair) =>
+    matches[pair.id] === number
+);
+
+if (!targetPair) {
+  return "neutral";
+}
+
+if (targetPair.number === number) {
+  return "correct";
+}
+
+return "incorrect";
+
+
+};
+
+const renderEmojiPicker = (pair) => {
+return ( <div className="matching-emoji-picker"> <div className="matching-emoji-picker-title">
+Choose an emoji </div>
+
+
+    {Object.entries(
+      EMOJI_CATEGORIES
+    ).map(
+      ([categoryName, emojis]) => (
+        <div
+          className="matching-emoji-category"
+          key={categoryName}
         >
-          {pairs.map(
-            (pair, index) => (
-              <div
-                className="matching-settings-row"
-                key={pair.id}
-              >
-                <Text strong>
-                  Pair {index + 1}
-                </Text>
+          <div className="matching-emoji-category-title">
+            {categoryName}
+          </div>
 
-                <InputNumber
-                  min={1}
-                  max={50}
-                  value={pair.number}
-                  onChange={(value) => {
+          <div className="matching-emoji-grid">
+            {emojis.map(
+              (emoji) => (
+                <button
+                  type="button"
+                  key={emoji}
+                  className={`matching-emoji-button ${
+                    pair.emoji === emoji
+                      ? "matching-emoji-button-selected"
+                      : ""
+                  }`}
+                  onClick={() => {
                     updatePair(
                       pair.id,
-                      "number",
-                      value || 1
+                      "emoji",
+                      emoji
                     );
                   }}
-                />
-
-                <Popover
-                  trigger="click"
-                  placement="bottom"
-                  content={renderEmojiPicker(
-                    pair
-                  )}
                 >
-                  <Button className="matching-emoji-selector">
-                    <span className="matching-selected-emoji">
-                      {pair.emoji}
-                    </span>
-                  </Button>
-                </Popover>
-
-                <Tag>
-                  {pair.number}{" "}
-                  {pair.number === 1
-                    ? "object"
-                    : "objects"}
-                </Tag>
-
-                <Button
-                  danger
-                  type="text"
-                  icon={
-                    <DeleteOutlined />
-                  }
-                  disabled={
-                    pairs.length <= 1
-                  }
-                  onClick={() =>
-                    removePair(
-                      pair.id
-                    )
-                  }
-                />
-              </div>
-            )
-          )}
-        </Space>
-      </Card>
-    );
-  };
-
-  if (isTeacher) {
-    return (
-      <div className="matching-minigame matching-game-wrapper">
-        {renderTeacherSettings()}
-      </div>
-    );
-  }
-
-  return (
-    <div className="matching-minigame matching-game-wrapper">
-      <Card className="matching-game-card">
-        <div className="matching-game-header">
-          <div>
-            <Title
-              level={3}
-              className="matching-game-title"
-            >
-              {game?.name ||
-                "Match the Amounts"}
-            </Title>
-
-            <Text type="secondary">
-              Drag each number to the
-              group with the same amount.
-            </Text>
-          </div>
-
-          <Space>
-            {checked && (
-              <Tag
-                color={
-                  score === pairs.length
-                    ? "green"
-                    : "blue"
-                }
-              >
-                Score: {score} /{" "}
-                {pairs.length}
-              </Tag>
+                  {emoji}
+                </button>
+              )
             )}
-
-            <Button
-              icon={
-                <ReloadOutlined />
-              }
-              onClick={resetAnswers}
-            >
-              Reset
-            </Button>
-
-            <Button
-              icon={
-                <ReloadOutlined />
-              }
-              onClick={
-                shuffleForNewAttempt
-              }
-            >
-              Shuffle
-            </Button>
-
-            <Button
-              type="primary"
-              icon={
-                <CheckOutlined />
-              }
-              onClick={checkAnswers}
-            >
-              Check Answer
-            </Button>
-          </Space>
+          </div>
         </div>
+      )
+    )}
+  </div>
+);
 
-        {checked && (
-          <Alert
-            className="matching-result-alert"
-            type={
-              score === pairs.length
-                ? "success"
-                : "info"
-            }
-            showIcon
-            message={`You got ${score} out of ${pairs.length} correct.`}
-          />
-        )}
+};
 
-        <div className="matching-columns">
+const renderTeacherSettings = () => {
+if (!isTeacher) {
+return null;
+}
+
+
+return (
+  <Card
+    className="matching-settings-card"
+    title="Match the Amounts"
+    extra={
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={addPair}
+        disabled={pairs.length >= 6}
+      >
+        Add Pair
+      </Button>
+    }
+  >
+    <Space
+      direction="vertical"
+      size={12}
+      className="matching-settings-list"
+    >
+      {pairs.map(
+        (pair, index) => (
           <div
-            className={`matching-column ${
-              dragSource === "right"
-                ? "matching-column-drop-active"
-                : ""
-            }`}
-            onDragOver={
-              handleLeftColumnDragOver
-            }
-            onDrop={
-              handleDropBackToLeft
+            className="matching-settings-row"
+            key={pair.id}
+          >
+            <Text strong>
+              Pair {index + 1}
+            </Text>
+
+            <InputNumber
+              min={1}
+              max={50}
+              value={pair.number}
+              onChange={(value) => {
+                updatePair(
+                  pair.id,
+                  "number",
+                  value || 1
+                );
+              }}
+            />
+
+            <Popover
+              trigger="click"
+              placement="bottom"
+              content={renderEmojiPicker(
+                pair
+              )}
+            >
+              <Button className="matching-emoji-selector">
+                <span className="matching-selected-emoji">
+                  {pair.emoji}
+                </span>
+              </Button>
+            </Popover>
+
+            <Tag>
+              {pair.number}{" "}
+              {pair.number === 1
+                ? "object"
+                : "objects"}
+            </Tag>
+
+            <Button
+              danger
+              type="text"
+              icon={
+                <DeleteOutlined />
+              }
+              disabled={
+                pairs.length <= 1
+              }
+              onClick={() =>
+                removePair(
+                  pair.id
+                )
+              }
+            />
+          </div>
+        )
+      )}
+    </Space>
+  </Card>
+);
+
+
+};
+
+if (isTeacher) {
+return ( <div className="matching-minigame matching-game-wrapper">
+{renderTeacherSettings()} </div>
+);
+}
+
+return ( <div className="matching-minigame matching-game-wrapper"> <Card className="matching-game-card"> <div className="matching-game-header"> <div> <Title
+           level={3}
+           className="matching-game-title"
+         >
+{game?.name ||
+"Match the Amounts"} </Title>
+
+        <Text type="secondary">
+          Drag each number to the
+          group with the same amount.
+        </Text>
+      </div>
+
+      <Space>
+        {checked && (
+          <Tag
+            color={
+              score === pairs.length
+                ? "green"
+                : "blue"
             }
           >
-            <Card
-              className="matching-column-card"
-              title="Numbers"
-            >
-              <div className="matching-number-list">
-                {pairs.map((pair) => {
-                  const used =
-                    isNumberUsed(
-                      pair.number
-                    );
+            Score: {score} /{" "}
+            {pairs.length}
+          </Tag>
+        )}
 
-                  const status =
-                    getNumberStatus(
-                      pair.number
-                    );
+        <Button
+          icon={
+            <ReloadOutlined />
+          }
+          onClick={resetAnswers}
+        >
+          Reset
+        </Button>
 
-                  return (
-                    <div
-                      key={pair.id}
-                      className={`matching-number-card matching-status-${status} ${
-                        used
-                          ? "matching-number-used"
-                          : ""
-                      } ${
-                        draggedNumber ===
-                        pair.number
-                          ? "matching-number-dragging"
-                          : ""
-                      }`}
-                      draggable={!used}
-                      onDragStart={(event) =>
-                        handleNumberDragStart(
-                          event,
-                          pair
-                        )
-                      }
-                      onDragEnd={
-                        handleDragEnd
-                      }
-                    >
-                      <span className="matching-number-value">
-                        {pair.number}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+        <Button
+          icon={
+            <ReloadOutlined />
+          }
+          onClick={
+            shuffleForNewAttempt
+          }
+        >
+          Shuffle
+        </Button>
 
-              {dragSource === "right" && (
-                <div className="matching-return-hint">
-                  Drop here to return
-                  the number
+        <Button
+          type="primary"
+          icon={
+            <CheckOutlined />
+          }
+          onClick={checkAnswers}
+        >
+          Check Answer
+        </Button>
+      </Space>
+    </div>
+
+    {checked && (
+      <Alert
+        className="matching-result-alert"
+        type={
+          score === pairs.length
+            ? "success"
+            : "info"
+        }
+        showIcon
+        message={`You got ${score} out of ${pairs.length} correct.`}
+      />
+    )}
+
+    <div className="matching-columns">
+      <div
+        className={`matching-column ${
+          dragSource === "right"
+            ? "matching-column-drop-active"
+            : ""
+        }`}
+        onDragOver={
+          handleLeftColumnDragOver
+        }
+        onDrop={
+          handleDropBackToLeft
+        }
+      >
+        <Card
+          className="matching-column-card"
+          title="Numbers"
+        >
+          <div className="matching-number-list">
+            {pairs.map((pair) => {
+              const used =
+                isNumberUsed(
+                  pair.number
+                );
+
+              const status =
+                getNumberStatus(
+                  pair.number
+                );
+
+              return (
+                <div
+                  key={pair.id}
+                  className={`matching-number-card matching-status-${status} ${
+                    used
+                      ? "matching-number-used"
+                      : ""
+                  } ${
+                    draggedNumber ===
+                    pair.number
+                      ? "matching-number-dragging"
+                      : ""
+                  }`}
+                  draggable={!used}
+                  onDragStart={(event) =>
+                    handleNumberDragStart(
+                      event,
+                      pair
+                    )
+                  }
+                  onDragEnd={
+                    handleDragEnd
+                  }
+                >
+                  <span className="matching-number-value">
+                    {pair.number}
+                  </span>
                 </div>
-              )}
-            </Card>
+              );
+            })}
           </div>
 
-          <div className="matching-column">
-            <Card
-              className="matching-column-card"
-              title="Objects"
-            >
-              <div className="matching-target-list">
-                {objectGroups.map(
-                  (pair) => {
-                    const status =
-                      getTargetStatus(
-                        pair
-                      );
+          {dragSource === "right" && (
+            <div className="matching-return-hint">
+              Drop here to return
+              the number
+            </div>
+          )}
+        </Card>
+      </div>
 
-                    const hasNumber =
-                      matches[
-                        pair.id
-                      ] !== undefined;
+      <div className="matching-column">
+        <Card
+          className="matching-column-card"
+          title="Objects"
+        >
+          <div className="matching-target-list">
+            {objectGroups.map(
+              (pair) => {
+                const status =
+                  getTargetStatus(
+                    pair
+                  );
 
-                    return (
+                const hasNumber =
+                  matches[
+                    pair.id
+                  ] !== undefined;
+
+                return (
+                  <div
+                    key={pair.id}
+                    className={`matching-target-card matching-status-${status} ${
+                      hasNumber
+                        ? "matching-target-used"
+                        : ""
+                    } ${
+                      draggedNumber !==
+                        null &&
+                      !hasNumber
+                        ? "matching-target-drop-active"
+                        : ""
+                    }`}
+                    onDragOver={
+                      hasNumber
+                        ? undefined
+                        : handleDragOver
+                    }
+                    onDrop={
+                      hasNumber
+                        ? undefined
+                        : (event) =>
+                            handleDrop(
+                              event,
+                              pair
+                            )
+                    }
+                  >
+                    <div className="matching-objects">
+                      {pair.objects.map(
+                        (objectId) => (
+                          <span
+                            className="matching-object"
+                            key={objectId}
+                          >
+                            {pair.emoji}
+                          </span>
+                        )
+                      )}
+                    </div>
+
+                    {hasNumber && (
                       <div
-                        key={pair.id}
-                        className={`matching-target-card matching-status-${status} ${
-                          hasNumber
-                            ? "matching-target-used"
-                            : ""
-                        } ${
-                          draggedNumber !==
-                            null &&
-                          !hasNumber
-                            ? "matching-target-drop-active"
+                        className={`matching-placed-number ${
+                          draggedNumber ===
+                          matches[
+                            pair.id
+                          ]
+                            ? "matching-placed-number-dragging"
                             : ""
                         }`}
-                        onDragOver={
-                          hasNumber
-                            ? undefined
-                            : handleDragOver
+                        draggable
+                        onDragStart={(
+                          event
+                        ) =>
+                          handlePlacedNumberDragStart(
+                            event,
+                            matches[
+                              pair.id
+                            ]
+                          )
                         }
-                        onDrop={
-                          hasNumber
-                            ? undefined
-                            : (event) =>
-                                handleDrop(
-                                  event,
-                                  pair
-                                )
+                        onDragEnd={
+                          handleDragEnd
                         }
+                        title="Drag back to the Numbers column"
                       >
-                        <div className="matching-objects">
-                          {pair.objects.map(
-                            (objectId) => (
-                              <span
-                                className="matching-object"
-                                key={objectId}
-                              >
-                                {
-                                  pair.emoji
-                                }
-                              </span>
-                            )
-                          )}
-                        </div>
-
-                        {hasNumber && (
-                          <div
-                            className={`matching-placed-number ${
-                              draggedNumber ===
-                              matches[
-                                pair.id
-                              ]
-                                ? "matching-placed-number-dragging"
-                                : ""
-                            }`}
-                            draggable
-                            onDragStart={(
-                              event
-                            ) =>
-                              handlePlacedNumberDragStart(
-                                event,
-                                matches[
-                                  pair.id
-                                ]
-                              )
-                            }
-                            onDragEnd={
-                              handleDragEnd
-                            }
-                            title="Drag back to the Numbers column"
-                          >
-                            {
-                              matches[
-                                pair.id
-                              ]
-                            }
-                          </div>
-                        )}
-
-                        {!hasNumber && (
-                          <div className="matching-drop-placeholder">
-                            Drop number
-                            here
-                          </div>
-                        )}
+                        {
+                          matches[
+                            pair.id
+                          ]
+                        }
                       </div>
-                    );
-                  }
-                )}
-              </div>
-            </Card>
+                    )}
+
+                    {!hasNumber && (
+                      <div className="matching-drop-placeholder">
+                        Drop number
+                        here
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+            )}
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
-  );
+  </Card>
+</div>
+
+
+);
 };
 
 export default MatchingMinigame;
+
