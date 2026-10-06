@@ -35,6 +35,7 @@ build/
 ### Runtime data ###
 data/database/*
 data/uploads/*
+data/minigame-assets/
 !data/database/.gitkeep
 !data/uploads/.gitkeep
 # Sample images referenced by V2; other runtime uploads remain local.
