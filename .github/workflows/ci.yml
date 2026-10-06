@@ -103,6 +103,12 @@ jobs:
           cache: npm
           cache-dependency-path: my-react/package-lock.json
 
+      - name: Install browser-test dependencies
+        working-directory: my-react
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
       - name: Verify Docker and Compose
         run: |
           docker info
@@ -118,12 +124,6 @@ jobs:
         run: |
           curl --fail --silent --show-error http://127.0.0.1:8080/api/auth/csrf > /dev/null
           curl --fail --silent --show-error http://127.0.0.1:5173/ > /dev/null
-
-      - name: Install browser-test dependencies
-        working-directory: my-react
-        run: |
-          npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
 
       - name: Run Playwright end-to-end tests
         working-directory: my-react
