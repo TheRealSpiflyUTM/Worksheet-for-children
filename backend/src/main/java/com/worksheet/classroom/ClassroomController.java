@@ -1,8 +1,8 @@
 package com.worksheet.classroom;
 
 import com.worksheet.auth.AuthSessionService;
-import com.worksheet.auth.User;
 import com.worksheet.auth.UserRole;
+import com.worksheet.worksheet.WorksheetShareResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -50,6 +50,41 @@ public class ClassroomController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeMember(@PathVariable Long classroomId, @PathVariable Long userId, HttpServletRequest request) {
         service.removeMember(classroomId, userId, sessions.requireRole(request, UserRole.TEACHER));
+    }
+
+    @PostMapping("/{classroomId}/members")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ClassroomMemberResponse addStudent(@PathVariable Long classroomId,
+            @RequestBody StudentNameRequest body, HttpServletRequest request) {
+        return service.addStudent(classroomId, sessions.requireRole(request, UserRole.TEACHER), body);
+    }
+
+    @PatchMapping("/{classroomId}/members/{userId}")
+    public ClassroomMemberResponse renameStudent(@PathVariable Long classroomId, @PathVariable Long userId,
+            @RequestBody StudentNameRequest body, HttpServletRequest request) {
+        return service.renameStudent(classroomId, userId, sessions.requireRole(request, UserRole.TEACHER), body);
+    }
+
+    @GetMapping("/{classroomId}/members/{userId}/tests")
+    public List<StudentTestResponse> getStudentTests(@PathVariable Long classroomId, @PathVariable Long userId,
+            HttpServletRequest request) {
+        return service.getStudentTests(classroomId, userId, sessions.requireRole(request, UserRole.TEACHER));
+    }
+
+    @PostMapping("/{classroomId}/tests")
+    @ResponseStatus(HttpStatus.CREATED)
+    public WorksheetShareResponse startTest(@PathVariable Long classroomId,
+            @RequestBody StartTestRequest body, HttpServletRequest request) {
+        return new WorksheetShareResponse(
+            service.startTest(classroomId, body.worksheetId(), sessions.requireRole(request, UserRole.TEACHER)));
+    }
+
+    public record StartTestRequest(Long worksheetId) {}
+
+    @PostMapping("/{classroomId}/members/{userId}/code")
+    public ClassroomMemberResponse issueStudentCode(@PathVariable Long classroomId, @PathVariable Long userId,
+            HttpServletRequest request) {
+        return service.issueStudentCode(classroomId, userId, sessions.requireRole(request, UserRole.TEACHER));
     }
 
     @PostMapping("/{classroomId}/join-code/rotate")

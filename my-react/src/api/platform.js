@@ -15,6 +15,14 @@ export const platformApi = {
   joinClass: (code) =>
     send("/api/classes/join", "POST", { joinCode: code.trim().toUpperCase() }),
   members: (id) => apiRequest(`/api/classes/${id}/members`),
+  addStudent: (id, name) => send(`/api/classes/${id}/members`, "POST", { name }),
+  issueStudentCode: (id, userId) => send(`/api/classes/${id}/members/${userId}/code`),
+  renameStudent: (id, userId, name) => send(`/api/classes/${id}/members/${userId}`, "PATCH", { name }),
+  studentTests: (id, userId) => apiRequest(`/api/classes/${id}/members/${userId}/tests`),
+  startClassTest: (id, worksheetId) => send(`/api/classes/${id}/tests`, "POST", { worksheetId }),
+  enterGame: (studentCode, worksheetCode) => send("/api/play/join", "POST", {
+    studentCode: studentCode.trim().toUpperCase(), worksheetCode: worksheetCode.trim().toUpperCase(),
+  }),
   removeMember: (id, userId) =>
     send(`/api/classes/${id}/members/${userId}`, "DELETE"),
   rotateClass: (id) => send(`/api/classes/${id}/join-code/rotate`),

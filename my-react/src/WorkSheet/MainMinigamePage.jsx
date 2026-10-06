@@ -1,3 +1,4 @@
+import ChildMinigame from "./ChildMinigame.jsx";
 // K is for kids
 // T is for teacher
 // We will use this to switch between teacher and student version
@@ -12,7 +13,7 @@ import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
 import { useState, useRef, useEffect } from "react";
-import { Button, message, Spin } from "antd";
+import { Button, message, Popconfirm, Progress, Spin } from "antd";
 import {
   ArrowLeftOutlined,
   EyeOutlined,
@@ -25,6 +26,7 @@ import {
   getWorksheetItems,
   createWorksheetItem,
   updateWorksheetItem,
+  deleteWorksheetItem,
   getMiniGameDefinitions,
 } from "../api/worksheets.js";
 import "./MainMinigamePage.css";
@@ -39,6 +41,7 @@ const TOOLS_WIDTH_STORAGE_KEY = "worksheet-tools-width";
 function MainMinigamePage(params) {
   // #region Values
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const { worksheetId } = useParams();
 
   /*
@@ -76,6 +79,18 @@ function MainMinigamePage(params) {
         },
       ],
     },
+    
+    {
+      id: "matching-game",
+      name: "Match the Amounts",
+      img: "/img/MatchingGame.png",
+      pairs: [
+        { id: "one", number: 1, emoji: "🍎" },
+        { id: "two", number: 2, emoji: "🍊" },
+        { id: "three", number: 3, emoji: "🍌" },
+      ],
+    },
+
     {
       id: "math-game",
       name: "Easy Math",
@@ -273,6 +288,14 @@ function MainMinigamePage(params) {
     loadWorksheet();
   }, [worksheetId]);
 
+  useEffect(() => {
+    if (!worksheetId) {
+      return;
+    }
+
+    loadWorksheet();
+  }, [worksheetId]);
+
   async function loadWorksheet() {
     setIsLoading(true);
 
@@ -456,6 +479,38 @@ function MainMinigamePage(params) {
   }
 
   /*
+    Delete a mini-game from the worksheet.
+    If it was already saved, it is also deleted on the server.
+  */
+  async function removeMinigame(game) {
+    try {
+      if (game.itemId) {
+        await deleteWorksheetItem(
+          worksheetId,
+          game.itemId
+        );
+      }
+
+      setAddedMinigames((currentGames) =>
+        currentGames.filter(
+          (currentGame) =>
+            currentGame.instanceId !==
+            game.instanceId
+        )
+      );
+
+      setSelectedGameId(null);
+      setHasUnsavedChanges(true);
+      message.success("Minigame removed.");
+    } catch (error) {
+      message.error(
+        error.message ||
+          "Could not remove the minigame."
+      );
+    }
+  }
+
+  /*
     Remove frontend-only fields before sending
     configuration to backend.
   */
@@ -531,6 +586,18 @@ function MainMinigamePage(params) {
        * each destination index is free before a
        * newly inserted item is created there.
        */
+        .filter(({ game }) => game.itemId)
+        .sort(
+          (first, second) =>
+            second.item.orderIndex -
+            first.item.orderIndex
+        );
+
+      /*
+       * Move existing items from bottom to top so
+       * each destination index is free before a
+       * newly inserted item is created there.
+       */
       for (const { game, item } of existingItems) {
         await updateWorksheetItem(
           worksheetId,
@@ -584,7 +651,20 @@ function MainMinigamePage(params) {
       message.success(
         "Worksheet saved successfully."
       );
+
+      message.success(
+        "Worksheet saved successfully."
+      );
     } catch (error) {
+      console.error(
+        "Failed to save worksheet:",
+        error
+      );
+
+      message.error(
+        error.message ||
+          "Failed to save worksheet."
+      );
       console.error(
         "Failed to save worksheet:",
         error
@@ -650,11 +730,13 @@ function MainMinigamePage(params) {
         return;
       }
 
+      if (event.target.closest(".ant-popover, .ant-modal-root")) {
+        return;
+      }
+
       if (
         selectedAreaRef.current &&
-        !selectedAreaRef.current.contains(
-          event.target
-        )
+        !selectedAreaRef.current.contains(event.target)
       ) {
         setSelectedGameId(null);
       }
@@ -890,6 +972,25 @@ function MainMinigamePage(params) {
                         >
                           Add Minigame
                         </Button>
+                        <Popconfirm
+                          title="Ștergi minigame-ul?"
+                          description="Minigame-ul va fi eliminat din fișă."
+                          okText="Șterge"
+                          cancelText="Anulează"
+                          onConfirm={() => removeMinigame(game)}
+                        >
+                          <Button
+                            className="addMinigameButton"
+                            danger
+                            icon={<DeleteOutlined />}
+                            tabIndex={
+                              selectedGameId === game.instanceId ? 0 : -1
+                            }
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            Delete Minigame
+                          </Button>
+                        </Popconfirm>
                       </div>
                     </div>
                   </div>
@@ -936,9 +1037,10 @@ function MainMinigamePage(params) {
               disabled={
                 addedMinigames.length === 0
               }
-              onClick={() =>
-                setIsPreviewing(true)
-              }
+              onClick={() => {
+                setPreviewIndex(0);
+                setIsPreviewing(true);
+              }}
             >
               Preview as Kid
             </Button>
@@ -976,60 +1078,29 @@ function MainMinigamePage(params) {
         </div>
       )}
 
-      {addedMinigames.map((game) => (
-        <div
-          className="worksheetGame worksheetGamePreview"
-          key={game.instanceId}
-        >
-          <WorksheetSprinkles
-            seed={game.decorationSeed}
-          />
-
-          <div className="worksheetGameContent">
-            {game.id === "color-game" && (
-              <ColorMinigame
-                isTeacher={false}
-                game={game}
+      {isPreviewing ? (
+        <>
+          <Progress percent={Math.round(previewIndex / addedMinigames.length * 100)} showInfo={false} strokeColor="#6c5ce7" />
+          {addedMinigames[previewIndex] ? (
+            <>
+              <ChildMinigame
+                key={addedMinigames[previewIndex].instanceId}
+                game={addedMinigames[previewIndex]}
+                onComplete={() => setPreviewIndex(current => current + 1)}
               />
-            )}
-
-            {game.id === "math-game" && (
-              <MathMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "sequence-game" && (
-              <SequenceMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id ===
-              "higher-lower-game" && (
-              <HigherOrLowerMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "odd-even-game" && (
-              <OddOrEvenMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-
-            {game.id === "matching-game" && (
-              <MatchingMinigame
-                isTeacher={false}
-                game={game}
-              />
-            )}
-          </div>
-        </div>
+              <div className="childGameActions">
+                <Button onClick={() => setPreviewIndex(current => current + 1)}>Skip activity</Button>
+              </div>
+            </>
+          ) : (
+            <div className="childGameActions">
+              <p>Ai terminat toate activitățile!</p>
+              <Button onClick={() => setPreviewIndex(0)}>Joacă din nou</Button>
+            </div>
+          )}
+        </>
+      ) : addedMinigames.map((game) => (
+        <ChildMinigame key={game.instanceId} game={game} />
       ))}
     </main>
   );

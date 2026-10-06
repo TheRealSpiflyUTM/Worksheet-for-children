@@ -1,21 +1,25 @@
 import React from "react";
 import { Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
-import { apiRequest } from "../src/api/client.js";
+import { platformApi } from "../src/api/platform.js";
+import { usePlatform } from "../src/platform/PlatformState.js";
 import "./login.css";
 
 function CodeLogin() {
 const navigate = useNavigate();
+const { loadSession } = usePlatform();
 
 const [code, setCode] = React.useState("");
+const [studentCode, setStudentCode] = React.useState("");
 const [codeError, setCodeError] = React.useState("");
 const [isCheckingCode, setIsCheckingCode] = React.useState(false);
 
 const onCodeSubmit = async () => {
+if (isCheckingCode) return;
 const cleanCode = code.trim().toUpperCase();
 
-if (!cleanCode) {
-  setCodeError("Enter the worksheet code");
+if (!cleanCode || !studentCode.trim()) {
+  setCodeError("Scrie codul tău și codul fișei primite de la profesor.");
   return;
 }
 
@@ -23,25 +27,16 @@ setIsCheckingCode(true);
 setCodeError("");
 
 try {
-  const worksheet = await apiRequest("/api/worksheets/join", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      code: cleanCode,
-    }),
-  });
+  const worksheet = await platformApi.enterGame(studentCode, cleanCode);
+  await loadSession();
+  const history = await platformApi.history(worksheet.assignmentId);
+  const attempt = history.find((entry) => entry.status === "IN_PROGRESS")
+    || await platformApi.start(worksheet.assignmentId);
 
   sessionStorage.removeItem("pending-worksheet-code");
   setCodeError("");
-  navigate(`/assignments/${worksheet.assignmentId}`);
+  navigate(`/attempts/${attempt.id}`);
 } catch (requestError) {
-  if (requestError.status === 401) {
-    sessionStorage.setItem("pending-worksheet-code", cleanCode);
-    navigate("/login");
-    return;
-  }
   setCodeError(
     requestError.message || "Worksheet code not found"
   );
@@ -76,15 +71,26 @@ return (
 
       <div className="code-login-card">
         <div className="code-login-card-icon" aria-hidden="true">🚀</div>
-        <h2>Ai primit un cod?</h2>
-        <p>Scrie-l mai jos și aventura poate începe.</p>
+        <h2>Ai primit codurile?</h2>
+        <p>Scrie codul tău și codul fișei. Nu ai nevoie de cont.</p>
 
         <div className="code-login-form">
+          <Input
+            maxLength={8}
+            placeholder="CODUL TĂU"
+            className="pin-input"
+            value={studentCode}
+            aria-label="Codul elevului"
+            disabled={isCheckingCode}
+            onChange={(event) => { setStudentCode(event.target.value.toUpperCase()); setCodeError(""); }}
+            onPressEnter={onCodeSubmit}
+          />
           <Input
             maxLength={9}
             placeholder="CODUL FIȘEI"
             className="pin-input"
             value={code}
+            disabled={isCheckingCode}
             aria-label="Codul fișei de lucru"
             onChange={(e) => {
               setCode(e.target.value.toUpperCase());

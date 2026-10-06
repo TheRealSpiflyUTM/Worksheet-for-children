@@ -1,5 +1,5 @@
 import { ConfigProvider } from "antd";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 
 import MainMinigamePage from "./WorkSheet/MainMinigamePage.jsx";
 import WorkSheetViewer from "./WorkSheet/WorkSheetViewer.jsx";
@@ -12,6 +12,9 @@ import Avatar from "./Avatar/Avatar.jsx";
 import SignUp from "./Auth/SignUp.jsx";
 
 import KidPage from "./Home/kids/KidPage.jsx";
+import TestPage from "./Home/kidstests/TestPage.jsx";
+import LegacyClassEntry from "./Home/LegacyClassEntry.jsx";
+import { usePlatform } from "./platform/PlatformState.js";
 import { PlatformProvider } from "./platform/PlatformContext.jsx";
 import { RequireSession } from "./platform/PlatformUI.jsx";
 import {
@@ -26,6 +29,13 @@ import {
 } from "./platform/PlatformPages.jsx";
 import AttemptPage from "./platform/AttemptPage.jsx";
 import "./platform/Platform.css";
+
+function AttemptRoute() {
+    const { user } = usePlatform();
+    return <RequireSession entry="/">
+        {user?.role === "USER" ? <div className="child-game-page"><AttemptPage /></div> : <LeftSidebar><Avatar /><AttemptPage /></LeftSidebar>}
+    </RequireSession>;
+}
 
 function App() {
 const location = useLocation();
@@ -92,7 +102,7 @@ return (
         />
         <Route
             path="/home/:className"
-            element={<Navigate to="/classes" replace />}
+            element={<RequireSession teacherOnly><LegacyClassEntry /></RequireSession>}
         />
 
 
@@ -101,7 +111,7 @@ return (
         element={
             <LeftSidebar>
             <Avatar />
-            <KidPage />
+            <RequireSession teacherOnly><LegacyClassEntry /></RequireSession>
             </LeftSidebar>
         }
         />
@@ -181,8 +191,18 @@ return (
             />
 
             <Route
+                path="/classes/:id/children/:userId"
+                element={<LeftSidebar><Avatar /><RequireSession teacherOnly><KidPage /></RequireSession></LeftSidebar>}
+            />
+
+            <Route
+                path="/classes/:id/children/:userId/tests/:attemptId"
+                element={<LeftSidebar><Avatar /><RequireSession teacherOnly><TestPage /></RequireSession></LeftSidebar>}
+            />
+
+            <Route
                 path="/attempts/:id"
-                element={<LeftSidebar><Avatar /><RequireSession><AttemptPage /></RequireSession></LeftSidebar>}
+                element={<AttemptRoute />}
             />
 
 

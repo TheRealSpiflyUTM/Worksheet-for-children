@@ -57,6 +57,13 @@ public void run(String... args) {
         oddEvenConfigurationSchema(),
         oddEvenDefaultConfiguration()
     );
+    
+    createIfMissing(
+        "Match the Amounts",
+        "matching-game",
+        matchingConfigurationSchema(),
+        matchingDefaultConfiguration()
+);
 }
 
 private void createIfMissing(
@@ -93,6 +100,48 @@ private void createIfMissing(
             true
         )
     );
+}
+
+private JsonNode matchingConfigurationSchema() {
+    ObjectNode schema = baseObjectSchema();
+
+    ObjectNode pair = baseObjectSchema();
+    addStringProperty(pair, "id");
+    addStringProperty(pair, "emoji");
+    ObjectNode number = JsonNodeFactory.instance.objectNode();
+    number.put("type", "integer");
+    number.put("minimum", 1);
+    number.put("maximum", 50);
+    properties(pair).set("number", number);
+    require(pair, "id", "number", "emoji");
+
+    ObjectNode pairs = JsonNodeFactory.instance.objectNode();
+    pairs.put("type", "array");
+    pairs.put("minItems", 1);
+    pairs.put("maxItems", 6);
+    pairs.set("items", pair);
+
+    properties(schema).set("pairs", pairs);
+    require(schema, "pairs");
+    return schema;
+}
+
+private JsonNode matchingDefaultConfiguration() {
+    ObjectNode config = JsonNodeFactory.instance.objectNode();
+    var pairs = JsonNodeFactory.instance.arrayNode();
+    pairs.add(matchingPair("one", 1, "🍎"));
+    pairs.add(matchingPair("two", 2, "🍊"));
+    pairs.add(matchingPair("three", 3, "🍌"));
+    config.set("pairs", pairs);
+    return config;
+}
+
+private ObjectNode matchingPair(String id, int number, String emoji) {
+    ObjectNode pair = JsonNodeFactory.instance.objectNode();
+    pair.put("id", id);
+    pair.put("number", number);
+    pair.put("emoji", emoji);
+    return pair;
 }
 
 private JsonNode colorConfigurationSchema() {

@@ -3,6 +3,7 @@
   margin: 0 auto;
   color: var(--play-ink);
 }
+.child-game-page { min-height: 100vh; padding: 96px 24px 80px; }
 .platformPageHeader, .platformActions, .platformRow, .platformCodeActions {
   display: flex;
   align-items: center;
@@ -40,6 +41,7 @@
 .platformAccount strong { font-size: 1.1rem; }
 .platformAccount .platformStatus { justify-self: start; }
 @media (max-width: 650px) {
+  .platformLanguage { position: static; display: flex; justify-content: flex-end; padding: 0 20px 20px; }
   .platformPageHeader, .platformRow { align-items: stretch; flex-direction: column; }
   .platformActions { flex-wrap: wrap; }
 }

@@ -53,6 +53,25 @@ Publishing occurs when an assignment is created, a personal attempt starts, or a
 
 A worksheet share code points to one immutable revision. A signed-in `USER` redeems it once to receive a normal assignment, then uses the assignment attempt APIs. Reusing the same code returns the existing active assignment. `POST /api/worksheets/{id}/share/rotate` publishes the latest draft under a new code without changing earlier assignments.
 
+Teachers create children by name with `POST /api/classes/{id}/members` and rename them
+with `PATCH /api/classes/{id}/members/{userId}`. These profiles use internal `USER`
+identities to store progress, with no usable email/password login. V21 stores a unique
+personal code per membership. Existing accounts can receive a code using
+`POST /api/classes/{id}/members/{userId}/code`; their account names remain self-managed.
+
+`POST /api/classes/{id}/tests` accepts `worksheetId`, publishes the current draft,
+updates its shared revision, and assigns it to every active member atomically.
+Earlier assignments keep their frozen revisions. The public `POST /api/play/join`
+accepts `studentCode` and `worksheetCode`, validates both against an active membership
+and its teacher, and establishes a child session only after successful redemption.
+It returns the child and `assignmentId` for the normal attempt APIs. Assignments are
+matched within that membership's class. Child code entry never creates a new profile.
+
+The teacher-only `GET /api/classes/{id}/members/{userId}/tests` returns saved attempts.
+Roster responses include last-test percentage, average percentage, and the lowest
+scoring test, calculated from completed attempts. Removing a member disables their
+personal code and revokes their class assignments without deleting history.
+
 The old `worksheet_result` and `mini_game_result` tables/routes remain as deprecated compatibility APIs. New work uses `worksheet_attempt` and `worksheet_attempt_item_result`.
 
 ## Attempt lifecycle
@@ -198,6 +217,12 @@ task images recorded as V19, inspect `flyway_schema_history` and back up that da
 before planning reconciliation; do not delete its history or run `flyway repair` blindly.
 
 ## Run and verify
+
+For the complete Docker development stack (frontend, backend, and database), run
+`docker compose up --build -d` from the repository root and open
+http://localhost:5173. See the [root README](../README.md) for teammate setup,
+live frontend updates, backend rebuilds, persistent data, and container test commands.
+The commands below are the alternative workflow with Java installed locally.
 
 Requirements: Temurin Java 25 and Docker Desktop.
 

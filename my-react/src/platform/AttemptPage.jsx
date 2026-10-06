@@ -3,7 +3,7 @@ import { Alert, Button, Progress } from "antd";
 import { Link, useParams } from "react-router-dom";
 import { platformApi } from "../api/platform.js";
 import { usePlatform } from "./PlatformState.js";
-import { gameTitle, remainingItems, resultPayload } from "./game-model.js";
+import { activityMaxScore, gameTitle, remainingItems, resultPayload } from "./game-model.js";
 import GamePlayer from "./GamePlayer.jsx";
 import { ErrorNotice, PlatformPage, Resource } from "./PlatformUI.jsx";
 import { useResource } from "./useResource.js";
@@ -22,7 +22,7 @@ function AttemptContent({ initial }) {
   const pending = remainingItems(attempt);
   const item = pending[0];
   const readOnly = attempt.status !== "IN_PROGRESS" || (attempt.assignmentId && user.role !== "USER");
-  const back = attempt.assignmentId ? `/assignments/${attempt.assignmentId}` : `/kids/${attempt.worksheetId}`;
+  const back = user.role === "USER" ? "/" : attempt.assignmentId ? `/assignments/${attempt.assignmentId}` : `/kids/${attempt.worksheetId}`;
 
   async function save(result) {
     if (!item || busy) return;
@@ -75,7 +75,7 @@ function AttemptContent({ initial }) {
         <>
           <GamePlayer key={item.id} item={item} onComplete={save} busy={busy} />
           <div className="platformActions" style={{ justifyContent: "center", marginTop: 20 }}>
-            <Button disabled={busy} onClick={() => save(resultPayload(0, item.configuration.exerciseCount || item.configuration.animals?.length || 5, 0, "SKIPPED"))}>{t("Skip activity")}</Button>
+            <Button disabled={busy} onClick={() => save(resultPayload(0, activityMaxScore(item), 0, "SKIPPED"))}>{t("Skip activity")}</Button>
           </div>
         </>
       ) : (

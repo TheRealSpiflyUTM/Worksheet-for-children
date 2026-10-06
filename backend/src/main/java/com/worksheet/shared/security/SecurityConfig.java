@@ -58,7 +58,9 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/login", "/signup", "/home", "/home/*", "/account", "/sheets",
                 "/teacher", "/teacher/*", "/kids", "/kids/*", "/classes", "/classes/*",
                 "/assignments", "/assignments/*", "/attempts/*").permitAll()
+            .requestMatchers(HttpMethod.GET, "/classes/*/children/*", "/classes/*/children/*/tests/*", "/home/*/*").permitAll()
             .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/csrf").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/play/join").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/minigames", "/api/minigames/*").permitAll()
             .requestMatchers("/api/minigame1/**", "/api/count-match/**").permitAll()
             .requestMatchers("/api/admin/**").hasRole("ADMIN")

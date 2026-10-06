@@ -4,7 +4,82 @@ A React frontend and Spring Boot backend for worksheets, mini-games, classrooms,
 assignments, and saved attempts. The backend requires PostgreSQL and applies Flyway
 migrations at startup.
 
-## Requirements
+## Run all three services with Docker (recommended for development)
+
+Install Docker Desktop and start it in **Linux containers** mode. Colleagues on
+Linux can use Docker Engine with the Compose plugin. No local Java, Node.js, or
+Maven installation is needed for this workflow.
+
+After cloning the repository (or pulling this branch), run from the repository root:
+
+```powershell
+docker compose up --build -d
+docker compose ps
+```
+
+The first run downloads images, builds Java, and installs frontend dependencies;
+allow a few minutes. Open **http://localhost:5173** once all three services are healthy.
+
+| Service | Local address | Purpose |
+| --- | --- | --- |
+| Frontend | http://localhost:5173 | React/Vite with live updates |
+| Backend | http://localhost:8080 | Spring Boot API |
+| PostgreSQL | localhost:5432 | Database `worksheets`, user/password `postgres` |
+
+The frontend forwards `/api` requests to the backend inside Docker. Keep using
+`localhost:5173` in the browser; the internal Docker service names are not browser URLs.
+Ports are bound to the local computer. This configuration is for development.
+
+### Everyday work
+
+- Edit frontend files normally in your editor; Vite updates the browser automatically.
+  Polling is enabled in Docker so changes made by Windows editors are detected too.
+- After Java, backend configuration, or migration changes, rebuild the backend:
+  `docker compose up --build -d backend`.
+- After frontend dependency changes, restart the frontend:
+  `docker compose restart frontend`. It runs `npm ci` using the committed lockfile
+  at every start; dependencies are stored in a Docker volume.
+- After pulling changes from colleagues, run `docker compose up --build -d` and
+  `docker compose restart frontend` to refresh both the backend and dependencies.
+- View logs: `docker compose logs -f frontend backend postgres`.
+- Stop everything: `docker compose down`.
+- Start again: `docker compose up -d`.
+
+Each colleague has their own local database and uploads. Git shares the code and
+configuration, not accounts, worksheet data, or uploaded images. Existing local
+PostgreSQL data stays in `database/postgres-data`, and backend files stay in
+`backend/data`; stopping or rebuilding containers does not remove those folders.
+Do not delete these folders to troubleshoot startup. Back up an existing database
+before applying new migrations. Frontend dependencies are isolated from host
+`node_modules`, so Windows, macOS, and Linux colleagues can use the same setup.
+
+If a port is already occupied, stop the existing local Vite, Java, or PostgreSQL
+process before starting the Docker services. If a service fails, inspect its logs.
+The backend waits for PostgreSQL readiness, and the frontend waits for backend
+readiness. Migration errors still need the investigation described below.
+
+### Checks inside Docker
+
+With the services running:
+
+```powershell
+docker compose exec frontend npm test
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run build -- --outDir /tmp/worksheet-frontend-build
+```
+
+The build check uses a temporary container directory, preserving the backend's
+committed static files. For backend tests without a local JDK, use the build stage:
+
+```powershell
+docker build --target build -t worksheet-backend-check ./backend
+docker run --rm --entrypoint ./mvnw worksheet-backend-check -B test
+```
+
+These backend tests run against isolated H2 databases; the PostgreSQL integration
+checks under `verify` still require a local JDK and Docker as described below.
+
+## Requirements for running outside Docker
 
 - Java JDK 25.
 - Node.js 24 LTS and npm.
@@ -53,6 +128,20 @@ npm run dev
 
 Open http://localhost:5173. Vite forwards `/api` requests to the backend on port 8080.
 
+## Children play with codes
+
+Teachers sign up, create a class, and add children by name using **Adaugă elev**.
+Each child receives a personal code; no child email, password, or signup is required.
+For existing class members, use **Generează cod** to enable code entry.
+
+Use **Începe un test** in the class to select a worksheet and obtain its code.
+Children enter their personal code and the worksheet code on the public home page.
+Unfinished attempts resume, and completed scores are saved under the child in the class.
+Click a child's name, then a test, to see question results; breadcrumbs return to the class.
+Removing a child revokes access while retaining results for the teacher.
+
+Restart the backend after updating so Flyway applies V21, which adds personal access codes.
+
 ## Build and verify the backend
 
 With Docker Desktop running, from `backend`:
@@ -88,7 +177,7 @@ reconciliation; do not delete the database or its migration history to bypass th
 
 - `backend/`: Spring Boot source, Flyway migrations, tests, and Maven wrapper.
 - `my-react/`: React source and Vite build configuration.
-- `docker-compose.yml`: local PostgreSQL service.
+- `docker-compose.yml`: frontend, backend, and PostgreSQL development services.
 - `database/postgres-data/`: local database files managed by PostgreSQL.
 - `Project/`: legacy build artifacts; use `backend` and `my-react` for current development.
 

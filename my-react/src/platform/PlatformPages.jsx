@@ -5,6 +5,7 @@ import { platformApi } from "../api/platform.js";
 import { usePlatform } from "./PlatformState.js";
 import { EmptyPanel, ErrorNotice, PlatformPage, Resource } from "./PlatformUI.jsx";
 import { useResource } from "./useResource.js";
+import ClassPage from "../Home/ClassPage.jsx";
 
 function Status({ value }) {
   return <span className="platformStatus">{String(value || "ACTIVE").replaceAll("_", " ")}</span>;
@@ -41,7 +42,7 @@ export function ClassesPage() {
   return (
     <PlatformPage
       title={t("Classes")}
-      subtitle={teacher ? "Create a class and invite students with a code." : "Join a class with your teacher's code."}
+      subtitle={teacher ? "Create a class, add children and give them their personal codes." : "Join a class with your teacher's code."}
       actions={<Button type="primary" onClick={() => setOpen(true)}>{t(teacher ? "New class" : "Join class")}</Button>}
     >
       <Resource resource={classes}>
@@ -151,6 +152,11 @@ export function AccountPage() {
 }
 
 export function ClassDetailPage() {
+  const { user } = usePlatform();
+  return user.role === "TEACHER" ? <ClassPage /> : <JoinedClassDetailPage />;
+}
+
+function JoinedClassDetailPage() {
   const { id } = useParams();
   const { user, t } = usePlatform();
   const teacher = user.role === "TEACHER" || user.role === "ADMIN";

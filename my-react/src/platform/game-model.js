@@ -1,4 +1,5 @@
 export const gameRegistry = {
+  "matching-game": { title: "Match the Amounts", symbol: "↔" },
   "color-game": { title: "Letters & pictures", symbol: "Aa" },
   "math-game": { title: "Easy math", symbol: "+" },
   "sequence-game": { title: "Number sequence", symbol: "123" },
@@ -71,6 +72,17 @@ export function resultPayload(score, maxScore, seconds, outcome = "COMPLETED") {
     timeSeconds: Math.max(0, Math.round(seconds)),
     details: {},
   };
+}
+
+export function activityMaxScore(item) {
+  const configuration = item.configuration || {};
+  if (item.definition?.type === "color-game") {
+    const letter = String(configuration.letter || "u").toLocaleLowerCase("ro-RO");
+    return (configuration.animals || []).reduce((count, animal) => count +
+      Array.from(animal.name).filter(character => character.toLocaleLowerCase("ro-RO") === letter).length, 0);
+  }
+  if (item.definition?.type === "matching-game") return configuration.pairs?.length || 3;
+  return configuration.exerciseCount || 10;
 }
 
 export function remainingItems(attempt) {

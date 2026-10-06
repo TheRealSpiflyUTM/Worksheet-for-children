@@ -13,8 +13,11 @@ public interface WorksheetAssignmentRepository extends JpaRepository<WorksheetAs
         "worksheetRevision.worksheet.user", "user", "classroom"})
     List<WorksheetAssignment> findByUser_IdAndRevokedAtIsNullOrderByAssignedAtDesc(Long userId);
     List<WorksheetAssignment> findByClassroom_IdAndUser_IdAndRevokedAtIsNull(Long classroomId, Long userId);
+    List<WorksheetAssignment> findByClassroom_IdAndUser_IdOrderByAssignedAtDesc(Long classroomId, Long userId);
     Optional<WorksheetAssignment> findFirstByWorksheetRevision_IdAndUser_IdAndRevokedAtIsNullOrderByAssignedAtDesc(
         Long revisionId, Long userId);
+    Optional<WorksheetAssignment> findFirstByWorksheetRevision_IdAndUser_IdAndClassroom_IdAndRevokedAtIsNullOrderByAssignedAtDesc(
+        Long revisionId, Long userId, Long classroomId);
     @Override
     @EntityGraph(attributePaths = {"worksheetRevision", "worksheetRevision.worksheet",
         "worksheetRevision.worksheet.user", "user", "classroom"})

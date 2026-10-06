@@ -55,7 +55,11 @@ body{
     overflow: hidden;
     display: flex;
     justify-content: center;
+    gap: 12px;
     background: #f5f8ff;
+}
+.addMinigameSlotInner .addMinigameButton.ant-btn {
+    margin: 1rem 0;
 }
 .addMinigameSlot:not(.isOpen) .addMinigameButton.ant-btn {
     pointer-events: none;

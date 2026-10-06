@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Button, Input, Segmented } from "antd";
+import { Alert, Button, Input } from "antd";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../api/client.js";
 import "./Auth.css";
@@ -12,7 +12,6 @@ const SignUp = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [role, setRole] = useState("TEACHER");
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,7 +37,7 @@ const SignUp = () => {
                     name,
                     email,
                     password,
-                    role,
+                    role: "TEACHER",
                 }),
             });
 
@@ -54,6 +53,8 @@ const SignUp = () => {
     return (
         <div className="auth-container">
             <div className="auth-form">
+                <h1>Cont pentru profesori</h1>
+                <p>Copiii intră în joc cu codurile primite de la profesor.</p>
 
                 <Input
                     type="email"
@@ -70,19 +71,6 @@ const SignUp = () => {
                     className="username-input"
                     onChange={(e) => setName(e.target.value)}
                 />
-
-                <div className="signup-role-field">
-                    <span>I am a</span>
-                    <Segmented
-                        block
-                        value={role}
-                        onChange={setRole}
-                        options={[
-                            { label: "Teacher", value: "TEACHER" },
-                            { label: "Student", value: "USER" },
-                        ]}
-                    />
-                </div>
 
                 <Input.Password
                     placeholder="Password"

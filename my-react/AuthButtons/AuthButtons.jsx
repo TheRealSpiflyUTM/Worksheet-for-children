@@ -1,12 +1,27 @@
-import { Button, Layout, theme } from "antd";
+import { Button, Layout, message, theme } from "antd";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HomeOutlined } from "@ant-design/icons";
 import "./AuthButtons.css";
+import { usePlatform } from "../src/platform/PlatformState.js";
+import { platformApi } from "../src/api/platform.js";
 
 const { Header } = Layout;
 
 function AuthButtons() {
 const navigate = useNavigate();
+const { user, setUser } = usePlatform();
+const [busy, setBusy] = useState(false);
+
+async function leave() {
+    setBusy(true);
+    try {
+        await platformApi.logout();
+        setUser(null);
+        navigate("/");
+    } catch (error) { message.error(error.message); }
+    finally { setBusy(false); }
+}
 
 const {
     token: { colorBgContainer },
@@ -37,12 +52,15 @@ return (
 
         {/* Login and Sign Up buttons */}
         <div className="auth-buttons">
-
+            {user ? <>
+                {user.role === "TEACHER" && <Button onClick={() => navigate("/home")}>Clasele mele</Button>}
+                <Button loading={busy} onClick={leave}>{user.role === "USER" ? "Alt copil" : "Deconectare"}</Button>
+            </> : <>
             <Button
                 className="login-button"
                 onClick={() => navigate("/login")}
             >
-                Login
+                Profesori
             </Button>
 
             <Button
@@ -50,9 +68,9 @@ return (
                 className="signup-button"
                 onClick={() => navigate("/signup")}
             >
-                Sign Up
+                Cont profesor
             </Button>
-
+            </>}
         </div>
     </Header>
 );
