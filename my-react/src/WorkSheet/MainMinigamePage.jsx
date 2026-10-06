@@ -13,9 +13,10 @@ import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
 import { useState, useRef, useEffect } from "react";
-import { Button, message, Progress, Spin } from "antd";
+import { Button, message, Popconfirm, Progress, Spin } from "antd";
 import {
   ArrowLeftOutlined,
+  DeleteOutlined,
   EyeOutlined,
   PlusOutlined,
   SaveOutlined,
@@ -26,6 +27,7 @@ import {
   getWorksheetItems,
   createWorksheetItem,
   updateWorksheetItem,
+  deleteWorksheetItem,
   getMiniGameDefinitions,
 } from "../api/worksheets.js";
 import "./MainMinigamePage.css";
@@ -78,6 +80,18 @@ function MainMinigamePage(params) {
         },
       ],
     },
+    
+    {
+      id: "matching-game",
+      name: "Match the Amounts",
+      img: "/img/MatchingGame.png",
+      pairs: [
+        { id: "one", number: 1, emoji: "🍎" },
+        { id: "two", number: 2, emoji: "🍊" },
+        { id: "three", number: 3, emoji: "🍌" },
+      ],
+    },
+
     {
       id: "math-game",
       name: "Easy Math",
@@ -458,6 +472,38 @@ function MainMinigamePage(params) {
   }
 
   /*
+    Delete a mini-game from the worksheet.
+    If it was already saved, it is also deleted on the server.
+  */
+  async function removeMinigame(game) {
+    try {
+      if (game.itemId) {
+        await deleteWorksheetItem(
+          worksheetId,
+          game.itemId
+        );
+      }
+
+      setAddedMinigames((currentGames) =>
+        currentGames.filter(
+          (currentGame) =>
+            currentGame.instanceId !==
+            game.instanceId
+        )
+      );
+
+      setSelectedGameId(null);
+      setHasUnsavedChanges(true);
+      message.success("Minigame removed.");
+    } catch (error) {
+      message.error(
+        error.message ||
+          "Could not remove the minigame."
+      );
+    }
+  }
+
+  /*
     Remove frontend-only fields before sending
     configuration to backend.
   */
@@ -652,11 +698,13 @@ function MainMinigamePage(params) {
         return;
       }
 
+      if (event.target.closest(".ant-popover, .ant-modal-root")) {
+        return;
+      }
+
       if (
         selectedAreaRef.current &&
-        !selectedAreaRef.current.contains(
-          event.target
-        )
+        !selectedAreaRef.current.contains(event.target)
       ) {
         setSelectedGameId(null);
       }
@@ -892,6 +940,25 @@ function MainMinigamePage(params) {
                         >
                           Add Minigame
                         </Button>
+                        <Popconfirm
+                          title="Ștergi minigame-ul?"
+                          description="Minigame-ul va fi eliminat din fișă."
+                          okText="Șterge"
+                          cancelText="Anulează"
+                          onConfirm={() => removeMinigame(game)}
+                        >
+                          <Button
+                            className="addMinigameButton"
+                            danger
+                            icon={<DeleteOutlined />}
+                            tabIndex={
+                              selectedGameId === game.instanceId ? 0 : -1
+                            }
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            Delete Minigame
+                          </Button>
+                        </Popconfirm>
                       </div>
                     </div>
                   </div>
