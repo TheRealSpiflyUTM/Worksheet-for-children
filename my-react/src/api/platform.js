@@ -15,23 +15,33 @@ export const platformApi = {
   joinClass: (code) =>
     send("/api/classes/join", "POST", { joinCode: code.trim().toUpperCase() }),
   members: (id) => apiRequest(`/api/classes/${id}/members`),
-  addStudent: (id, name) => send(`/api/classes/${id}/members`, "POST", { name }),
-  issueStudentCode: (id, userId) => send(`/api/classes/${id}/members/${userId}/code`),
-  renameStudent: (id, userId, name) => send(`/api/classes/${id}/members/${userId}`, "PATCH", { name }),
-  studentTests: (id, userId) => apiRequest(`/api/classes/${id}/members/${userId}/tests`),
-  startClassTest: (id, worksheetId) => send(`/api/classes/${id}/tests`, "POST", { worksheetId }),
-  enterGame: (studentCode, worksheetCode) => send("/api/play/join", "POST", {
-    studentCode: studentCode.trim().toUpperCase(), worksheetCode: worksheetCode.trim().toUpperCase(),
-  }),
+  addStudent: (id, name) =>
+    send(`/api/classes/${id}/members`, "POST", { name }),
+  issueStudentCode: (id, userId) =>
+    send(`/api/classes/${id}/members/${userId}/code`),
+  renameStudent: (id, userId, name) =>
+    send(`/api/classes/${id}/members/${userId}`, "PATCH", { name }),
+  studentTests: (id, userId) =>
+    apiRequest(`/api/classes/${id}/members/${userId}/tests`),
+  startClassTest: (id, worksheetId) =>
+    send(`/api/classes/${id}/tests`, "POST", { worksheetId }),
+  enterGame: (studentCode, worksheetCode) =>
+    send("/api/play/join", "POST", {
+      studentCode: studentCode.trim().toUpperCase(),
+      worksheetCode: worksheetCode.trim().toUpperCase(),
+    }),
   removeMember: (id, userId) =>
     send(`/api/classes/${id}/members/${userId}`, "DELETE"),
   rotateClass: (id) => send(`/api/classes/${id}/join-code/rotate`),
   assignments: () => apiRequest("/api/assignments"),
+  assignmentReport: () => apiRequest("/api/assignments/report"),
   assignment: (id) => apiRequest(`/api/assignments/${id}`),
   assign: (worksheetId, body) =>
     send(`/api/worksheets/${worksheetId}/assignments`, "POST", body),
   history: (id, personal = false) =>
-    apiRequest(`/api/${personal ? "worksheets" : "assignments"}/${id}/attempts`),
+    apiRequest(
+      `/api/${personal ? "worksheets" : "assignments"}/${id}/attempts`,
+    ),
   start: (id, personal = false) =>
     send(`/api/${personal ? "worksheets" : "assignments"}/${id}/attempts`),
   attempt: (id) => apiRequest(`/api/attempts/${id}`),
@@ -46,7 +56,7 @@ export const platformApi = {
     body.append("file", file);
     return apiRequest(
       `/api/minigames/${definitionId}/image-slots/${slotKey}/uploads`,
-      { method: "POST", body }
+      { method: "POST", body },
     );
   },
 };

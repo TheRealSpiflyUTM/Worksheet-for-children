@@ -49,9 +49,7 @@
 
   background-size: 24px 24px;
 
-  box-shadow:
-    8px 10px 0 var(--game-shadow),
-    0 24px 45px rgba(32, 52, 91, 0.1);
+  box-shadow: 8px 10px 0 var(--game-shadow);
 
   color: var(--play-ink);
 }
@@ -1313,9 +1311,7 @@
     linear-gradient(135deg, #fffdf4, #fff 48%, #f8f2ff);
   background-size: auto, auto, auto, 24px 24px, 24px 24px, auto;
   border-width: 4px;
-  box-shadow:
-    10px 12px 0 var(--game-shadow),
-    0 24px 45px rgba(32, 52, 91, 0.13);
+  box-shadow: 10px 12px 0 var(--game-shadow);
 }
 
 :is(

@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("worksheet-language", "ro"),
+  );
+});
+
 const teacher = {
   id: 1,
   name: "Teacher",
@@ -82,7 +88,7 @@ test("children enter codes, resume unfinished work and finish without signup", a
     fullPage: true,
   });
   await page.getByLabel("Codul elevului").fill("abcd2345");
-  await page.getByLabel("Codul fișei de lucru").fill("efgh6789");
+  await page.getByLabel("Codul fișei").fill("efgh6789");
   await page.getByRole("button", { name: "Verifică și începe" }).click();
   await expect(page).toHaveURL(/\/attempts\/40$/);
   expect(starts).toBe(0);
@@ -92,11 +98,11 @@ test("children enter codes, resume unfinished work and finish without signup", a
   await page.getByRole("button", { name: "Impar", exact: true }).click();
   await page.getByRole("button", { name: "Finalizează" }).click();
   await page.getByRole("button", { name: "Continuă" }).click();
-  await page.getByRole("button", { name: "Finish worksheet" }).click();
-  await expect(page.getByRole("heading", { name: "Well done!" })).toBeVisible();
+  await page.getByRole("button", { name: "Finalizează fișa" }).click();
+  await expect(page.getByRole("heading", { name: "Bravo!" })).toBeVisible();
   await expect(page.getByText("1 / 1", { exact: true }).first()).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Well done!" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bravo!" })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(

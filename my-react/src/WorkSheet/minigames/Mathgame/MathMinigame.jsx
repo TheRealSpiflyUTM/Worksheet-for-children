@@ -1,11 +1,13 @@
+import { usePlatform } from "../../../platform/PlatformState.js";
 import { useState } from "react";
 import { Checkbox, InputNumber } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
 import "./MathMinigame.css";
 
 function MathMinigame({ isTeacher, game, onGameChange, onComplete }) {
+  const { t } = usePlatform();
   const [question, setQuestion] = useState(() =>
-    generateQuestion(game.maxNumber, game.operations)
+    generateQuestion(game.maxNumber, game.operations),
   );
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
@@ -75,10 +77,10 @@ function MathMinigame({ isTeacher, game, onGameChange, onComplete }) {
     const operations = game.operations || ["+"];
     return (
       <div className="math-minigame teacher-math">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
 
         <div className="math-setting">
-          <p>Număr maxim pentru termeni:</p>
+          <p>{t("Maximum number for operands:")}</p>
           <InputNumber
             min={1}
             max={100}
@@ -88,7 +90,7 @@ function MathMinigame({ isTeacher, game, onGameChange, onComplete }) {
         </div>
 
         <div className="math-setting">
-          <p>Număr de exerciții:</p>
+          <p>{t("Number of exercises:")}</p>
           <InputNumber
             min={1}
             max={100}
@@ -98,41 +100,43 @@ function MathMinigame({ isTeacher, game, onGameChange, onComplete }) {
         </div>
 
         <div className="math-setting">
-          <p>Selectează operațiile:</p>
+          <p>{t("Select operations:")}</p>
           <div className="math-operations">
             <Checkbox
               checked={operations.includes("+")}
               onChange={() => changeOperation("+")}
             >
-              Adunare (+)
+              {t("Addition (+)")}{" "}
             </Checkbox>
 
             <Checkbox
               checked={operations.includes("-")}
               onChange={() => changeOperation("-")}
             >
-              Scădere (-)
+              {t("Subtraction (-)")}{" "}
             </Checkbox>
 
             <Checkbox
               checked={operations.includes("*")}
               onChange={() => changeOperation("*")}
             >
-              Înmulțire (×)
+              {t("Multiplication (×)")}{" "}
             </Checkbox>
 
             <Checkbox
               checked={operations.includes("/")}
               onChange={() => changeOperation("/")}
             >
-              Împărțire (÷)
+              {t("Division (÷)")}{" "}
             </Checkbox>
           </div>
         </div>
 
         <p>
-          Copiii vor primi {game.exerciseCount || 10} exerciții folosind
-          numere de la 1 până la {game.maxNumber}.
+          {t(
+            "Children will receive {count} exercises using numbers from 1 to {max}.",
+            { count: game.exerciseCount || 10, max: game.maxNumber },
+          )}
         </p>
       </div>
     );
@@ -141,11 +145,11 @@ function MathMinigame({ isTeacher, game, onGameChange, onComplete }) {
   if (finished) {
     return (
       <div className="math-minigame">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
         <div className="math-feedback">
-          <h3>Finalizat!</h3>
+          <h3>{t("Finished!")}</h3>
           <p>
-            Scorul tău: {score} / {game.exerciseCount || 10}
+            {t("Your score:")} {score} / {game.exerciseCount || 10}
           </p>
         </div>
       </div>
@@ -154,11 +158,13 @@ function MathMinigame({ isTeacher, game, onGameChange, onComplete }) {
 
   return (
     <div className="math-minigame">
-      <h2>{game.name}</h2>
-      <div className="math-score">Scor: {score}</div>
+      <h2>{t(game.name)}</h2>
+      <div className="math-score">
+        {t("Score:")} {score}
+      </div>
 
       <div className="math-exercise-number">
-        Exercițiul {exerciseNumber} / {game.exerciseCount || 10}
+        {t("Exercise")} {exerciseNumber} / {game.exerciseCount || 10}
       </div>
 
       <div className="math-question">
@@ -181,18 +187,18 @@ function MathMinigame({ isTeacher, game, onGameChange, onComplete }) {
         <div className="math-feedback">
           {selectedAnswer === question.correctAnswer ? (
             <>
-              <p>Corect!</p>
+              <p>{t("Correct!")}</p>
               <button onClick={getNewQuestion}>
                 {exerciseNumber >= (game.exerciseCount || 10)
-                  ? "Finalizează"
-                  : "Următoarea întrebare"}
+                  ? t("Finish")
+                  : t("Next question")}
               </button>
             </>
           ) : (
             <>
-              <p>Încearcă din nou!</p>
+              <p>{t("Try again!")}</p>
               <button onClick={() => setSelectedAnswer(null)}>
-                Încearcă din nou
+                {t("Try again")}{" "}
               </button>
             </>
           )}
@@ -207,8 +213,7 @@ function generateQuestion(maxNumber, selectedOperations) {
     selectedOperations && selectedOperations.length > 0
       ? selectedOperations
       : ["+"];
-  const operator =
-    operators[Math.floor(Math.random() * operators.length)];
+  const operator = operators[Math.floor(Math.random() * operators.length)];
   let number1;
   let number2;
   let correctAnswer;

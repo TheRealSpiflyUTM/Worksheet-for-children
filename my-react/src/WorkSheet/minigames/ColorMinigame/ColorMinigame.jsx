@@ -1,3 +1,4 @@
+import { usePlatform } from "../../../platform/PlatformState.js";
 import { useState } from "react";
 import { Button, Input, Typography } from "antd";
 import WidgetT from "./WidgetT.jsx";
@@ -7,6 +8,7 @@ import "./ColorMinigame.css";
 const { Title } = Typography;
 
 function ColorMinigame(params) {
+  const { t } = usePlatform();
   const [found, setFound] = useState([]);
   const [finished, setFinished] = useState(false);
   // Values at the top
@@ -66,17 +68,18 @@ function ColorMinigame(params) {
       <>
         <div className="minigame colorMinigame">
           <div className="colorGameHeader">
-            <Title
-              level={2}
-              className="titleText"
-            >{`Apasa pe bulina corespunzatoare sunetului "${displayedLetter}"`}</Title>
+            <Title level={2} className="titleText">
+              {t("Tap the circle for the sound “{letter}”", {
+                letter: displayedLetter,
+              })}
+            </Title>
             <label className="targetLetterControl">
-              <span>Litera cautata</span>
+              <span>{t("Target letter")}</span>
               <Input
                 className="targetLetterInput"
                 value={displayedLetter}
                 maxLength={1}
-                aria-label="Litera cautata"
+                aria-label={t("Target letter")}
                 onFocus={(event) => event.target.select()}
                 onChange={changeLetter}
               />
@@ -101,12 +104,13 @@ function ColorMinigame(params) {
       <>
         <div className="minigame addBorder colorMinigame">
           <div className="colorGameHeader">
-            <Title
-              level={2}
-              className="titleText"
-            >{`Apasa pe bulina corespunzatoare sunetului "${displayedLetter}"`}</Title>
+            <Title level={2} className="titleText">
+              {t("Tap the circle for the sound “{letter}”", {
+                letter: displayedLetter,
+              })}
+            </Title>
             <div className="targetLetterControl">
-              <span>Litera cautata</span>
+              <span>{t("Target letter")}</span>
               <span className="targetLetterInput ant-input targetLetterDisplay">
                 {displayedLetter}
               </span>
@@ -127,11 +131,14 @@ function ColorMinigame(params) {
           <div className="childGameActions">
             {finished ? (
               <p role="status">
-                Ai găsit {found.length} din {maxScore} litere!
+                {t("You found {count} of {total} letters!", {
+                  count: found.length,
+                  total: maxScore,
+                })}
               </p>
             ) : (
               <Button size="large" type="primary" onClick={finish}>
-                Am terminat
+                {t("I'm done")}{" "}
               </Button>
             )}
           </div>

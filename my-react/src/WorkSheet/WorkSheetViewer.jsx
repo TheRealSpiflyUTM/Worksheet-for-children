@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   Button,
@@ -8,442 +8,239 @@ import {
   Input,
   List,
   Modal,
-  Spin,
-  Tooltip,
+  Popconfirm,
   Typography,
-  message,
 } from "antd";
-
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  ShareAltOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import {
   createWorksheet,
   deleteWorksheet,
   getWorksheets,
-  shareWorksheet,
 } from "../api/worksheets.js";
-
-import {
-  CloseOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  ShareAltOutlined,
-} from "@ant-design/icons";
-
-import { useNavigate } from "react-router-dom";
-import { clickSoftSound } from "@/lib/click-soft";
-import { playSound } from "@/lib/sound-engine";
+import { usePlatform } from "../platform/PlatformState.js";
+import { PlatformPage, Resource } from "../platform/PlatformUI.jsx";
+import { useResource } from "../platform/useResource.js";
+import { ShareWorksheetModal } from "../platform/WorksheetActions.jsx";
 import "./WorkSheetViewer.css";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
-function WorkSheetViewer() {
+export default function WorkSheetViewer() {
+  const { t, language } = usePlatform();
   const navigate = useNavigate();
-
-  const [workSheets, setWorkSheets] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [createError, setCreateError] = useState("");
-
-  const [deletingWorkSheetId, setDeletingWorkSheetId] = useState(null);
-
-  // Share state
-  const [sharingWorkSheetId, setSharingWorkSheetId] = useState(null);
-  const [shareCode, setShareCode] = useState("");
-  const [isShareOpen, setIsShareOpen] = useState(false);
-
-  
-  // Helper Functions
-  function playClick() {
-  void playSound(clickSoftSound.dataUri);
-  }
-
+  const resource = useResource(getWorksheets);
+  const [creating, setCreating] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [error, setError] = useState(null);
+  const [shareId, setShareId] = useState(null);
   const [form] = Form.useForm();
 
-  async function loadWorkSheets() {
-    setIsLoading(true);
-    setError("");
-
+  async function create(values) {
+    setCreating(true);
+    setCreateError(null);
     try {
-      const worksheets = await getWorksheets();
-      setWorkSheets(worksheets);
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadWorkSheets();
-  }, []);
-
-  async function createWorkSheet({ name }) {
-    setIsCreating(true);
-    setCreateError("");
-
-    try {
-      const createdWorkSheet = await createWorksheet(name);
-
-      setWorkSheets((currentWorkSheets) =>{ 
-        
-        return([createdWorkSheet, ...currentWorkSheets]);
-      });
-
+      const worksheet = await createWorksheet(values.name.trim());
       form.resetFields();
-      setIsCreateOpen(false);
+      setCreateOpen(false);
+      navigate(`/teacher/${worksheet.id}`);
     } catch (requestError) {
-      setCreateError(requestError.message);
+      setCreateError(requestError);
     } finally {
-      setIsCreating(false);
+      setCreating(false);
     }
   }
 
-  function closeCreateModal() {
-    if (isCreating) return;
+  async function remove(id) {
+    setDeletingId(id);
+    setError(null);
+    try {
+      await deleteWorksheet(id);
+      resource.setData(resource.data.filter((sheet) => sheet.id !== id));
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
+  function closeCreate() {
+    if (creating) return;
     form.resetFields();
-    setCreateError("");
-    setIsCreateOpen(false);
-  }
-
-  function openWorkSheet(workSheetId) {
-    navigate(`/teacher/${workSheetId}`);
-  }
-
-  function preventCardOpen(event) {
-    event.stopPropagation();
-  }
-
-  async function removeWorkSheet(workSheetId) {
-    setDeletingWorkSheetId(workSheetId);
-    setError("");
-
-    try {
-      await deleteWorksheet(workSheetId);
-
-      setWorkSheets((currentWorkSheets) =>
-        currentWorkSheets.filter(
-          (workSheet) => workSheet.id !== workSheetId
-        )
-      );
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setDeletingWorkSheetId(null);
-    }
-  }
-
-  async function handleShare(workSheetId) {
-    setSharingWorkSheetId(workSheetId);
-
-    try {
-      const response = await shareWorksheet(workSheetId);
-
-      setShareCode(response.code);
-      setIsShareOpen(true);
-    } catch (requestError) {
-      message.error(requestError.message);
-    } finally {
-      setSharingWorkSheetId(null);
-    }
-  }
-
-  async function copyShareCode() {
-    try {
-      await navigator.clipboard.writeText(shareCode);
-      message.success("Code copied!");
-    } catch (error) {
-      console.error(error);
-      message.error("Could not copy the code.");
-    }
-  }
-
-  function closeShareModal() {
-    setIsShareOpen(false);
-    setShareCode("");
-  }
-
-  function handleWorkSheetKeyDown(event, worksheetId) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      openWorkSheet(worksheetId);
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <Flex justify="center" align="center" style={{ minHeight: 240 }}>
-        <Spin size="large" tip="Loading worksheets...">
-          <div className="worksheetLoadingContent" />
-        </Spin>
-      </Flex>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert
-        type="error"
-        message="Could not load worksheets"
-        description={error}
-        showIcon
-        action={
-          <Button size="small" onClick={loadWorkSheets}>
-            Try again
-          </Button>
-        }
-      />
-    );
+    setCreateError(null);
+    setCreateOpen(false);
   }
 
   return (
-    <section aria-labelledby="worksheets-title">
-      <Card>
-        <Flex
-          justify="space-between"
-          align="center"
-          gap="middle"
-          wrap
+    <PlatformPage
+      title={t("My worksheets")}
+      actions={
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setCreateOpen(true)}
         >
-          <div>
-            <Title
-              id="worksheets-title"
-              level={2}
-              style={{ margin: 0 }}
-            >
-              My worksheets
-            </Title>
-
-            <Text type="secondary">
-              Create and manage your learning activities.
-            </Text>
-          </div>
-
-          <Flex gap="small">
-            <Tooltip title="Refresh worksheets">
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={loadWorkSheets}
-                aria-label="Refresh worksheets"
-              />
-            </Tooltip>
-            <Button type="primary" 
-              icon={<PlusOutlined />} 
-              onClick={() => {
-                setIsCreateOpen(true);
-                playClick();
-                }}
-
-            >
-              New worksheet
-            </Button>
-          </Flex>
-        </Flex>
-
-        <List
-          dataSource={workSheets}
-          locale={{
-            emptyText:
-              "No worksheets yet. Create your first worksheet to begin.",
-          }}
-          renderItem={(sheet) => (
-            <List.Item key={sheet.id}>
-              <Card
-                className="worksheet-card"
-                size="small"
-                hoverable
-                onClick={() => openWorkSheet(sheet.id)}
-                onKeyDown={(event) =>
-                  handleWorkSheetKeyDown(event, sheet.id)
-                }
-                role="button"
-                tabIndex={0}
-                style={{ width: "100%" }}
-              >
-                <Flex
-                  justify="space-between"
-                  align="center"
-                  gap="middle"
-                >
-                  <div>
-                    <Title
-                      level={4}
-                      style={{ margin: 0 }}
+          {t("New worksheet")}
+        </Button>
+      }
+    >
+      <section className="platformPanel">
+        {error && <Alert type="error" showIcon title={t(error.message)} />}
+        <Resource resource={resource}>
+          {(sheets) => (
+            <List
+              dataSource={sheets}
+              locale={{
+                emptyText: t(
+                  "No worksheets yet. Create your first worksheet to begin.",
+                ),
+              }}
+              renderItem={(sheet) => (
+                <List.Item key={sheet.id}>
+                  <Card
+                    className="worksheet-card"
+                    size="small"
+                    style={{ width: "100%" }}
+                    onClick={(event) => {
+                      if (
+                        event.target.closest("button, [data-worksheet-actions]")
+                      )
+                        return;
+                      navigate(`/teacher/${sheet.id}`);
+                    }}
+                  >
+                    <Flex
+                      justify="space-between"
+                      align="center"
+                      gap="middle"
+                      wrap
                     >
-                      {sheet.name}
-                    </Title>
-
-                    {sheet.updatedAt && (
-                      <Text type="secondary">
-                        Last updated{" "}
-                        {new Date(
-                          sheet.updatedAt
-                        ).toLocaleString()}
-                      </Text>
-                    )}
-                  </div>
-
-                  <Flex gap="small">
-                    <Tooltip
-                      title="Share worksheet"
-                      placement="top"
-                      arrow={{ pointAtCenter: true }}
-                    >
-                      <Button
-                        type="text"
-                        icon={<ShareAltOutlined />}
-                        aria-label={`Share ${sheet.name}`}
-                        loading={
-                          sharingWorkSheetId === sheet.id
-                        }
-                        onClick={(event) => {
-                          preventCardOpen(event);
-                          handleShare(sheet.id);
-                        }}
-                      />
-                    </Tooltip>
-
-                    <Tooltip
-                      title="Delete worksheet"
-                      placement="top"
-                      arrow={{ pointAtCenter: true }}
-                    >
-                      <Button
-                        danger
-                        type="text"
-                        icon={<CloseOutlined />}
-                        aria-label={`Delete ${sheet.name}`}
-                        loading={
-                          deletingWorkSheetId === sheet.id
-                        }
-                        onClick={(event) => {
-                          preventCardOpen(event);
-                          removeWorkSheet(sheet.id);
-                        }}
-                      />
-                    </Tooltip>
-                  </Flex>
-                </Flex>
-              </Card>
-            </List.Item>
+                      <div className="worksheetSummary">
+                        <Button
+                          type="link"
+                          className="worksheetOpenButton"
+                          onClick={() => navigate(`/teacher/${sheet.id}`)}
+                        >
+                          {sheet.name}
+                        </Button>
+                        {sheet.updatedAt && (
+                          <div>
+                            <Text type="secondary">
+                              {t("Last updated {date}", {
+                                date: new Date(sheet.updatedAt).toLocaleString(
+                                  language === "ro" ? "ro-RO" : "en-GB",
+                                ),
+                              })}
+                            </Text>
+                          </div>
+                        )}
+                        <Text
+                          type="secondary"
+                          className="worksheetActivityCount"
+                        >
+                          {t(
+                            sheet.items?.length === 1
+                              ? "{count} activity"
+                              : "{count} activities",
+                            {
+                              count: sheet.items?.length || 0,
+                            },
+                          )}
+                        </Text>
+                      </div>
+                      <Flex
+                        gap="small"
+                        data-worksheet-actions
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Button
+                          icon={<ShareAltOutlined />}
+                          disabled={!sheet.items?.length}
+                          aria-label={t("Share worksheet") + ": " + sheet.name}
+                          onClick={() => setShareId(sheet.id)}
+                        >
+                          {t("Share worksheet")}
+                        </Button>
+                        <Popconfirm
+                          title={t("Delete this worksheet?")}
+                          description={t(
+                            "This removes the editable worksheet. This action cannot be undone.",
+                          )}
+                          okText={t("Delete")}
+                          cancelText={t("Cancel")}
+                          onConfirm={() => remove(sheet.id)}
+                        >
+                          <Button
+                            danger
+                            type="text"
+                            icon={<DeleteOutlined />}
+                            disabled={deletingId !== null}
+                            loading={deletingId === sheet.id}
+                            aria-label={
+                              t("Delete worksheet") + ": " + sheet.name
+                            }
+                          />
+                        </Popconfirm>
+                      </Flex>
+                    </Flex>
+                  </Card>
+                </List.Item>
+              )}
+            />
           )}
-        />
-      </Card>
-
+        </Resource>
+      </section>
+      <ShareWorksheetModal
+        worksheetId={shareId}
+        open={shareId !== null}
+        onClose={() => setShareId(null)}
+      />
       <Modal
-        title="Share worksheet"
-        open={isShareOpen}
-        onCancel={closeShareModal}
-        footer={[
-          <Button
-            key="close"
-            onClick={closeShareModal}
-          >
-            Close
-          </Button>,
-
-          <Button
-            key="copy"
-            type="primary"
-            onClick={copyShareCode}
-          >
-            Copy code
-          </Button>,
-        ]}
-      >
-        <Flex
-          vertical
-          align="center"
-          gap="middle"
-          style={{ padding: "20px 0" }}
-        >
-          <Text type="secondary">
-            Give this code to the student:
-          </Text>
-
-          <Title
-            level={2}
-            style={{
-              margin: 0,
-              letterSpacing: "4px",
-            }}
-          >
-            {shareCode}
-          </Title>
-
-          <Text type="secondary">
-            The student can enter this code to open
-            your worksheet.
-          </Text>
-        </Flex>
-      </Modal>
-
-      <Modal
-        title="Create worksheet"
-        open={isCreateOpen}
-        onCancel={closeCreateModal}
+        title={t("Create worksheet")}
+        open={createOpen}
+        onCancel={closeCreate}
         footer={null}
         destroyOnHidden
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={createWorkSheet}
-        >
+        <Form form={form} layout="vertical" onFinish={create}>
           <Form.Item
-            label="Worksheet name"
+            label={t("Worksheet name")}
             name="name"
             rules={[
               {
                 required: true,
                 whitespace: true,
-                message: "Enter a worksheet name.",
+                message: t("Enter a worksheet name."),
               },
-              {
-                max: 150,
-                message:
-                  "Use 150 characters or fewer.",
-              },
+              { max: 150, message: t("Use 150 characters or fewer.") },
             ]}
           >
             <Input
               autoFocus
               maxLength={150}
-              placeholder="For example: Animals and colours"
+              disabled={creating}
+              placeholder={t("For example: Animals and colours")}
             />
           </Form.Item>
-
           {createError && (
-            <Alert
-              type="error"
-              message={createError}
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
+            <Alert type="error" showIcon title={t(createError.message)} />
           )}
-
           <Flex justify="flex-end" gap="small">
-            <Button
-              onClick={closeCreateModal}
-              disabled={isCreating}
-            >
-              Cancel
+            <Button disabled={creating} onClick={closeCreate}>
+              {t("Cancel")}
             </Button>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isCreating}
-            >
-              Create worksheet
+            <Button type="primary" htmlType="submit" loading={creating}>
+              {t("Create worksheet")}
             </Button>
           </Flex>
         </Form>
       </Modal>
-    </section>
+    </PlatformPage>
   );
 }
-
-export default WorkSheetViewer;

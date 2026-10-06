@@ -1,3 +1,4 @@
+import { usePlatform } from "../platform/PlatformState.js";
 import { useCallback, useState } from "react";
 import { Alert, Button } from "antd";
 import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
@@ -11,6 +12,7 @@ import { resultPayload } from "../platform/game-model.js";
 import "./MainMinigamePage.css";
 import "./PlayfulMinigames.css";
 import "./ChildMinigame.css";
+import "./ChildGameTheme.css";
 
 const games = {
   "color-game": ColorMinigame,
@@ -36,6 +38,7 @@ const animals = [
 
 // Editor preview and saved attempts render the same child-facing games.
 export default function ChildMinigame({ game, onComplete, busy = false }) {
+  const { t } = usePlatform();
   const [started] = useState(() => performance.now());
   const [result, setResult] = useState(null);
   const clearResult = useCallback(() => setResult(null), []);
@@ -56,7 +59,7 @@ export default function ChildMinigame({ game, onComplete, busy = false }) {
     animals,
     ...game,
   };
-  if (!Game) return <Alert type="warning" title="Activitate indisponibilă" />;
+  if (!Game) return <Alert type="warning" title={t("Unavailable activity")} />;
   return (
     <section
       className="worksheetGame worksheetGamePreview"
@@ -64,12 +67,14 @@ export default function ChildMinigame({ game, onComplete, busy = false }) {
     >
       <WorksheetSprinkles seed={game.decorationSeed} />
       <div className="worksheetGameContent">
-        <Game
-          isTeacher={false}
-          game={configuration}
-          onComplete={recordResult}
-          onReset={clearResult}
-        />
+        <div inert={busy}>
+          <Game
+            isTeacher={false}
+            game={configuration}
+            onComplete={recordResult}
+            onReset={clearResult}
+          />
+        </div>
         {result && (
           <div className="childGameActions">
             {onComplete ? (
@@ -79,11 +84,11 @@ export default function ChildMinigame({ game, onComplete, busy = false }) {
                 loading={busy}
                 onClick={() => onComplete(result)}
               >
-                Continuă
+                {t("Continue")}{" "}
               </Button>
             ) : (
               <p role="status">
-                Rezultat: {result.score} / {result.maxScore}
+                {t("Result:")} {result.score} / {result.maxScore}
               </p>
             )}
           </div>

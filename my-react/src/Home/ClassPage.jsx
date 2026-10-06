@@ -1,3 +1,4 @@
+import { usePlatform } from "../platform/PlatformState.js";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -20,6 +21,7 @@ import "./Classpage.css";
 const percent = (value) => (value == null ? "—" : `${value}%`);
 
 export default function ClassPage() {
+  const { t } = usePlatform();
   const { id } = useParams();
   const resource = useResource(async () => {
     const [classroom, students, worksheets] = await Promise.all([
@@ -46,7 +48,7 @@ export default function ClassPage() {
   async function saveStudent() {
     if (busy) return;
     if (!name.trim()) {
-      setError(new Error("Scrie numele elevului."));
+      setError(new Error(t("Enter the student's name.")));
       return;
     }
     setBusy(true);
@@ -103,21 +105,24 @@ export default function ClassPage() {
   async function copy(code) {
     try {
       await navigator.clipboard.writeText(code);
-      message.success("Cod copiat");
+      message.success(t("Code copied!"));
     } catch {
-      message.error("Nu s-a putut copia codul. Îl poți selecta manual.");
+      message.error(t("Could not copy the code. You can select it manually."));
     }
   }
 
   return (
     <section className="class-menu">
       <PathBreadcrumb
-        items={[{ label: "Clase", to: "/classes" }, { label: "Elevi" }]}
+        items={[
+          { label: t("Classes"), to: "/classes" },
+          { label: t("Members") },
+        ]}
       />
       <Resource resource={resource}>
         {({ classroom, students, worksheets }) => (
           <>
-            <Card>
+            <section className="platformPanel">
               <Flex justify="space-between" align="center" gap="middle" wrap>
                 <Typography.Title level={2} style={{ margin: 0 }}>
                   {classroom.name}
@@ -130,10 +135,10 @@ export default function ClassPage() {
                       setTestOpen(true);
                     }}
                   >
-                    Începe un test
+                    {t("Start a test")}{" "}
                   </Button>
                   <Button type="primary" onClick={() => edit()}>
-                    Adaugă elev
+                    {t("Add student")}{" "}
                   </Button>
                 </Flex>
               </Flex>
@@ -142,26 +147,27 @@ export default function ClassPage() {
                 <div className="class-test-code">
                   <strong>{testCode.name}</strong>
                   <p>
-                    Codul fișei:{" "}
+                    {t("Worksheet code")}:{" "}
                     <strong className="platformCode">{testCode.code}</strong>
                   </p>
                   <p>
-                    Fiecare copil folosește codul său și acest cod pentru a
-                    începe.
+                    {t(
+                      "Each child uses their own code and this code to start.",
+                    )}{" "}
                   </p>
                   <Button onClick={() => copy(testCode.code)}>
-                    Copiază codul fișei
+                    {t("Copy worksheet code")}{" "}
                   </Button>
                 </div>
               )}
               {students.length ? (
                 <>
                   <div className="student-grid student-head">
-                    <span>Nume / cod</span>
-                    <span>Ultimul test</span>
-                    <span>Media</span>
-                    <span>Cel mai slab test</span>
-                    <span>Acțiuni</span>
+                    <span>{t("Name / code")}</span>
+                    <span>{t("Last test")}</span>
+                    <span>{t("Average")}</span>
+                    <span>{t("Lowest scoring test")}</span>
+                    <span>{t("Actions")}</span>
                   </div>
                   {[...students]
                     .sort((a, b) => a.name.localeCompare(b.name, "ro"))
@@ -185,25 +191,30 @@ export default function ClassPage() {
                                 <Button
                                   size="small"
                                   onClick={() => copy(student.studentCode)}
-                                  aria-label={`Copiază codul lui ${student.name}`}
+                                  aria-label={t("Copy {name}'s code", {
+                                    name: student.name,
+                                  })}
                                 >
-                                  Copiază
+                                  {t("Copy")}{" "}
                                 </Button>
                               </div>
                             )}
                           </div>
                           <span
                             className="student-metric"
-                            data-label="Ultimul test"
+                            data-label={t("Last test")}
                           >
                             {percent(student.lastTestPercent)}
                           </span>
-                          <span className="student-metric" data-label="Media">
+                          <span
+                            className="student-metric"
+                            data-label={t("Average")}
+                          >
                             {percent(student.averagePercent)}
                           </span>
                           <span
                             className="student-metric"
-                            data-label="Cel mai slab test"
+                            data-label={t("Lowest scoring test")}
                           >
                             {student.worstTest || "—"}
                           </span>
@@ -213,7 +224,7 @@ export default function ClassPage() {
                                 size="small"
                                 onClick={() => edit(student)}
                               >
-                                Redenumește
+                                {t("Rename")}{" "}
                               </Button>
                             )}
                             {!student.studentCode && (
@@ -221,16 +232,18 @@ export default function ClassPage() {
                                 size="small"
                                 onClick={() => issueCode(student)}
                               >
-                                Generează cod
+                                {t("Generate code")}{" "}
                               </Button>
                             )}
                             <Popconfirm
-                              title="Ștergi elevul din clasă?"
-                              description="Accesul la teste va fi revocat. Rezultatele rămân salvate."
+                              title={t("Remove the student from this class?")}
+                              description={t(
+                                "Test access will be revoked. Results remain saved.",
+                              )}
                               onConfirm={() => removeStudent(student)}
                             >
                               <Button size="small" danger>
-                                Șterge
+                                {t("Delete")}{" "}
                               </Button>
                             </Popconfirm>
                           </Flex>
@@ -239,24 +252,28 @@ export default function ClassPage() {
                     ))}
                 </>
               ) : (
-                <EmptyPanel description="Nu sunt elevi în clasă. Adaugă primul elev." />
+                <EmptyPanel
+                  description={t(
+                    "No students in this class. Add your first student.",
+                  )}
+                />
               )}
-            </Card>
+            </section>
             <Modal
-              title={editor?.userId ? "Redenumește elevul" : "Elev nou"}
+              title={editor?.userId ? t("Rename student") : t("New student")}
               open={editor !== null}
               onCancel={() => !busy && setEditor(null)}
               onOk={saveStudent}
               confirmLoading={busy}
-              okText="Salvează"
-              cancelText="Anulează"
+              okText={t("Save")}
+              cancelText={t("Cancel")}
             >
               <ErrorNotice error={error} />
               <Input
                 autoFocus
                 maxLength={100}
-                aria-label="Numele elevului"
-                placeholder="Numele elevului"
+                aria-label={t("Student name")}
+                placeholder={t("Student name")}
                 value={name}
                 disabled={busy}
                 onChange={(event) => setName(event.target.value)}
@@ -264,15 +281,15 @@ export default function ClassPage() {
               />
             </Modal>
             <Modal
-              title="Începe un test"
+              title={t("Start a test")}
               open={testOpen}
               onCancel={() => !busy && setTestOpen(false)}
               footer={null}
             >
               <ErrorNotice error={error} />
               <Input.Search
-                aria-label="Caută un test"
-                placeholder="Caută un test"
+                aria-label={t("Search for a test")}
+                placeholder={t("Search for a test")}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 allowClear
@@ -293,14 +310,14 @@ export default function ClassPage() {
                       onClick={() => startTest(worksheet)}
                     >
                       {worksheet.name}
-                      {!worksheet.items.length && " (fără întrebări)"}
+                      {!worksheet.items.length && " " + t("(no questions)")}
                     </Button>
                   ))}
                 {!worksheets.length && (
-                  <EmptyPanel description="Creează mai întâi o fișă de lucru." />
+                  <EmptyPanel description={t("Create a worksheet first.")} />
                 )}
                 {!students.length && (
-                  <p>Adaugă elevi înainte de a începe testul.</p>
+                  <p>{t("Add students before starting a test.")}</p>
                 )}
               </Flex>
             </Modal>

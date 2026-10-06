@@ -1,11 +1,13 @@
+import { usePlatform } from "../../../platform/PlatformState.js";
 import { useState } from "react";
 import { InputNumber, Button } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
 import "./OddOrEvenMinigame.css";
 
 function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
+  const { t } = usePlatform();
   const [question, setQuestion] = useState(() =>
-    generateQuestion(game.maxNumber)
+    generateQuestion(game.maxNumber),
   );
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
@@ -49,9 +51,9 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
   if (isTeacher) {
     return (
       <div className="odd-even-minigame teacher-odd-even">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
         <label>
-          Număr maxim:
+          {t("Maximum number:")}{" "}
           <InputNumber
             min={10}
             max={100}
@@ -61,7 +63,7 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
         </label>
 
         <label>
-          Număr de exerciții:
+          {t("Number of exercises:")}{" "}
           <InputNumber
             min={1}
             max={100}
@@ -70,9 +72,7 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
           />
         </label>
 
-        <p>
-          Copiii vor trebui să decidă dacă un număr este impar sau par.
-        </p>
+        <p>{t("Children will decide whether a number is odd or even.")} </p>
       </div>
     );
   }
@@ -80,11 +80,11 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
   if (finished) {
     return (
       <div className="odd-even-minigame">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
         <div className="odd-even-feedback">
-          <h3>Finalizat!</h3>
+          <h3>{t("Finished!")}</h3>
           <p>
-            Scorul tău: {score} / {game.exerciseCount || 10}
+            {t("Your score:")} {score} / {game.exerciseCount || 10}
           </p>
         </div>
       </div>
@@ -93,15 +93,17 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
 
   return (
     <div className="odd-even-minigame">
-      <h2>{game.name}</h2>
-      <div className="odd-even-score">Scor: {score}</div>
+      <h2>{t(game.name)}</h2>
+      <div className="odd-even-score">
+        {t("Score:")} {score}
+      </div>
 
       <div className="odd-even-exercise-number">
-        Exercițiul {exerciseNumber} / {game.exerciseCount || 10}
+        {t("Exercise")} {exerciseNumber} / {game.exerciseCount || 10}
       </div>
 
       <div className="odd-even-question">
-        <p>Acest număr este impar sau par?</p>
+        <p>{t("Is this number odd or even?")}</p>
         <strong>{question.number}</strong>
       </div>
 
@@ -112,7 +114,7 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
           onClick={() => checkAnswer("odd")}
           disabled={selectedAnswer !== null}
         >
-          Impar
+          {t("Odd")}{" "}
         </Button>
 
         <Button
@@ -121,7 +123,7 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
           onClick={() => checkAnswer("even")}
           disabled={selectedAnswer !== null}
         >
-          Par
+          {t("Even")}{" "}
         </Button>
       </div>
 
@@ -129,18 +131,18 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
         <div className="odd-even-feedback">
           {selectedAnswer === question.correctAnswer ? (
             <>
-              <p>Corect!</p>
+              <p>{t("Correct!")}</p>
               <Button type="primary" onClick={getNewQuestion}>
                 {exerciseNumber >= (game.exerciseCount || 10)
-                  ? "Finalizează"
-                  : "Următorul exercițiu"}
+                  ? t("Finish")
+                  : t("Next exercise")}
               </Button>
             </>
           ) : (
             <>
-              <p>Încearcă din nou!</p>
+              <p>{t("Try again!")}</p>
               <Button onClick={() => setSelectedAnswer(null)}>
-                Încearcă din nou
+                {t("Try again")}{" "}
               </Button>
             </>
           )}

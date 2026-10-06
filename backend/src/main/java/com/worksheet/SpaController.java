@@ -8,7 +8,8 @@ public class SpaController {
 
     @GetMapping({"/login", "/signup", "/home", "/home/{legacyName}", "/account", "/sheets",
         "/teacher", "/teacher/{id}", "/kids", "/kids/{id}", "/classes", "/classes/{id}",
-        "/assignments", "/assignments/{id}", "/attempts/{id}", "/home/{className}/{kidName}",
+        "/assignments", "/assignments/{id}", "/assignments/classes/{classId}",
+        "/assignments/classes/{classId}/worksheets/{revisionId}", "/attempts/{id}", "/home/{className}/{kidName}",
         "/classes/{id}/children/{userId}", "/classes/{id}/children/{userId}/tests/{attemptId}"})
     public String reactRoutes() {
         return "forward:/index.html";

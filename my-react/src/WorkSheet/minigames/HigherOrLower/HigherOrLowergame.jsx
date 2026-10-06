@@ -1,11 +1,13 @@
+import { usePlatform } from "../../../platform/PlatformState.js";
 import { useState } from "react";
 import { InputNumber, Button } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
 import "./HigherOrLowerMinigame.css";
 
 function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
+  const { t } = usePlatform();
   const [question, setQuestion] = useState(() =>
-    generateQuestion(game.maxNumber)
+    generateQuestion(game.maxNumber),
   );
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
@@ -49,9 +51,9 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
   if (isTeacher) {
     return (
       <div className="higher-lower-minigame teacher-higher-lower">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
         <label>
-          Număr maxim:
+          {t("Maximum number:")}{" "}
           <InputNumber
             min={10}
             max={100}
@@ -61,7 +63,7 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
         </label>
 
         <label>
-          Număr de exerciții:
+          {t("Number of exercises:")}{" "}
           <InputNumber
             min={1}
             max={100}
@@ -71,8 +73,9 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
         </label>
 
         <p>
-          Copiii vor trebui să decidă dacă primul număr este mai mare sau mai
-          mic decât al doilea număr.
+          {t(
+            "Children will decide whether the first number is greater or smaller than the second.",
+          )}{" "}
         </p>
       </div>
     );
@@ -81,11 +84,11 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
   if (finished) {
     return (
       <div className="higher-lower-minigame">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
         <div className="higher-lower-feedback">
-          <h3>Finalizat!</h3>
+          <h3>{t("Finished!")}</h3>
           <p>
-            Scorul tău: {score} / {game.exerciseCount || 10}
+            {t("Your score:")} {score} / {game.exerciseCount || 10}
           </p>
         </div>
       </div>
@@ -94,17 +97,17 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
 
   return (
     <div className="higher-lower-minigame">
-      <h2>{game.name}</h2>
-      <div className="higher-lower-score">Scor: {score}</div>
+      <h2>{t(game.name)}</h2>
+      <div className="higher-lower-score">
+        {t("Score:")} {score}
+      </div>
 
       <div className="higher-lower-exercise-number">
-        Exercițiul {exerciseNumber} / {game.exerciseCount || 10}
+        {t("Exercise")} {exerciseNumber} / {game.exerciseCount || 10}
       </div>
 
       <div className="higher-lower-question">
-        <p>
-          Primul număr este mai mare sau mai mic decât al doilea?
-        </p>
+        <p>{t("Is the first number greater or smaller than the second?")} </p>
 
         <strong>
           {question.firstNumber} &nbsp; ? &nbsp; {question.secondNumber}
@@ -118,7 +121,7 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
           onClick={() => checkAnswer("bigger")}
           disabled={selectedAnswer !== null}
         >
-          Mai mare
+          {t("Greater")}{" "}
         </Button>
 
         <Button
@@ -127,7 +130,7 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
           onClick={() => checkAnswer("smaller")}
           disabled={selectedAnswer !== null}
         >
-          Mai mic
+          {t("Smaller")}{" "}
         </Button>
       </div>
 
@@ -135,18 +138,18 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
         <div className="higher-lower-feedback">
           {selectedAnswer === question.correctAnswer ? (
             <>
-              <p>Corect!</p>
+              <p>{t("Correct!")}</p>
               <Button type="primary" onClick={getNewQuestion}>
                 {exerciseNumber >= (game.exerciseCount || 10)
-                  ? "Finalizează"
-                  : "Următorul exercițiu"}
+                  ? t("Finish")
+                  : t("Next exercise")}
               </Button>
             </>
           ) : (
             <>
-              <p>Încearcă din nou!</p>
+              <p>{t("Try again!")}</p>
               <Button onClick={() => setSelectedAnswer(null)}>
-                Încearcă din nou
+                {t("Try again")}{" "}
               </Button>
             </>
           )}
@@ -160,7 +163,7 @@ function generateQuestion(maxNumber) {
   const safeMaxNumber = Math.max(2, Number(maxNumber) || 10);
   const firstNumber = Math.floor(Math.random() * safeMaxNumber) + 1;
   let secondNumber;
-  
+
   // Previne generarea aceluiași număr (pentru a evita egalitatea)
   do {
     secondNumber = Math.floor(Math.random() * safeMaxNumber) + 1;

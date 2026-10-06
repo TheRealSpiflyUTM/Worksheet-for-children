@@ -18,7 +18,7 @@ npm run build
 npm run test:e2e
 ```
 
-Install the Playwright browser once with `npx playwright install chromium`. The end-to-end suite starts Vite automatically and expects the backend to be running. Run tests that create accounts, classes, assignments, or attempts only against an isolated test database because those workflows persist data.
+Install the Playwright browser once with `npx playwright install chromium`. The end-to-end suite starts Vite automatically and uses mocked API responses, so it does not require a backend or change your database. Set `E2E_BASE_URL` to test against an already running frontend. Any manual checks that create accounts, classes, assignments, or attempts against real services should use an isolated test database.
 
 ## React + Vite
 

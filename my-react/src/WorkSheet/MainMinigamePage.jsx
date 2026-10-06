@@ -1,9 +1,22 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Alert, Button, Progress, message } from "antd";
+import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
+import { useBlocker, useParams } from "react-router-dom";
+import {
+  getWorksheet,
+  getWorksheetItems,
+  getMiniGameDefinitions,
+  renameWorksheet,
+  createWorksheetItem,
+  updateWorksheetItem,
+  deleteWorksheetItem,
+} from "../api/worksheets.js";
+import { gameRegistry, saveDraft } from "../platform/game-model.js";
+import { usePlatform } from "../platform/PlatformState.js";
+import { Resource } from "../platform/PlatformUI.jsx";
+import { useResource } from "../platform/useResource.js";
+import { ShareWorksheetModal } from "../platform/WorksheetActions.jsx";
 import ChildMinigame from "./ChildMinigame.jsx";
-// K is for kids
-// T is for teacher
-// We will use this to switch between teacher and student version
-
-// #region Imports
 import ColorMinigame from "./minigames/ColorMinigame/ColorMinigame.jsx";
 import MathMinigame from "./minigames/Mathgame/MathMinigame.jsx";
 import SequenceMinigame from "./minigames/Sequencegame/SequenceMinigame.jsx";
@@ -12,1068 +25,476 @@ import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
 import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
-import { useState, useRef, useEffect } from "react";
-import { Button, message, Popconfirm, Progress, Spin } from "antd";
-import {
-  ArrowLeftOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  PlusOutlined,
-  SaveOutlined,
-} from "@ant-design/icons";
-import { useBlocker, useParams } from "react-router-dom";
-import {
-  getWorksheet,
-  getWorksheetItems,
-  createWorksheetItem,
-  updateWorksheetItem,
-  deleteWorksheetItem,
-  getMiniGameDefinitions,
-} from "../api/worksheets.js";
+import WorksheetToolbar from "./WorksheetToolbar.jsx";
 import "./MainMinigamePage.css";
 import "./PlayfulMinigames.css";
-// #endregion
 
-const MIN_TOOLS_WIDTH = 180;
-const MAX_TOOLS_WIDTH = 480;
-const DEFAULT_TOOLS_WIDTH = 260;
-const TOOLS_WIDTH_STORAGE_KEY = "worksheet-tools-width";
+const gameComponents = {
+  "color-game": ColorMinigame,
+  "math-game": MathMinigame,
+  "sequence-game": SequenceMinigame,
+  "higher-lower-game": HigherOrLowerMinigame,
+  "odd-even-game": OddOrEvenMinigame,
+  "matching-game": MatchingMinigame,
+};
 
-function MainMinigamePage(params) {
-  // #region Values
-  const [isPreviewing, setIsPreviewing] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
-  const { worksheetId } = useParams();
-
-  /*
-    These are the games that exist in the frontend.
-    The "id" here is important.
-    It matches the "type" returned by the backend:
-    color-game
-    math-game
-    sequence-game
-    higher-lower-game
-    odd-even-game
-    matching-game
-  */
-  const availableMinigames = [
-    {
-      id: "color-game",
-      name: "Color Game",
-      img: "/img/ColorGame.png",
-      letter: "u",
-      animals: [
-        {
-          id: "bear",
-          name: "Urs",
-          img: "/img/BearImg.webp",
-        },
-        {
-          id: "fox",
-          name: "Vulpe",
-          img: "/img/FoxImg.webp",
-        },
-        {
-          id: "wolf",
-          name: "Lup",
-          img: "/img/WolfImg.webp",
-        },
-      ],
-    },
-    
-    {
-      id: "matching-game",
-      name: "Match the Amounts",
-      img: "/img/MatchingGame.png",
-      pairs: [
-        { id: "one", number: 1, emoji: "🍎" },
-        { id: "two", number: 2, emoji: "🍊" },
-        { id: "three", number: 3, emoji: "🍌" },
-      ],
-    },
-
-    {
-      id: "math-game",
-      name: "Easy Math",
-      img: "/img/MathGame.png",
-      maxNumber: 10,
-      operations: ["+", "-", "*", "/"],
-    },
-    {
-      id: "sequence-game",
-      name: "Number Sequence",
-      img: "/img/SequenceGame.png",
-      maxNumber: 10,
-    },
-    {
-      id: "higher-lower-game",
-      name: "Higher or Lower",
-      img: "/img/HigherLowerGame.png",
-      maxNumber: 10,
-    },
-    {
-      id: "odd-even-game",
-      name: "Odd or Even",
-      img: "/img/OddEvenGame.png",
-      maxNumber: 10,
-    },
-    {
-      id: "matching-game",
-      name: "Match the Amounts",
-      img: "/img/MatchingGame.png",
-    },
-  ];
-
-  const [selectedGameId, setSelectedGameId] = useState(null);
-  const [isAddMinigameOpen, setIsAddMinigameOpen] = useState(false);
-  const [addedMinigames, setAddedMinigames] = useState([]);
-  const [definitions, setDefinitions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const selectedAreaRef = useRef(null);
-  const saveWorksheetShortcutRef = useRef(null);
-  const pendingScrollGameIdRef = useRef(null);
-  const gameElementRefs = useRef(new Map());
-
-  const navigationBlocker = useBlocker(
-    params.isTeacher && hasUnsavedChanges
-  );
-
-  const [toolsWidth, setToolsWidth] = useState(() => {
-    try {
-      const savedWidth = Number(
-        localStorage.getItem(TOOLS_WIDTH_STORAGE_KEY)
+function WorksheetGameFrame({ children }) {
+  const frameRef = useRef(null);
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    const card = frame.querySelector(".worksheetGameContent > *");
+    if (!card) return;
+    const positionActions = () => {
+      const frameBox = frame.getBoundingClientRect();
+      const cardBox = card.getBoundingClientRect();
+      frame.style.setProperty(
+        "--game-card-right",
+        `${cardBox.right - frameBox.left}px`,
       );
-
-      if (Number.isFinite(savedWidth) && savedWidth > 0) {
-        return Math.min(
-          MAX_TOOLS_WIDTH,
-          Math.max(MIN_TOOLS_WIDTH, savedWidth)
-        );
-      }
-    } catch (error) {
-      console.warn("Could not load the saved tools width:", error);
-    }
-
-    return DEFAULT_TOOLS_WIDTH;
-  });
-
-  /*
-    Load the worksheet from the backend.
-    This is only needed when a worksheetId exists.
-    For the teacher:
-    /teacher/:worksheetId
-    For the student:
-    /kids/:worksheetId
-  */
-  // #endregion
-
-  // #region functions
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        TOOLS_WIDTH_STORAGE_KEY,
-        String(toolsWidth)
-      );
-    } catch (error) {
-      console.warn("Could not save the tools width:", error);
-    }
-  }, [toolsWidth]);
-
-  useEffect(() => {
-    if (!params.isTeacher || !hasUnsavedChanges) {
-      return;
-    }
-
-    function warnAboutUnsavedChanges(event) {
-      event.preventDefault();
-      event.returnValue = true;
-    }
-
-    window.addEventListener(
-      "beforeunload",
-      warnAboutUnsavedChanges
-    );
-
-    return () => {
-      window.removeEventListener(
-        "beforeunload",
-        warnAboutUnsavedChanges
+      frame.style.setProperty(
+        "--game-card-center",
+        `${cardBox.top - frameBox.top + cardBox.height / 2}px`,
       );
     };
-  }, [params.isTeacher, hasUnsavedChanges]);
-
-  useEffect(() => {
-    if (navigationBlocker.state !== "blocked") {
-      return;
-    }
-
-    const shouldLeave = window.confirm(
-      "You have unsaved worksheet changes. Leave without saving?"
-    );
-
-    if (shouldLeave) {
-      navigationBlocker.proceed();
-    } else {
-      navigationBlocker.reset();
-    }
-  }, [navigationBlocker]);
-
-  function startToolsResize(event) {
-    event.preventDefault();
-
-    const startingMouseX = event.clientX;
-    const startingWidth = toolsWidth;
-    const previousCursor = document.body.style.cursor;
-    const previousUserSelect = document.body.style.userSelect;
-
-    document.body.style.cursor = "ew-resize";
-    document.body.style.userSelect = "none";
-
-    function handlePointerMove(moveEvent) {
-      // Moving left makes the sidebar wider.
-      const distance = startingMouseX - moveEvent.clientX;
-      const requestedWidth = startingWidth + distance;
-
-      const limitedWidth = Math.min(
-        MAX_TOOLS_WIDTH,
-        Math.max(MIN_TOOLS_WIDTH, requestedWidth)
-      );
-
-      setToolsWidth(limitedWidth);
-    }
-
-    function stopResize() {
-      document.body.style.cursor = previousCursor;
-      document.body.style.userSelect = previousUserSelect;
-
-      window.removeEventListener(
-        "pointermove",
-        handlePointerMove
-      );
-
-      window.removeEventListener(
-        "pointerup",
-        stopResize
-      );
-
-      window.removeEventListener(
-        "pointercancel",
-        stopResize
-      );
-    }
-
-    window.addEventListener(
-      "pointermove",
-      handlePointerMove
-    );
-
-    window.addEventListener(
-      "pointerup",
-      stopResize
-    );
-
-    window.addEventListener(
-      "pointercancel",
-      stopResize
-    );
-  }
-
-  useEffect(() => {
-    if (!worksheetId) {
-      return;
-    }
-
-    loadWorksheet();
-  }, [worksheetId]);
-
-  async function loadWorksheet() {
-    setIsLoading(true);
-
-    try {
-      /*
-       * Get both:
-       * 1. The worksheet
-       * 2. The mini-game definitions
-       */
-      const [worksheet, miniGameDefinitions] =
-        await Promise.all([
-          getWorksheet(worksheetId),
-          getMiniGameDefinitions(),
-        ]);
-
-      setDefinitions(miniGameDefinitions);
-
-      let worksheetItems = worksheet.items;
-
-      if (!Array.isArray(worksheetItems)) {
-        worksheetItems =
-          await getWorksheetItems(worksheetId);
-      }
-
-      const sortedItems = [...worksheetItems].sort(
-        (a, b) => a.orderIndex - b.orderIndex
-      );
-
-      const loadedGames = sortedItems
-        .map((item) => {
-          const definition =
-            miniGameDefinitions.find(
-              (miniGame) =>
-                miniGame.id === item.miniGameId
-            );
-
-          if (!definition) {
-            console.warn(
-              `Mini-game with ID ${item.miniGameId} was not found on the server.`
-            );
-
-            return null;
-          }
-
-          const frontendGame =
-            availableMinigames.find(
-              (game) =>
-                game.id === definition.type
-            );
-
-          if (!frontendGame) {
-            console.warn(
-              `Mini-game type "${definition.type}" is not supported by the frontend.`
-            );
-
-            return null;
-          }
-
-          return {
-            ...frontendGame,
-            ...(item.configuration || {}),
-            instanceId: crypto.randomUUID(),
-            decorationSeed:
-              `worksheet-${worksheetId}-item-${item.id}`,
-            itemId: item.id,
-            miniGameId: item.miniGameId,
-            orderIndex: item.orderIndex,
-          };
-        })
-        .filter(Boolean);
-
-      setAddedMinigames(loadedGames);
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      console.error(
-        "Failed to load worksheet:",
-        error
-      );
-
-      message.error(
-        error.message ||
-          "Failed to load the worksheet."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  /*
-    Add a new mini-game to the worksheet.
-  */
-  const addMinigameFunction = (game) => {
-    const newGame = {
-      ...game,
-      instanceId: crypto.randomUUID(),
-      decorationSeed: crypto.randomUUID(),
-      itemId: null,
-      miniGameId: null,
-
-      animals: game.animals
-        ? game.animals.map((animal) => ({
-            ...animal,
-          }))
-        : undefined,
-    };
-
-    pendingScrollGameIdRef.current =
-      newGame.instanceId;
-
-    setAddedMinigames((currentGames) => {
-      if (currentGames.length === 0) {
-        return [newGame];
-      }
-
-      const selectedIndex =
-        currentGames.findIndex(
-          (currentGame) =>
-            currentGame.instanceId ===
-            selectedGameId
-        );
-
-      if (selectedIndex === -1) {
-        return [...currentGames, newGame];
-      }
-
-      const updatedGames = [...currentGames];
-
-      updatedGames.splice(
-        selectedIndex + 1,
-        0,
-        newGame
-      );
-
-      return updatedGames;
-    });
-
-    setSelectedGameId(newGame.instanceId);
-    setIsAddMinigameOpen(false);
-    setHasUnsavedChanges(true);
-  };
-
-  useEffect(() => {
-    const gameId =
-      pendingScrollGameIdRef.current;
-
-    if (!gameId) {
-      return;
-    }
-
-    const gameElement =
-      gameElementRefs.current.get(gameId);
-
-    if (!gameElement) {
-      return;
-    }
-
-    pendingScrollGameIdRef.current = null;
-
-    gameElement.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-  }, [addedMinigames]);
-
-  /*
-    Update a mini-game configuration.
-  */
-  function updateMinigame(
-    instanceId,
-    updatedGame
-  ) {
-    setAddedMinigames((currentGames) =>
-      currentGames.map((game) =>
-        game.instanceId === instanceId
-          ? updatedGame
-          : game
-      )
-    );
-
-    setHasUnsavedChanges(true);
-  }
-
-  /*
-    Delete a mini-game from the worksheet.
-    If it was already saved, it is also deleted on the server.
-  */
-  async function removeMinigame(game) {
-    try {
-      if (game.itemId) {
-        await deleteWorksheetItem(
-          worksheetId,
-          game.itemId
-        );
-      }
-
-      setAddedMinigames((currentGames) =>
-        currentGames.filter(
-          (currentGame) =>
-            currentGame.instanceId !==
-            game.instanceId
-        )
-      );
-
-      setSelectedGameId(null);
-      setHasUnsavedChanges(true);
-      message.success("Minigame removed.");
-    } catch (error) {
-      message.error(
-        error.message ||
-          "Could not remove the minigame."
-      );
-    }
-  }
-
-  /*
-    Remove frontend-only fields before sending
-    configuration to backend.
-  */
-  function getGameConfiguration(game) {
-    const configuration = {
-      ...game,
-    };
-
-    delete configuration.id;
-    delete configuration.name;
-    delete configuration.img;
-    delete configuration.instanceId;
-    delete configuration.itemId;
-    delete configuration.miniGameId;
-    delete configuration.orderIndex;
-    delete configuration.decorationSeed;
-
-    return configuration;
-  }
-
-  /*
-    Save the whole worksheet.
-  */
-  async function saveWorksheet() {
-    if (isSaving) {
-      return;
-    }
-
-    if (!worksheetId) {
-      message.error("Worksheet ID is missing.");
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const itemsToSave =
-        addedMinigames.map((game, index) => {
-          const definition =
-            definitions.find(
-              (miniGame) =>
-                miniGame.type === game.id
-            );
-
-          if (!definition) {
-            throw new Error(
-              `Mini-game type "${game.id}" was not found on the server.`
-            );
-          }
-
-          return {
-            game,
-
-            item: {
-              miniGameId: definition.id,
-              orderIndex: index,
-              configuration:
-                getGameConfiguration(game),
-            },
-          };
-        });
-
-      const existingItems = itemsToSave
-        .filter(({ game }) => game.itemId)
-        .sort(
-          (first, second) =>
-            second.item.orderIndex -
-            first.item.orderIndex
-        );
-
-      /*
-       * Move existing items from bottom to top so
-       * each destination index is free before a
-       * newly inserted item is created there.
-       */
-      for (const { game, item } of existingItems) {
-        await updateWorksheetItem(
-          worksheetId,
-          game.itemId,
-          item
-        );
-      }
-
-      for (const { game, item } of itemsToSave) {
-        if (game.itemId) {
-          continue;
-        }
-
-        const createdItem =
-          await createWorksheetItem(
-            worksheetId,
-            item
-          );
-
-        /*
-         * Store each new database ID immediately.
-         * If a later request fails, retrying the save
-         * updates this item instead of creating it twice.
-         */
-        setAddedMinigames((currentGames) =>
-          currentGames.map((currentGame) =>
-            currentGame.instanceId ===
-            game.instanceId
-              ? {
-                  ...currentGame,
-                  itemId: createdItem.id,
-                  miniGameId:
-                    createdItem.miniGameId,
-                  orderIndex:
-                    createdItem.orderIndex,
-                }
-              : currentGame
-          )
-        );
-      }
-
-      setAddedMinigames((currentGames) =>
-        currentGames.map((game, index) => ({
-          ...game,
-          orderIndex: index,
-        }))
-      );
-
-      setHasUnsavedChanges(false);
-
-      message.success(
-        "Worksheet saved successfully."
-      );
-    } catch (error) {
-      console.error(
-        "Failed to save worksheet:",
-        error
-      );
-
-      message.error(
-        error.message ||
-          "Failed to save worksheet."
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  useEffect(() => {
-    saveWorksheetShortcutRef.current =
-      params.isTeacher
-        ? saveWorksheet
-        : null;
-  });
-
-  useEffect(() => {
-    function handleSaveShortcut(event) {
-      const isSaveShortcut =
-        (event.ctrlKey || event.metaKey) &&
-        !event.altKey &&
-        event.key.toLowerCase() === "s";
-
-      if (
-        !isSaveShortcut ||
-        !saveWorksheetShortcutRef.current
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (!event.repeat) {
-        saveWorksheetShortcutRef.current();
-      }
-    }
-
-    window.addEventListener(
-      "keydown",
-      handleSaveShortcut
-    );
-
-    return () => {
-      window.removeEventListener(
-        "keydown",
-        handleSaveShortcut
-      );
-    };
+    positionActions();
+    const observer = new ResizeObserver(positionActions);
+    observer.observe(frame);
+    observer.observe(card);
+    return () => observer.disconnect();
   }, []);
-
-  /*
-    Close selection when clicking outside
-    the game area.
-  */
-  useEffect(() => {
-    function handleClickAway(event) {
-      if (isAddMinigameOpen) {
-        return;
-      }
-
-      if (event.target.closest(".ant-popover, .ant-modal-root")) {
-        return;
-      }
-
-      if (
-        selectedAreaRef.current &&
-        !selectedAreaRef.current.contains(event.target)
-      ) {
-        setSelectedGameId(null);
-      }
-    }
-
-    document.addEventListener(
-      "pointerdown",
-      handleClickAway
-    );
-
-    return () => {
-      document.removeEventListener(
-        "pointerdown",
-        handleClickAway
-      );
-    };
-  }, [isAddMinigameOpen]);
-
-  /*
-    Show a loading state while the worksheet
-    is being loaded.
-  */
-  if (isLoading) {
-    return (
-      <main className="mainMinigamePage loadingContainer">
-        <Spin size="large" />
-      </main>
-    );
-  }
-
-  // #endregion
-
-  // #region Teacher
-
-  if (params.isTeacher && !isPreviewing) {
-    return (
-      <main className="mainMinigamePage">
-        <div
-          className="worksheetEditorLayout"
-          style={{
-            "--tools-width": `${toolsWidth}px`,
-          }}
-        >
-          <section className="worksheetCanvas">
-            {addedMinigames.length === 0 ? (
-              <Button
-                className="firstAddMinigameButton"
-                type="primary"
-                size="large"
-                icon={<PlusOutlined />}
-                onClick={() =>
-                  setIsAddMinigameOpen(true)
-                }
-              >
-                Add Minigame
-              </Button>
-            ) : (
-              <div
-                className="addedGames"
-                ref={selectedAreaRef}
-              >
-                {addedMinigames.map((game) => (
-                  <div
-                    className={
-                      selectedGameId ===
-                      game.instanceId
-                        ? "worksheetGame selectedGame"
-                        : "worksheetGame "
-                    }
-                    key={game.instanceId}
-                    ref={(element) => {
-                      if (element) {
-                        gameElementRefs.current.set(
-                          game.instanceId,
-                          element
-                        );
-                      } else {
-                        gameElementRefs.current.delete(
-                          game.instanceId
-                        );
-                      }
-                    }}
-                    onClick={() =>
-                      setSelectedGameId(
-                        game.instanceId
-                      )
-                    }
-                  >
-                    <WorksheetSprinkles
-                      seed={game.decorationSeed}
-                    />
-
-                    <div className="worksheetGameContent">
-                      {game.id ===
-                        "color-game" && (
-                        <ColorMinigame
-                          isTeacher={
-                            params.isTeacher
-                          }
-                          game={game}
-                          onGameChange={(
-                            updatedGame
-                          ) =>
-                            updateMinigame(
-                              game.instanceId,
-                              updatedGame
-                            )
-                          }
-                        />
-                      )}
-
-                      {game.id ===
-                        "math-game" && (
-                        <MathMinigame
-                          isTeacher={
-                            params.isTeacher
-                          }
-                          game={game}
-                          onGameChange={(
-                            updatedGame
-                          ) =>
-                            updateMinigame(
-                              game.instanceId,
-                              updatedGame
-                            )
-                          }
-                        />
-                      )}
-
-                      {game.id ===
-                        "sequence-game" && (
-                        <SequenceMinigame
-                          isTeacher={
-                            params.isTeacher
-                          }
-                          game={game}
-                          onGameChange={(
-                            updatedGame
-                          ) =>
-                            updateMinigame(
-                              game.instanceId,
-                              updatedGame
-                            )
-                          }
-                        />
-                      )}
-
-                      {game.id ===
-                        "higher-lower-game" && (
-                        <HigherOrLowerMinigame
-                          isTeacher={
-                            params.isTeacher
-                          }
-                          game={game}
-                          onGameChange={(
-                            updatedGame
-                          ) =>
-                            updateMinigame(
-                              game.instanceId,
-                              updatedGame
-                            )
-                          }
-                        />
-                      )}
-
-                      {game.id ===
-                        "odd-even-game" && (
-                        <OddOrEvenMinigame
-                          isTeacher={
-                            params.isTeacher
-                          }
-                          game={game}
-                          onGameChange={(
-                            updatedGame
-                          ) =>
-                            updateMinigame(
-                              game.instanceId,
-                              updatedGame
-                            )
-                          }
-                        />
-                      )}
-
-                      {game.id ===
-                        "matching-game" && (
-                        <MatchingMinigame
-                          isTeacher={
-                            params.isTeacher
-                          }
-                          game={game}
-                          onGameChange={(
-                            updatedGame
-                          ) =>
-                            updateMinigame(
-                              game.instanceId,
-                              updatedGame
-                            )
-                          }
-                        />
-                      )}
-                    </div>
-
-                    <div
-                      className={`addMinigameSlot ${
-                        selectedGameId ===
-                        game.instanceId
-                          ? "isOpen"
-                          : ""
-                      }`}
-                      aria-hidden={
-                        selectedGameId !==
-                        game.instanceId
-                      }
-                    >
-                      <div className="addMinigameSlotInner">
-                        <Button
-                          className="addMinigameButton"
-                          type="primary"
-                          icon={<PlusOutlined />}
-                          tabIndex={
-                            selectedGameId ===
-                            game.instanceId
-                              ? 0
-                              : -1
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-
-                            setIsAddMinigameOpen(
-                              true
-                            );
-                          }}
-                        >
-                          Add Minigame
-                        </Button>
-                        <Popconfirm
-                          title="Ștergi minigame-ul?"
-                          description="Minigame-ul va fi eliminat din fișă."
-                          okText="Șterge"
-                          cancelText="Anulează"
-                          onConfirm={() => removeMinigame(game)}
-                        >
-                          <Button
-                            className="addMinigameButton"
-                            danger
-                            icon={<DeleteOutlined />}
-                            tabIndex={
-                              selectedGameId === game.instanceId ? 0 : -1
-                            }
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            Delete Minigame
-                          </Button>
-                        </Popconfirm>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <aside className="worksheetTools">
-            <div
-              className="worksheetToolsResizeHandle"
-              role="separator"
-              aria-label="Resize worksheet tools"
-              aria-orientation="vertical"
-              aria-valuemin={
-                MIN_TOOLS_WIDTH
-              }
-              aria-valuemax={
-                MAX_TOOLS_WIDTH
-              }
-              aria-valuenow={toolsWidth}
-              onPointerDown={
-                startToolsResize
-              }
-            />
-
-            <Button
-              className="saveWorksheetButton"
-              type="primary"
-              block
-              icon={<SaveOutlined />}
-              loading={isSaving}
-              disabled={
-                addedMinigames.length === 0
-              }
-              onClick={saveWorksheet}
-            >
-              Save Worksheet
-            </Button>
-
-            <Button
-              block
-              icon={<EyeOutlined />}
-              disabled={
-                addedMinigames.length === 0
-              }
-              onClick={() => {
-                setPreviewIndex(0);
-                setIsPreviewing(true);
-              }}
-            >
-              Preview as Kid
-            </Button>
-          </aside>
-        </div>
-
-        <AddMinigameWindow
-          open={isAddMinigameOpen}
-          closeFuntion={() =>
-            setIsAddMinigameOpen(false)
-          }
-          games={availableMinigames}
-          addMinigame={addMinigameFunction}
-        />
-      </main>
-    );
-  }
-
-  // #endregion
-
-  // #region Children
-
   return (
-    <main className="mainMinigamePage">
-      {isPreviewing && (
-        <div className="previewToolsBar">
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() =>
-              setIsPreviewing(false)
-            }
-          >
-            Back To Editor
-          </Button>
-        </div>
-      )}
-
-      {isPreviewing ? (
-        <>
-          <Progress percent={Math.round(previewIndex / addedMinigames.length * 100)} showInfo={false} strokeColor="#6c5ce7" />
-          {addedMinigames[previewIndex] ? (
-            <>
-              <ChildMinigame
-                key={addedMinigames[previewIndex].instanceId}
-                game={addedMinigames[previewIndex]}
-                onComplete={() => setPreviewIndex(current => current + 1)}
-              />
-              <div className="childGameActions">
-                <Button onClick={() => setPreviewIndex(current => current + 1)}>Skip activity</Button>
-              </div>
-            </>
-          ) : (
-            <div className="childGameActions">
-              <p>Ai terminat toate activitățile!</p>
-              <Button onClick={() => setPreviewIndex(0)}>Joacă din nou</Button>
-            </div>
-          )}
-        </>
-      ) : addedMinigames.map((game) => (
-        <ChildMinigame key={game.instanceId} game={game} />
-      ))}
-    </main>
+    <div className="worksheetGameFrame" ref={frameRef}>
+      {children}
+    </div>
   );
-
-  // #endregion
 }
 
-export default MainMinigamePage;
+function configurationOf(game) {
+  const configuration = { ...game };
+  for (const key of [
+    "id",
+    "name",
+    "img",
+    "instanceId",
+    "itemId",
+    "miniGameId",
+    "orderIndex",
+    "decorationSeed",
+  ])
+    delete configuration[key];
+  return configuration;
+}
+
+export default function MainMinigamePage({ isTeacher }) {
+  return isTeacher ? <WorksheetLoader /> : null;
+}
+
+function WorksheetLoader() {
+  const { worksheetId } = useParams();
+  const resource = useResource(async () => {
+    const [worksheet, definitions] = await Promise.all([
+      getWorksheet(worksheetId),
+      getMiniGameDefinitions(),
+    ]);
+    const items = Array.isArray(worksheet.items)
+      ? worksheet.items
+      : await getWorksheetItems(worksheetId);
+    const games = [...items]
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map((item) => {
+        const definition =
+          item.definition ||
+          definitions.find((entry) => entry.id === item.miniGameId);
+        if (!gameComponents[definition?.type])
+          throw new Error(
+            "This worksheet contains an unavailable activity. Its saved content has been preserved.",
+          );
+        return {
+          ...structuredClone(definition.defaultConfiguration || {}),
+          ...item.configuration,
+          id: definition.type,
+          name: gameRegistry[definition.type].title,
+          instanceId: `item-${item.id}`,
+          decorationSeed: `worksheet-${worksheetId}-item-${item.id}`,
+          itemId: item.id,
+          miniGameId: item.miniGameId,
+          orderIndex: item.orderIndex,
+        };
+      });
+    return { worksheet, definitions, games };
+  }, [worksheetId]);
+  return (
+    <Resource resource={resource}>
+      {(data) => (
+        <WorksheetEditor
+          key={data.worksheet.id}
+          worksheetId={data.worksheet.id}
+          initial={data}
+        />
+      )}
+    </Resource>
+  );
+}
+
+function WorksheetEditor({ worksheetId, initial }) {
+  const { t } = usePlatform();
+  const [name, setName] = useState(initial.worksheet.name);
+  const [games, setGames] = useState(initial.games);
+  const [removed, setRemoved] = useState([]);
+  const [undo, setUndo] = useState([]);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const saveLock = useRef(false);
+  const shortcut = useRef(null);
+  const pendingScroll = useRef(null);
+  const gameElements = useRef(new Map());
+  const blocker = useBlocker(dirty || saving);
+
+  const available = Object.keys(gameComponents).flatMap((type) => {
+    const definition = initial.definitions
+      .filter((entry) => entry.type === type && entry.active !== false)
+      .sort((a, b) => b.version - a.version)[0];
+    return definition
+      ? [
+          {
+            ...definition,
+            id: type,
+            miniGameId: definition.id,
+            name: gameRegistry[type].title,
+            symbol: gameRegistry[type].symbol,
+          },
+        ]
+      : [];
+  });
+
+  useEffect(() => {
+    if (!dirty && !saving) return;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = true;
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, saving]);
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    if (saving) {
+      message.info(t("Please wait until saving finishes."));
+      blocker.reset();
+    } else if (
+      window.confirm(
+        t("You have unsaved worksheet changes. Leave without saving?"),
+      )
+    ) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker, saving, t]);
+
+  useEffect(() => {
+    const id = pendingScroll.current;
+    if (!id || !gameElements.current.has(id)) return;
+    pendingScroll.current = null;
+    gameElements.current.get(id).scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "center",
+    });
+  }, [games]);
+
+  function addGame(definition) {
+    const id = crypto.randomUUID();
+    const game = {
+      ...structuredClone(definition.defaultConfiguration || {}),
+      id: definition.id,
+      name: definition.name,
+      miniGameId: definition.miniGameId,
+      instanceId: id,
+      decorationSeed: id,
+      itemId: null,
+    };
+    setGames((current) => {
+      const next = [...current];
+      const index = current.findIndex((entry) => entry.instanceId === selected);
+      next.splice(index < 0 ? next.length : index + 1, 0, game);
+      return next;
+    });
+    pendingScroll.current = id;
+    setSelected(id);
+    setAdding(false);
+    setDirty(true);
+  }
+
+  function removeGame(game, index) {
+    setUndo((current) => [...current, { game, index }]);
+    if (game.itemId) setRemoved((current) => [...current, game.itemId]);
+    setGames((current) =>
+      current.filter((entry) => entry.instanceId !== game.instanceId),
+    );
+    setSelected(null);
+    setDirty(true);
+  }
+
+  function undoRemoval() {
+    const entry = undo.at(-1);
+    if (!entry) return;
+    setGames((current) => {
+      const next = [...current];
+      next.splice(entry.index, 0, entry.game);
+      return next;
+    });
+    setRemoved((current) => current.filter((id) => id !== entry.game.itemId));
+    setUndo((current) => current.slice(0, -1));
+    setSelected(entry.game.instanceId);
+    setDirty(true);
+  }
+
+  async function saveWorksheet() {
+    if (saveLock.current || !dirty) return;
+    if (!name.trim()) {
+      setError(new Error(t("Enter a worksheet name.")));
+      return;
+    }
+    saveLock.current = true;
+    setSaving(true);
+    setError(null);
+    setUndo([]);
+    try {
+      await saveDraft(
+        {
+          renameWorksheet,
+          deleteItem: deleteWorksheetItem,
+          saveItem: (id, item) => {
+            const payload = {
+              miniGameId: item.miniGameId,
+              orderIndex: item.orderIndex,
+              configuration: item.configuration,
+            };
+            return item.id
+              ? updateWorksheetItem(id, item.id, payload)
+              : createWorksheetItem(id, payload);
+          },
+        },
+        worksheetId,
+        {
+          name,
+          items: games.map((game) => ({
+            key: game.instanceId,
+            id: game.itemId,
+            miniGameId: game.miniGameId,
+            orderIndex: game.orderIndex,
+            configuration: configurationOf(game),
+          })),
+        },
+        removed,
+        (key, item) =>
+          setGames((current) =>
+            current.map((game) =>
+              game.instanceId === key
+                ? { ...game, itemId: item.id, orderIndex: item.orderIndex }
+                : game,
+            ),
+          ),
+        (id) =>
+          setRemoved((current) => current.filter((entry) => entry !== id)),
+      );
+      setName(name.trim());
+      setDirty(false);
+      message.success(t("Worksheet saved successfully."));
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      saveLock.current = false;
+      setSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    shortcut.current = saveWorksheet;
+  });
+  useEffect(() => {
+    const onKey = (event) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        event.key.toLowerCase() === "s"
+      ) {
+        event.preventDefault();
+        if (!event.repeat) void shortcut.current?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const toolbar = (
+    <WorksheetToolbar
+      name={name}
+      onNameChange={(value) => {
+        setName(value);
+        setDirty(true);
+      }}
+      dirty={dirty}
+      saving={saving}
+      hasGames={games.length > 0}
+      canUndo={undo.length > 0}
+      onSave={saveWorksheet}
+      onShare={() => setShareOpen(true)}
+      onUndo={undoRemoval}
+      onPreview={() => {
+        setPreviewIndex(0);
+        setPreviewing(true);
+      }}
+      previewing={previewing}
+      onBack={() => setPreviewing(false)}
+    />
+  );
+
+  if (previewing)
+    return (
+      <main className="mainMinigamePage">
+        {toolbar}
+        <Progress
+          percent={Math.round((previewIndex / games.length) * 100)}
+          showInfo={false}
+        />
+        {games[previewIndex] ? (
+          <>
+            <p className="worksheetActivityProgress">
+              {t("Activity {current} of {total}", {
+                current: previewIndex + 1,
+                total: games.length,
+              })}
+            </p>
+            <ChildMinigame
+              key={games[previewIndex].instanceId}
+              game={games[previewIndex]}
+              onComplete={() => setPreviewIndex((current) => current + 1)}
+            />
+            <div className="childGameActions">
+              <Button onClick={() => setPreviewIndex((current) => current + 1)}>
+                {t("Skip activity")}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="childGameActions">
+            <p>{t("You finished all the activities!")}</p>
+            <Button onClick={() => setPreviewIndex(0)}>
+              {t("Play again")}
+            </Button>
+          </div>
+        )}
+      </main>
+    );
+
+  return (
+    <main className="mainMinigamePage" aria-busy={saving}>
+      {toolbar}
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          title={t(error.message)}
+          description={t(
+            "Some changes may have been saved. Your remaining edits are kept here; retry saving to finish.",
+          )}
+          action={
+            <Button disabled={saving} onClick={saveWorksheet}>
+              {t("Try again")}
+            </Button>
+          }
+        />
+      )}
+      <div className="worksheetEditorLayout">
+        <section className="worksheetCanvas" inert={saving}>
+          {!games.length ? (
+            <Button
+              className="firstAddMinigameButton"
+              type="primary"
+              size="large"
+              icon={<PlusOutlined aria-hidden="true" />}
+              onClick={() => setAdding(true)}
+            >
+              {t("Add activity")}
+            </Button>
+          ) : (
+            <div className="addedGames">
+              {games.map((game, index) => {
+                const Game = gameComponents[game.id];
+                return (
+                  <WorksheetGameFrame key={game.instanceId}>
+                    <WorksheetSprinkles seed={game.decorationSeed} />
+                    <div
+                      className={`worksheetGame ${selected === game.instanceId ? "selectedGame" : ""}`}
+                      ref={(element) => {
+                        if (element)
+                          gameElements.current.set(game.instanceId, element);
+                        else gameElements.current.delete(game.instanceId);
+                      }}
+                      onClick={() => setSelected(game.instanceId)}
+                    >
+                      <div className="worksheetGameContent">
+                        <Game
+                          isTeacher
+                          game={game}
+                          onGameChange={(updated) => {
+                            setGames((current) =>
+                              current.map((entry) =>
+                                entry.instanceId === game.instanceId
+                                  ? updated
+                                  : entry,
+                              ),
+                            );
+                            setDirty(true);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      className="worksheetCardAction worksheetCardAction--add"
+                      aria-label={t("Add activity")}
+                      disabled={saving}
+                      icon={<PlusOutlined aria-hidden="true" />}
+                      onClick={() => {
+                        setSelected(game.instanceId);
+                        setAdding(true);
+                      }}
+                    />
+                    <Button
+                      className="worksheetCardAction worksheetCardAction--remove"
+                      aria-label={t("Remove activity")}
+                      disabled={saving}
+                      icon={<CloseOutlined aria-hidden="true" />}
+                      onClick={() => removeGame(game, index)}
+                    />
+                  </WorksheetGameFrame>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+      <AddMinigameWindow
+        open={adding && !saving}
+        closeFuntion={() => setAdding(false)}
+        games={available}
+        addMinigame={addGame}
+      />
+      <ShareWorksheetModal
+        worksheetId={worksheetId}
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+      />
+    </main>
+  );
+}

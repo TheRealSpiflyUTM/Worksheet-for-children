@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorksheetAssignmentRepository extends JpaRepository<WorksheetAssignment, Long> {
     @EntityGraph(attributePaths = {"worksheetRevision", "worksheetRevision.worksheet",
-        "worksheetRevision.worksheet.user", "user", "classroom"})
+        "worksheetRevision.worksheet.user", "worksheetRevision.worksheet.shareRevision", "user", "classroom"})
     List<WorksheetAssignment> findByWorksheetRevision_Worksheet_User_IdOrderByAssignedAtDesc(Long teacherId);
     @EntityGraph(attributePaths = {"worksheetRevision", "worksheetRevision.worksheet",
         "worksheetRevision.worksheet.user", "user", "classroom"})

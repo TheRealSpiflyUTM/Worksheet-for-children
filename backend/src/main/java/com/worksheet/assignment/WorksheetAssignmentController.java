@@ -14,10 +14,17 @@ import org.springframework.web.bind.annotation.*;
 public class WorksheetAssignmentController {
     private final WorksheetAssignmentService service;
     private final AuthSessionService sessions;
+    private final AssignmentReportService reports;
 
-    public WorksheetAssignmentController(WorksheetAssignmentService service, AuthSessionService sessions) {
+    public WorksheetAssignmentController(WorksheetAssignmentService service, AuthSessionService sessions, AssignmentReportService reports) {
         this.service = service;
         this.sessions = sessions;
+        this.reports = reports;
+    }
+
+    @GetMapping("/assignments/report")
+    public List<AssignmentReportResponse> report(HttpServletRequest request) {
+        return reports.getReport(sessions.requireRole(request, UserRole.TEACHER));
     }
 
     @PostMapping("/worksheets/{worksheetId}/assignments")
