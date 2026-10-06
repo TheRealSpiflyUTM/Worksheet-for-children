@@ -218,6 +218,12 @@ before planning reconciliation; do not delete its history or run `flyway repair`
 
 ## Run and verify
 
+For the complete Docker development stack (frontend, backend, and database), run
+`docker compose up --build -d` from the repository root and open
+http://localhost:5173. See the [root README](../README.md) for teammate setup,
+live frontend updates, backend rebuilds, persistent data, and container test commands.
+The commands below are the alternative workflow with Java installed locally.
+
 Requirements: Temurin Java 25 and Docker Desktop.
 
 ```powershell
