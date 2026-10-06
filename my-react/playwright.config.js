@@ -10,4 +10,11 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   reporter: [["list"], ["html", { open: "never" }]],
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: "npm run dev -- --host localhost",
+        url: "http://localhost:5173",
+        reuseExistingServer: !process.env.CI,
+      },
 });

@@ -3,7 +3,12 @@ import { Alert, Button, Progress } from "antd";
 import { Link, useParams } from "react-router-dom";
 import { platformApi } from "../api/platform.js";
 import { usePlatform } from "./PlatformState.js";
-import { activityMaxScore, gameTitle, remainingItems, resultPayload } from "./game-model.js";
+import {
+  activityMaxScore,
+  gameTitle,
+  remainingItems,
+  resultPayload,
+} from "./game-model.js";
 import GamePlayer from "./GamePlayer.jsx";
 import { ErrorNotice, PlatformPage, Resource } from "./PlatformUI.jsx";
 import { useResource } from "./useResource.js";
@@ -11,7 +16,11 @@ import { useResource } from "./useResource.js";
 export default function AttemptPage() {
   const { id } = useParams();
   const resource = useResource(() => platformApi.attempt(id), [id]);
-  return <Resource resource={resource}>{(attempt) => <AttemptContent initial={attempt} />}</Resource>;
+  return (
+    <Resource resource={resource}>
+      {(attempt) => <AttemptContent key={attempt.id} initial={attempt} />}
+    </Resource>
+  );
 }
 
 function AttemptContent({ initial }) {
@@ -21,8 +30,15 @@ function AttemptContent({ initial }) {
   const [error, setError] = useState(null);
   const pending = remainingItems(attempt);
   const item = pending[0];
-  const readOnly = attempt.status !== "IN_PROGRESS" || (attempt.assignmentId && user.role !== "USER");
-  const back = user.role === "USER" ? "/" : attempt.assignmentId ? `/assignments/${attempt.assignmentId}` : `/kids/${attempt.worksheetId}`;
+  const readOnly =
+    attempt.status !== "IN_PROGRESS" ||
+    (attempt.assignmentId && user.role !== "USER");
+  const back =
+    user.role === "USER"
+      ? "/"
+      : attempt.assignmentId
+        ? `/assignments/${attempt.assignmentId}`
+        : `/kids/${attempt.worksheetId}`;
 
   async function save(result) {
     if (!item || busy) return;
@@ -32,7 +48,12 @@ function AttemptContent({ initial }) {
       const saved = await platformApi.result(attempt.id, item.id, result);
       setAttempt((current) => ({
         ...current,
-        results: [...current.results.filter((entry) => entry.revisionItemId !== item.id), saved],
+        results: [
+          ...current.results.filter(
+            (entry) => entry.revisionItemId !== item.id,
+          ),
+          saved,
+        ],
       }));
     } catch (requestError) {
       setError(requestError);
@@ -55,12 +76,28 @@ function AttemptContent({ initial }) {
 
   if (readOnly) {
     return (
-      <PlatformPage title={attempt.status === "COMPLETED" ? "Well done!" : "Results"} actions={<Link to={back}>{t("Back")}</Link>}>
+      <PlatformPage
+        title={attempt.status === "COMPLETED" ? t("Well done!") : t("Results")}
+        actions={<Link to={back}>{t("Back")}</Link>}
+      >
         <section className="platformPanel">
-          <p className="platformQuestion">{attempt.totalScore} / {attempt.maxScore}</p>
+          <p className="platformQuestion">
+            {attempt.totalScore} / {attempt.maxScore}
+          </p>
           {attempt.items.map((activity, index) => {
-            const result = attempt.results.find((entry) => entry.revisionItemId === activity.id);
-            return <div className="platformRow" key={activity.id}><span>{index + 1}. {gameTitle(activity.definition)}</span><strong>{result ? `${result.score} / ${result.maxScore}` : "—"}</strong></div>;
+            const result = attempt.results.find(
+              (entry) => entry.revisionItemId === activity.id,
+            );
+            return (
+              <div className="platformRow" key={activity.id}>
+                <span>
+                  {index + 1}. {t(gameTitle(activity.definition))}
+                </span>
+                <strong>
+                  {result ? `${result.score} / ${result.maxScore}` : "—"}
+                </strong>
+              </div>
+            );
           })}
         </section>
       </PlatformPage>
@@ -68,20 +105,59 @@ function AttemptContent({ initial }) {
   }
 
   return (
-    <PlatformPage title="Worksheet activity" actions={<Link to={back}>{t("Back")}</Link>}>
+    <PlatformPage
+      title={t("Worksheet activity")}
+      actions={<Link to={back}>{t("Back")}</Link>}
+    >
       <ErrorNotice error={error} />
-      <Progress percent={Math.round((attempt.results.length / attempt.items.length) * 100)} showInfo={false} strokeColor="#6c5ce7" />
+      <Progress
+        percent={
+          attempt.items.length
+            ? Math.round((attempt.results.length / attempt.items.length) * 100)
+            : 100
+        }
+        showInfo={false}
+        strokeColor="#6c5ce7"
+      />
       {item ? (
         <>
+          <p className="worksheetActivityProgress" role="status">
+            {t("Activity {current} of {total}", {
+              current: attempt.results.length + 1,
+              total: attempt.items.length,
+            })}
+          </p>
           <GamePlayer key={item.id} item={item} onComplete={save} busy={busy} />
-          <div className="platformActions" style={{ justifyContent: "center", marginTop: 20 }}>
-            <Button disabled={busy} onClick={() => save(resultPayload(0, activityMaxScore(item), 0, "SKIPPED"))}>{t("Skip activity")}</Button>
+          <div
+            className="platformActions"
+            style={{ justifyContent: "center", marginTop: 20 }}
+          >
+            <Button
+              disabled={busy}
+              onClick={() =>
+                save(resultPayload(0, activityMaxScore(item), 0, "SKIPPED"))
+              }
+            >
+              {t("Skip activity")}
+            </Button>
           </div>
         </>
       ) : (
         <section className="platformPanel">
-          <Alert type="success" showIcon title="All activities are saved. Ready to finish?" />
-          <Button type="primary" size="large" loading={busy} onClick={finish} style={{ marginTop: 16 }}>{t("Finish worksheet")}</Button>
+          <Alert
+            type="success"
+            showIcon
+            title={t("All activities are saved. Ready to finish?")}
+          />
+          <Button
+            type="primary"
+            size="large"
+            loading={busy}
+            onClick={finish}
+            style={{ marginTop: 16 }}
+          >
+            {t("Finish worksheet")}
+          </Button>
         </section>
       )}
     </PlatformPage>

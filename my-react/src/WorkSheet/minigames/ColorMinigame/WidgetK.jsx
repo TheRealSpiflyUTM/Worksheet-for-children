@@ -1,3 +1,4 @@
+import { usePlatform } from "../../../platform/PlatformState.js";
 import { useState } from "react";
 import { Button, Image, Typography } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
@@ -6,6 +7,7 @@ import "./WidgetK.css";
 const { Title } = Typography;
 
 function Widget(params) {
+  const { t } = usePlatform();
   // Values
 
   const [bubles, setBuble] = useState(() =>
@@ -58,7 +60,10 @@ function Widget(params) {
                 shape="circle"
                 className={buble ? "bubleActive" : "buble"}
                 onClick={() => bubleVerification(index)}
-                aria-label={`Litera ${index + 1} din ${params.name}`}
+                aria-label={t("Letter {index} in {name}", {
+                  index: index + 1,
+                  name: params.name,
+                })}
                 aria-pressed={buble}
                 disabled={params.disabled}
               />

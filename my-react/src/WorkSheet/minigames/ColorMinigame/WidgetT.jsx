@@ -1,13 +1,15 @@
-import { useState } from 'react';
-import { Button, Image, Input } from 'antd';
+import { usePlatform } from "../../../platform/PlatformState.js";
+import { useState } from "react";
+import { Button, Image, Input } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
-import "./WidgetT.css"
-function Widget (params){
+import "./WidgetT.css";
+function Widget(params) {
+  const { t } = usePlatform();
 
   // Values
 
-  const[bubles, setBuble]= useState(
-    () => Array.from(params.name).map(() => false)
+  const [bubles, setBuble] = useState(() =>
+    Array.from(params.name).map(() => false),
   );
 
   function playCorrectSFX() {
@@ -16,18 +18,18 @@ function Widget (params){
   }
 
   function bubleVerification(index) {
-    if(bubles[index]) return;
+    if (bubles[index]) return;
 
     const currentLetter = Array.from(params.name)[index];
-    if(!currentLetter || /\s/u.test(currentLetter)) return;
+    if (!currentLetter || /\s/u.test(currentLetter)) return;
 
     const isMatch = currentLetter.toLowerCase() === params.letter.toLowerCase();
-    
-    if(isMatch){
+
+    if (isMatch) {
       playCorrectSFX();
       celebrateCorrectAnswer();
       // b for bubbles
-      setBuble(b => {
+      setBuble((b) => {
         const updatedBubbles = [...b];
         updatedBubbles[index] = true;
         return updatedBubbles;
@@ -35,38 +37,45 @@ function Widget (params){
     }
   }
 
-  return(<>
-    <div className="widget">
-      <Image src={params.img} alt={params.name} preview={false} />
-      <Input className='animalNameInput' value={params.name}
-        maxLength={14}
-        aria-label="Numele animalului"
-        onChange={(event) =>{
-          const newName = event.target.value;
-          params.onNameChange(newName);
-          setBuble(Array.from(newName, () => false));
-        }}
-      />
-      
-      <div className='bubles'>
-        {Array.from(params.name).map((character, index)=> {
-          if(/\s/u.test(character)) return null;
+  return (
+    <>
+      <div className="widget">
+        <Image src={params.img} alt={params.name} preview={false} />
+        <Input
+          className="animalNameInput"
+          value={params.name}
+          maxLength={14}
+          aria-label={t("Animal name")}
+          onChange={(event) => {
+            const newName = event.target.value;
+            params.onNameChange(newName);
+            setBuble(Array.from(newName, () => false));
+          }}
+        />
 
-          const buble = bubles[index] ?? false;
-          return(
-            <Button
-              key={index} 
-              type={buble ? "primary" : "default"}
-              shape="circle"
-              className={buble ? "bubleActive" : "buble"}
-              onClick={() => bubleVerification(index)}
-              aria-label={`Litera ${index + 1} din ${params.name}`}
-              aria-pressed={buble}
-            />
-          )
-        })}
+        <div className="bubles">
+          {Array.from(params.name).map((character, index) => {
+            if (/\s/u.test(character)) return null;
+
+            const buble = bubles[index] ?? false;
+            return (
+              <Button
+                key={index}
+                type={buble ? "primary" : "default"}
+                shape="circle"
+                className={buble ? "bubleActive" : "buble"}
+                onClick={() => bubleVerification(index)}
+                aria-label={t("Letter {index} in {name}", {
+                  index: index + 1,
+                  name: params.name,
+                })}
+                aria-pressed={buble}
+              />
+            );
+          })}
+        </div>
       </div>
-    </div>
-  </>);
+    </>
+  );
 }
-export default Widget
+export default Widget;

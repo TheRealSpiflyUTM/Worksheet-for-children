@@ -1,11 +1,13 @@
+import { usePlatform } from "../../../platform/PlatformState.js";
 import { useState } from "react";
 import { InputNumber, Button } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
 import "./SequenceMinigame.css";
 
 function SequenceMinigame({ isTeacher, game, onGameChange, onComplete }) {
+  const { t } = usePlatform();
   const [question, setQuestion] = useState(() =>
-    generateQuestion(game.maxNumber)
+    generateQuestion(game.maxNumber),
   );
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
@@ -49,10 +51,10 @@ function SequenceMinigame({ isTeacher, game, onGameChange, onComplete }) {
   if (isTeacher) {
     return (
       <div className="sequence-minigame teacher-sequence">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
 
         <label>
-          Număr maxim:
+          {t("Maximum number:")}{" "}
           <InputNumber
             min={10}
             max={100}
@@ -62,7 +64,7 @@ function SequenceMinigame({ isTeacher, game, onGameChange, onComplete }) {
         </label>
 
         <label>
-          Număr de exerciții:
+          {t("Number of exercises:")}{" "}
           <InputNumber
             min={1}
             max={100}
@@ -72,7 +74,7 @@ function SequenceMinigame({ isTeacher, game, onGameChange, onComplete }) {
         </label>
 
         <p>
-          Copiii vor trebui să găsească următorul număr din diferite șiruri.
+          {t("Children will find the next number in different sequences.")}{" "}
         </p>
       </div>
     );
@@ -81,11 +83,11 @@ function SequenceMinigame({ isTeacher, game, onGameChange, onComplete }) {
   if (finished) {
     return (
       <div className="sequence-minigame">
-        <h2>{game.name}</h2>
+        <h2>{t(game.name)}</h2>
         <div className="sequence-feedback">
-          <h3>Finalizat!</h3>
+          <h3>{t("Finished!")}</h3>
           <p>
-            Scorul tău: {score} / {game.exerciseCount || 10}
+            {t("Your score:")} {score} / {game.exerciseCount || 10}
           </p>
         </div>
       </div>
@@ -94,12 +96,14 @@ function SequenceMinigame({ isTeacher, game, onGameChange, onComplete }) {
 
   return (
     <div className="sequence-minigame">
-      <h2>{game.name}</h2>
+      <h2>{t(game.name)}</h2>
 
-      <div className="sequence-score">Scor: {score}</div>
+      <div className="sequence-score">
+        {t("Score:")} {score}
+      </div>
 
       <div className="sequence-exercise-number">
-        Exercițiul {exerciseNumber} / {game.exerciseCount || 10}
+        {t("Exercise")} {exerciseNumber} / {game.exerciseCount || 10}
       </div>
 
       <div className="sequence-question">
@@ -126,18 +130,18 @@ function SequenceMinigame({ isTeacher, game, onGameChange, onComplete }) {
         <div className="sequence-feedback">
           {selectedAnswer === question.correctAnswer ? (
             <>
-              <p>Corect!</p>
+              <p>{t("Correct!")}</p>
               <Button type="primary" onClick={getNewQuestion}>
                 {exerciseNumber >= (game.exerciseCount || 10)
-                  ? "Finalizează"
-                  : "Următorul exercițiu"}
+                  ? t("Finish")
+                  : t("Next exercise")}
               </Button>
             </>
           ) : (
             <>
-              <p>Încearcă din nou!</p>
+              <p>{t("Try again!")}</p>
               <Button onClick={() => setSelectedAnswer(null)}>
-                Încearcă din nou
+                {t("Try again")}{" "}
               </Button>
             </>
           )}

@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("worksheet-language", "ro"),
+  );
+});
+
 const configuration = {
   letter: "u",
   animals: [
@@ -50,7 +56,7 @@ test("child preview and code-entry gameplay share the illustrated game and save 
   );
   await page.setViewportSize({ width: 1582, height: 1000 });
   await page.goto("/teacher/20");
-  await page.getByRole("button", { name: "Preview as Kid" }).click();
+  await page.getByRole("button", { name: "Previzualizează ca elev" }).click();
   const game = page.locator('[data-game-type="color-game"]');
   await expect(game.locator(".widget")).toHaveCount(3);
   await expect(game.locator("input")).toHaveCount(0);
@@ -101,7 +107,7 @@ test("child preview and code-entry gameplay share the illustrated game and save 
   await game.getByRole("button", { name: "Am terminat", exact: true }).click();
   await game.getByRole("button", { name: "Continuă", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Finish worksheet" }),
+    page.getByRole("button", { name: "Finalizează fișa" }),
   ).toBeVisible();
   expect(saved).toMatchObject({ score: 3, maxScore: 3, outcome: "COMPLETED" });
 
@@ -172,18 +178,18 @@ for (const type of [
       await game
         .locator(".matching-number-card")
         .dragTo(game.locator(".matching-target-card"));
-      await game.getByRole("button", { name: /Check Answer/ }).click();
+      await game.getByRole("button", { name: /Verifică răspunsul/ }).click();
       await expect(
         game.getByRole("button", { name: "Continuă", exact: true }),
       ).toBeVisible();
-      await game.getByRole("button", { name: /Reset/ }).click();
+      await game.getByRole("button", { name: /Reia/ }).click();
       await expect(
         game.getByRole("button", { name: "Continuă", exact: true }),
       ).toHaveCount(0);
       await game
         .locator(".matching-number-card")
         .dragTo(game.locator(".matching-target-card"));
-      await game.getByRole("button", { name: /Check Answer/ }).click();
+      await game.getByRole("button", { name: /Verifică răspunsul/ }).click();
     } else {
       let answer;
       if (type === "math-game") answer = "2";
@@ -209,7 +215,7 @@ for (const type of [
     }
     await game.getByRole("button", { name: "Continuă", exact: true }).click();
     await expect(
-      page.getByRole("button", { name: "Finish worksheet" }),
+      page.getByRole("button", { name: "Finalizează fișa" }),
     ).toBeVisible();
     expect(saved).toMatchObject({
       score: 1,
