@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: my-react
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: my-react/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build production frontend
+        run: npm run build
+
+  backend:
+    name: Backend and PostgreSQL tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: backend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Temurin Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Verify Docker is available
+        run: docker info
+
+      - name: Compile and run unit, Flyway, and PostgreSQL integration tests
+        run: bash ./mvnw --batch-mode --no-transfer-progress clean verify
+
+      - name: Upload backend test reports
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: backend-test-reports-${{ github.run_id }}
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  docker-smoke:
+    name: Docker stack and browser smoke tests
+    needs:
+      - frontend
+      - backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      COMPOSE_PROJECT_NAME: worksheet-ci-${{ github.run_id }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js for Playwright
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: my-react/package-lock.json
+
+      - name: Verify Docker and Compose
+        run: |
+          docker info
+          docker compose version
+
+      - name: Build application images
+        run: docker compose build
+
+      - name: Start the complete application stack
+        run: docker compose up --detach --wait --wait-timeout 300
+
+      - name: Verify backend and frontend health
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:8080/api/auth/csrf > /dev/null
+          curl --fail --silent --show-error http://127.0.0.1:5173/ > /dev/null
+
+      - name: Install browser-test dependencies
+        working-directory: my-react
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright end-to-end tests
+        working-directory: my-react
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5173
+        run: npm run test:e2e
+
+      - name: Show container status and logs on failure
+        if: failure()
+        run: |
+          docker compose ps --all
+          docker compose logs --no-color --tail=300
+
+      - name: Upload Playwright failure report
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            my-react/playwright-report/
+            my-react/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop application stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
