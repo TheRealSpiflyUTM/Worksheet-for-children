@@ -11,6 +11,8 @@ import tools.jackson.databind.node.ObjectNode;
 public class MiniGameDataInitializer implements CommandLineRunner {
 private static final int INITIAL_VERSION = 1;
 private static final int CORRECTED_SCHEMA_VERSION = 2;
+private static final int DEFAULT_EXERCISE_COUNT = 10;
+private static final int MAX_EXERCISE_COUNT = 100;
 
 private final MiniGameDefinitionRepository repository;
 private final JsonSchemaValidationService schemaValidator;
@@ -192,13 +194,7 @@ private ObjectNode animal(String id, String name, String image) {
 }
 
 private JsonNode mathConfigurationSchema() {
-    ObjectNode schema = baseObjectSchema();
-
-    ObjectNode maxNumber = JsonNodeFactory.instance.objectNode();
-    maxNumber.put("type", "integer");
-    maxNumber.put("minimum", 1);
-
-    properties(schema).set("maxNumber", maxNumber);
+    ObjectNode schema = numberConfigurationSchema();
 
     ObjectNode operations = JsonNodeFactory.instance.objectNode();
     operations.put("type", "array");
@@ -221,9 +217,7 @@ private JsonNode mathConfigurationSchema() {
 }
 
 private JsonNode mathDefaultConfiguration() {
-    ObjectNode config = JsonNodeFactory.instance.objectNode();
-
-    config.put("maxNumber", 10);
+    ObjectNode config = numberDefaultConfiguration();
 
     var operations = JsonNodeFactory.instance.arrayNode();
     operations.add("+");
@@ -237,48 +231,31 @@ private JsonNode mathDefaultConfiguration() {
 }
 
 private JsonNode sequenceConfigurationSchema() {
-    ObjectNode schema = baseObjectSchema();
-
-    ObjectNode maxNumber = JsonNodeFactory.instance.objectNode();
-    maxNumber.put("type", "integer");
-    maxNumber.put("minimum", 1);
-
-    properties(schema).set("maxNumber", maxNumber);
-    require(schema, "maxNumber");
-
-    return schema;
+    return numberConfigurationSchema();
 }
 
 private JsonNode sequenceDefaultConfiguration() {
-    ObjectNode config = JsonNodeFactory.instance.objectNode();
-
-    config.put("maxNumber", 10);
-
-    return config;
+    return numberDefaultConfiguration();
 }
 
 private JsonNode higherLowerConfigurationSchema() {
-    ObjectNode schema = baseObjectSchema();
-
-    ObjectNode maxNumber = JsonNodeFactory.instance.objectNode();
-    maxNumber.put("type", "integer");
-    maxNumber.put("minimum", 1);
-
-    properties(schema).set("maxNumber", maxNumber);
-    require(schema, "maxNumber");
-
-    return schema;
+    return numberConfigurationSchema();
 }
 
 private JsonNode higherLowerDefaultConfiguration() {
-    ObjectNode config = JsonNodeFactory.instance.objectNode();
-
-    config.put("maxNumber", 10);
-
-    return config;
+    return numberDefaultConfiguration();
 }
 
 private JsonNode oddEvenConfigurationSchema() {
+    return numberConfigurationSchema();
+}
+
+private JsonNode oddEvenDefaultConfiguration() {
+    return numberDefaultConfiguration();
+}
+
+// Shared contract for every built-in number game. Keep editor bounds and defaults in sync.
+private ObjectNode numberConfigurationSchema() {
     ObjectNode schema = baseObjectSchema();
 
     ObjectNode maxNumber = JsonNodeFactory.instance.objectNode();
@@ -286,15 +263,23 @@ private JsonNode oddEvenConfigurationSchema() {
     maxNumber.put("minimum", 1);
 
     properties(schema).set("maxNumber", maxNumber);
+    ObjectNode exerciseCount = JsonNodeFactory.instance.objectNode();
+    exerciseCount.put("type", "integer");
+    exerciseCount.put("minimum", 1);
+    exerciseCount.put("maximum", MAX_EXERCISE_COUNT);
+    exerciseCount.put("default", DEFAULT_EXERCISE_COUNT);
+    properties(schema).set("exerciseCount", exerciseCount);
+    // Optional so saved worksheets that predate the field remain valid.
     require(schema, "maxNumber");
 
     return schema;
 }
 
-private JsonNode oddEvenDefaultConfiguration() {
+private ObjectNode numberDefaultConfiguration() {
     ObjectNode config = JsonNodeFactory.instance.objectNode();
 
     config.put("maxNumber", 10);
+    config.put("exerciseCount", DEFAULT_EXERCISE_COUNT);
 
     return config;
 }

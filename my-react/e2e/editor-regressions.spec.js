@@ -181,6 +181,72 @@ test("activity controls emerge beside the card without moving it and support key
   await expect(add).toHaveCSS("transition-duration", "0s");
 });
 
+test("editor and child preview share card spacing, size and subtle drawings", async ({
+  page,
+}) => {
+  await mockPlatform(page);
+  await page.goto("/teacher/20");
+  async function switchView(label) {
+    const direct = page.getByRole("button", { name: label, exact: true });
+    if (await direct.isVisible()) {
+      await direct.click();
+    } else {
+      await page
+        .getByRole("button", { name: "More actions", exact: true })
+        .click();
+      await page.getByRole("menuitem", { name: label, exact: true }).click();
+    }
+  }
+  async function appearance() {
+    return page
+      .locator(".worksheetGameAppearance .math-minigame")
+      .evaluate((card) => {
+        const style = getComputedStyle(card);
+        const title = getComputedStyle(card.querySelector("h2"));
+        return {
+          width: card.getBoundingClientRect().width,
+          padding: style.padding,
+          margin: style.margin,
+          minHeight: style.minHeight,
+          border: style.border,
+          radius: style.borderRadius,
+          shadow: style.boxShadow,
+          grid: style.backgroundImage,
+          gridSize: style.backgroundSize,
+          titleSize: title.fontSize,
+          titleMargin: title.margin,
+          drawings: getComputedStyle(
+            card
+              .closest(".worksheetGameAppearance")
+              .querySelector(".worksheetSprinkles"),
+          ).opacity,
+        };
+      });
+  }
+  for (const width of [2400, 1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expect(page.locator(".sidebar + .ant-layout")).toHaveCSS(
+      "margin-left",
+      width < 768 ? "0px" : "240px",
+    );
+    const editor = await appearance();
+    expect(editor.drawings).toBe("0.22");
+    await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
+      "padding-right", width <= 600 ? "70px" : "74px",
+    );
+    await switchView("Preview as child");
+    expect(await appearance()).toEqual(editor);
+    await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
+      "padding-right", width <= 600 ? "70px" : "74px",
+    );
+    await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
+    await expect(
+      page.locator(".worksheetSprinkles > g").first(),
+    ).toBeAttached();
+    await switchView("Back to editor");
+  }
+});
+
 test("dashboard sharing opens the correct code without navigating to the editor", async ({
   page,
 }) => {

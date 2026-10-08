@@ -67,7 +67,9 @@ test("child preview and code-entry gameplay share the illustrated game and save 
   const previewStyle = await game.locator(".colorMinigame").evaluate((el) => ({
     background: getComputedStyle(el).backgroundImage,
     border: getComputedStyle(el).border,
+    sideSpace: getComputedStyle(el.closest(".worksheetGameFrame")).paddingRight,
   }));
+  expect(previewStyle.sideSpace).toBe("74px");
   await game.screenshot({
     path: testInfo.outputPath("teacher-child-preview.png"),
   });
@@ -88,6 +90,7 @@ test("child preview and code-entry gameplay share the illustrated game and save 
     await game.locator(".colorMinigame").evaluate((el) => ({
       background: getComputedStyle(el).backgroundImage,
       border: getComputedStyle(el).border,
+      sideSpace: getComputedStyle(el.closest(".worksheetGameFrame")).paddingRight,
     })),
   ).toEqual(previewStyle);
   await game.screenshot({ path: testInfo.outputPath("actual-child-game.png") });
@@ -114,6 +117,7 @@ test("child preview and code-entry gameplay share the illustrated game and save 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await expect(game.locator(".widget")).toHaveCount(3);
+  await expect(page.locator(".worksheetGameFrame")).toHaveCSS("padding-right", "70px");
   expect(
     await page.evaluate(
       () =>
@@ -174,6 +178,8 @@ for (const type of [
     await page.goto("/attempts/40");
     const game = page.locator(`[data-game-type="${type}"]`);
     await expect(game.getByRole("heading").first()).not.toBeEmpty();
+    await expect(page.locator(".worksheetGameFrame")).toHaveCSS("padding-right", "74px");
+    await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
     if (type === "matching-game") {
       await game
         .locator(".matching-number-card")

@@ -97,14 +97,6 @@
   .odd-even-minigame,
   .colorMinigame,
   .matching-minigame
-)::before,
-:is(
-  .math-minigame,
-  .sequence-minigame,
-  .higher-lower-minigame,
-  .odd-even-minigame,
-  .colorMinigame,
-  .matching-minigame
 )::after {
   content: "";
   position: absolute;
@@ -113,25 +105,6 @@
   border: 3px solid var(--play-ink);
 
   opacity: 0.9;
-}
-
-:is(
-  .math-minigame,
-  .sequence-minigame,
-  .higher-lower-minigame,
-  .odd-even-minigame,
-  .colorMinigame,
-  .matching-minigame
-)::before {
-  top: 24px;
-  right: 28px;
-
-  width: 22px;
-  height: 22px;
-
-  border-radius: 50%;
-
-  background: var(--play-yellow);
 }
 
 :is(
@@ -1301,15 +1274,11 @@
   .colorMinigame,
   .matching-minigame
 ) {
-  background-color: rgba(255, 255, 255, 0.92);
+  background-color: #fff;
   background-image:
-    radial-gradient(circle at 8% 12%, rgba(255, 217, 90, 0.42) 0 52px, transparent 54px),
-    radial-gradient(circle at 92% 20%, rgba(240, 106, 155, 0.25) 0 72px, transparent 74px),
-    radial-gradient(circle at 82% 92%, rgba(55, 167, 232, 0.24) 0 86px, transparent 88px),
     linear-gradient(rgba(55, 167, 232, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(55, 167, 232, 0.1) 1px, transparent 1px),
-    linear-gradient(135deg, #fffdf4, #fff 48%, #f8f2ff);
-  background-size: auto, auto, auto, 24px 24px, 24px 24px, auto;
+    linear-gradient(90deg, rgba(55, 167, 232, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
   border-width: 4px;
   box-shadow: 10px 12px 0 var(--game-shadow);
 }
