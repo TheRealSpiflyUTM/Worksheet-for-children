@@ -18,6 +18,8 @@ import com.worksheet.worksheet.result.minigame.MiniGameResultRepository;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -66,6 +68,7 @@ class DynamicMiniGameTests {
     @Autowired MiniGameDefinitionRepository definitions;
     @Autowired MiniGameAssetRepository assets;
     @Autowired UserRepository users;
+    @Autowired MiniGameDataInitializer initializer;
 
     @BeforeEach
     void cleanDatabase() {
@@ -83,6 +86,72 @@ class DynamicMiniGameTests {
         definitions.deleteAll();
         assets.deleteAll();
         users.deleteAll();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "math-game, '{\"maxNumber\":73,\"exerciseCount\":37,\"operations\":[\"*\",\"/\"]}'",
+        "sequence-game, '{\"maxNumber\":73,\"exerciseCount\":37}'",
+        "higher-lower-game, '{\"maxNumber\":73,\"exerciseCount\":37}'",
+        "odd-even-game, '{\"maxNumber\":73,\"exerciseCount\":37}'",
+        "color-game, '{\"letter\":\"a\",\"animals\":[{\"id\":\"bear\",\"name\":\"Ana\",\"img\":\"/img/BearImg.webp\"}]}'",
+        "matching-game, '{\"pairs\":[{\"id\":\"custom\",\"number\":17,\"emoji\":\"🍇\"}]}'"
+    })
+    void editedBuiltInSettingsSurviveSavingAndReloading(String type, String configuration) throws Exception {
+        // Exercise the real seeded contract and HTTP persistence, not a permissive mock catalog.
+        initializer.run();
+        var definition = definitions.findByTypeIgnoreCaseAndVersion(type, 1).orElseThrow();
+        Account teacher = signup("Teacher", "settings@example.com", "TEACHER");
+        Long worksheetId = createWorksheet(teacher);
+        Long itemId = idFrom(mvc.perform(post("/api/worksheets/{id}/items", worksheetId)
+                .session(teacher.session()).contentType("application/json")
+                .content("{\"miniGameId\":" + definition.getId() + ",\"orderIndex\":0}"))
+            .andExpect(status().isCreated()).andReturn());
+        mvc.perform(put("/api/worksheets/{id}/items/{itemId}", worksheetId, itemId)
+                .session(teacher.session()).contentType("application/json")
+                .content("{\"miniGameId\":" + definition.getId()
+                    + ",\"orderIndex\":0,\"configuration\":" + configuration + "}"))
+            .andExpect(status().isOk());
+        Object expectedConfiguration = JsonPath.read(configuration, "$");
+        mvc.perform(get("/api/worksheets/{id}/items", worksheetId).session(teacher.session()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].configuration").value(expectedConfiguration));
+        mvc.perform(get("/api/worksheets/{id}", worksheetId).session(teacher.session()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.items[0].configuration").value(expectedConfiguration));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"math-game", "sequence-game", "higher-lower-game", "odd-even-game"})
+    void numberGameDefaultsAndExerciseCountLimitsMatchTheEditor(String type) throws Exception {
+        initializer.run();
+        var definition = definitions.findByTypeIgnoreCaseAndVersion(type, 1).orElseThrow();
+        Account teacher = signup("Teacher", "count@example.com", "TEACHER");
+        Long worksheetId = createWorksheet(teacher);
+        Long itemId = idFrom(mvc.perform(post("/api/worksheets/{id}/items", worksheetId)
+                .session(teacher.session()).contentType("application/json")
+                .content("{\"miniGameId\":" + definition.getId() + ",\"orderIndex\":0}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.configuration.exerciseCount").value(10)).andReturn());
+        for (String count : new String[] {"1", "100", "0", "101", "1.5", "null", "\"20\""}) {
+            var configuration = (tools.jackson.databind.node.ObjectNode)
+                definition.getDefaultConfiguration().deepCopy();
+            configuration.set("exerciseCount", new tools.jackson.databind.ObjectMapper().readTree(count));
+            mvc.perform(put("/api/worksheets/{id}/items/{itemId}", worksheetId, itemId)
+                    .session(teacher.session()).contentType("application/json")
+                    .content("{\"miniGameId\":" + definition.getId()
+                        + ",\"orderIndex\":0,\"configuration\":" + configuration + "}"))
+                .andExpect(count.equals("1") || count.equals("100")
+                    ? status().isOk() : status().isBadRequest());
+        }
+        // Historical worksheets did not store exerciseCount; that remains a valid payload.
+        var legacy = (tools.jackson.databind.node.ObjectNode) definition.getDefaultConfiguration().deepCopy();
+        legacy.remove("exerciseCount");
+        mvc.perform(put("/api/worksheets/{id}/items/{itemId}", worksheetId, itemId)
+                .session(teacher.session()).contentType("application/json")
+                .content("{\"miniGameId\":" + definition.getId()
+                    + ",\"orderIndex\":0,\"configuration\":" + legacy + "}"))
+            .andExpect(status().isOk());
     }
 
     @Test

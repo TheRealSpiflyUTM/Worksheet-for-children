@@ -38,7 +38,7 @@ body {
   margin: 0;
   text-align: center;
 }
-/* Reserve room so the emerging controls never move the activity card. */
+/* Reserve the same side space in editor, preview and children's activities. */
 .addedGames {
   display: grid;
   gap: 16px;
@@ -145,12 +145,12 @@ body {
   z-index: 2;
 }
 .worksheetGameFrame > .worksheetGame {
-  z-index: auto;
-  isolation: auto;
+  z-index: 2;
+  isolation: isolate;
   background: transparent;
 }
 .worksheetGameFrame .worksheetGameContent {
-  z-index: auto;
+  z-index: 2;
 }
 .worksheetGameFrame .worksheetGameContent > * {
   z-index: 2;

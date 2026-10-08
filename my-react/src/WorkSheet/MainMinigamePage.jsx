@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Progress, message } from "antd";
 import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
 import { useBlocker, useParams } from "react-router-dom";
@@ -25,6 +25,7 @@ import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
 import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
+import WorksheetGameFrame from "./WorksheetGameFrame.jsx";
 import WorksheetToolbar from "./WorksheetToolbar.jsx";
 import "./MainMinigamePage.css";
 import "./PlayfulMinigames.css";
@@ -37,37 +38,6 @@ const gameComponents = {
   "odd-even-game": OddOrEvenMinigame,
   "matching-game": MatchingMinigame,
 };
-
-function WorksheetGameFrame({ children }) {
-  const frameRef = useRef(null);
-  useLayoutEffect(() => {
-    const frame = frameRef.current;
-    const card = frame.querySelector(".worksheetGameContent > *");
-    if (!card) return;
-    const positionActions = () => {
-      const frameBox = frame.getBoundingClientRect();
-      const cardBox = card.getBoundingClientRect();
-      frame.style.setProperty(
-        "--game-card-right",
-        `${cardBox.right - frameBox.left}px`,
-      );
-      frame.style.setProperty(
-        "--game-card-center",
-        `${cardBox.top - frameBox.top + cardBox.height / 2}px`,
-      );
-    };
-    positionActions();
-    const observer = new ResizeObserver(positionActions);
-    observer.observe(frame);
-    observer.observe(card);
-    return () => observer.disconnect();
-  }, []);
-  return (
-    <div className="worksheetGameFrame" ref={frameRef}>
-      {children}
-    </div>
-  );
-}
 
 function configurationOf(game) {
   const configuration = { ...game };
@@ -433,9 +403,8 @@ function WorksheetEditor({ worksheetId, initial }) {
                 const Game = gameComponents[game.id];
                 return (
                   <WorksheetGameFrame key={game.instanceId}>
-                    <WorksheetSprinkles seed={game.decorationSeed} />
                     <div
-                      className={`worksheetGame ${selected === game.instanceId ? "selectedGame" : ""}`}
+                      className={`worksheetGame worksheetGameAppearance ${selected === game.instanceId ? "selectedGame" : ""}`}
                       ref={(element) => {
                         if (element)
                           gameElements.current.set(game.instanceId, element);
@@ -443,6 +412,7 @@ function WorksheetEditor({ worksheetId, initial }) {
                       }}
                       onClick={() => setSelected(game.instanceId)}
                     >
+                      <WorksheetSprinkles seed={game.decorationSeed} />
                       <div className="worksheetGameContent">
                         <Game
                           isTeacher

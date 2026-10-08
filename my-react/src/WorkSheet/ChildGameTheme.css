@@ -1,12 +1,13 @@
-.worksheetGamePreview {
+/* Shared card geometry and decoration for the editor and the child view. */
+.worksheetGameAppearance {
   --child-ink: #24324a;
   background: transparent;
   padding: 4px 6px 12px;
 }
-.worksheetGamePreview .worksheetSprinkles {
+.worksheetGameAppearance .worksheetSprinkles {
   opacity: 0.22;
 }
-.worksheetGamePreview
+.worksheetGameAppearance
   :is(
     .math-minigame,
     .sequence-minigame,
@@ -27,7 +28,7 @@
   box-shadow: 6px 7px 0 var(--game-shadow);
   padding: clamp(20px, 4vw, 40px);
 }
-.worksheetGamePreview
+.worksheetGameAppearance
   :is(
     .math-minigame,
     .sequence-minigame,
@@ -36,7 +37,7 @@
     .colorMinigame,
     .matching-minigame
   )::before,
-.worksheetGamePreview
+.worksheetGameAppearance
   :is(
     .math-minigame,
     .sequence-minigame,
@@ -47,7 +48,7 @@
   )::after {
   opacity: 0.25;
 }
-.worksheetGamePreview
+.worksheetGameAppearance
   :is(
     .math-minigame,
     .sequence-minigame,
@@ -55,8 +56,8 @@
     .odd-even-minigame
   )
   > h2,
-.worksheetGamePreview .matching-game-title,
-.worksheetGamePreview .colorMinigame .titleText.ant-typography {
+.worksheetGameAppearance .matching-game-title,
+.worksheetGameAppearance .colorMinigame .titleText.ant-typography {
   margin-bottom: 24px;
   font-size: clamp(1.6rem, 3.5vw, 2.4rem);
   font-weight: 800;
@@ -157,7 +158,7 @@
   box-shadow: 0 3px 0 var(--child-ink);
   min-height: 44px;
 }
-.worksheetGamePreview .colorMinigame .widget {
+.worksheetGameAppearance .colorMinigame .widget {
   border-width: 2px;
   box-shadow: 3px 4px 0 var(--game-shadow);
 }
@@ -173,7 +174,7 @@
   margin-bottom: 20px;
 }
 @media (max-width: 620px) {
-  .worksheetGamePreview
+  .worksheetGameAppearance
     :is(
       .math-minigame,
       .sequence-minigame,

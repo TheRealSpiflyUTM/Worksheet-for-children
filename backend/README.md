@@ -169,6 +169,30 @@ Definitions are identified by stable `type` plus positive `version`. Configurati
 
 Public `GET /api/minigames` returns active versions only. Admin APIs can list all definitions and create, edit unused versions, activate, or deactivate them. Definition metadata supports a description, optional thumbnail, and logical asset keys.
 
+### Editable settings contract for new mini-games
+
+Every field emitted by a teacher editor must be declared in `configurationSchema.properties`,
+including fields shown using a frontend fallback. Put defaults in `defaultConfiguration` too:
+JSON Schema's `default` keyword alone does not populate saved configurations. Match integer
+types, bounds and array constraints between the editor and backend. Keep strict
+`additionalProperties: false`; silently dropping an edited field would lose teacher changes.
+
+The four built-in number games share `numberConfigurationSchema()` and
+`numberDefaultConfiguration()` in `MiniGameDataInitializer`: `exerciseCount` is an integer
+from 1 to 100, with default 10. It is optional for historical worksheets that omit it.
+When adding a similar game, reuse this contract and align the player and scoring fallback.
+
+For every new or changed editor, add a non-default create/update/reload case to
+`DynamicMiniGameTests.editedBuiltInSettingsSurviveSavingAndReloading`, using the real seeded
+definition. Test bounds and legacy configurations too. Permissive mocked catalogs do not
+verify backend validation. Test database upgrades with existing draft and revision data;
+changing startup seeds alone does not update definitions already stored in PostgreSQL.
+
+V22 is a targeted additive repair for the missing optional exercise-count field in built-in
+versions 1 and 2. It keeps definition IDs, required fields, draft/revision configurations and
+saved results intact, and excludes user-owned definitions and later contracts. Other contract
+changes still require a new version and an explicit compatibility plan for existing drafts.
+
 Assets are verified from magic bytes (not the submitted MIME header), limited to supported image/audio formats and 10 MB, hashed with SHA-256, and stored through `MiniGameAssetStorage`. Local disk is the default implementation; an S3-compatible implementation can replace it without changing catalog services. Referenced assets cannot be deleted.
 
 `minigame1` and `countmatch` are legacy adapters and remain behavior-compatible. New games use the dynamic catalog.
@@ -206,6 +230,8 @@ Flyway migrations are forward-only. Never rewrite V1–V13 or another migration 
 - V18 adds worksheet share codes.
 - V19 pins each share code to an immutable worksheet revision.
 - V20 tracks task image references in worksheet drafts and immutable revisions.
+- V21 adds personal student access codes.
+- V22 declares the editable exercise count and its default in existing built-in number-game definitions.
 
 The V13 upgrade migration can only snapshot the worksheet content available at upgrade time because older edits were not historically stored. Existing result history is preserved and linked to that snapshot.
 

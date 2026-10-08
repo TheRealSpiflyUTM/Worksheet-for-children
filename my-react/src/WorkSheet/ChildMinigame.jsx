@@ -8,6 +8,7 @@ import HigherOrLowerMinigame from "./minigames/HigherOrLower/HigherOrLowergame.j
 import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
 import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
+import WorksheetGameFrame from "./WorksheetGameFrame.jsx";
 import { resultPayload } from "../platform/game-model.js";
 import "./MainMinigamePage.css";
 import "./PlayfulMinigames.css";
@@ -61,39 +62,41 @@ export default function ChildMinigame({ game, onComplete, busy = false }) {
   };
   if (!Game) return <Alert type="warning" title={t("Unavailable activity")} />;
   return (
-    <section
-      className="worksheetGame worksheetGamePreview"
-      data-game-type={game.id}
-    >
-      <WorksheetSprinkles seed={game.decorationSeed} />
-      <div className="worksheetGameContent">
-        <div inert={busy}>
-          <Game
-            isTeacher={false}
-            game={configuration}
-            onComplete={recordResult}
-            onReset={clearResult}
-          />
-        </div>
-        {result && (
-          <div className="childGameActions">
-            {onComplete ? (
-              <Button
-                size="large"
-                type="primary"
-                loading={busy}
-                onClick={() => onComplete(result)}
-              >
-                {t("Continue")}{" "}
-              </Button>
-            ) : (
-              <p role="status">
-                {t("Result:")} {result.score} / {result.maxScore}
-              </p>
-            )}
+    <WorksheetGameFrame>
+      <section
+        className="worksheetGame worksheetGameAppearance worksheetGamePreview"
+        data-game-type={game.id}
+      >
+        <WorksheetSprinkles seed={game.decorationSeed} />
+        <div className="worksheetGameContent">
+          <div inert={busy}>
+            <Game
+              isTeacher={false}
+              game={configuration}
+              onComplete={recordResult}
+              onReset={clearResult}
+            />
           </div>
-        )}
-      </div>
-    </section>
+          {result && (
+            <div className="childGameActions">
+              {onComplete ? (
+                <Button
+                  size="large"
+                  type="primary"
+                  loading={busy}
+                  onClick={() => onComplete(result)}
+                >
+                  {t("Continue")}{" "}
+                </Button>
+              ) : (
+                <p role="status">
+                  {t("Result:")} {result.score} / {result.maxScore}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+    </WorksheetGameFrame>
   );
 }
