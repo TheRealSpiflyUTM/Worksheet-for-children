@@ -49,6 +49,11 @@ mini_game_definition (type + version + JSON Schemas)
 
 Only `worksheet` stores worksheet ownership. An assignment derives its worksheet and teacher through `worksheet_revision -> worksheet -> auth_users`; it does not duplicate those foreign keys. Child access is checked through these parent relationships.
 
+Worksheet and worksheet-item creation, updates and deletion require a `TEACHER` or
+`ADMIN` session, together with the existing ownership checks. Child (`USER`) sessions
+receive 403 even for historical drafts they own. Assignment and attempt APIs still
+allow children to complete activities and save their results.
+
 Publishing occurs when an assignment is created, a personal attempt starts, or a worksheet is shared. A SHA-256 content hash reuses the latest unchanged revision. A changed name, item order, definition version, or configuration creates the next revision. Published rows are never edited.
 
 A worksheet share code points to one immutable revision. A signed-in `USER` redeems it once to receive a normal assignment, then uses the assignment attempt APIs. Reusing the same code returns the existing active assignment. `POST /api/worksheets/{id}/share/rotate` publishes the latest draft under a new code without changing earlier assignments.

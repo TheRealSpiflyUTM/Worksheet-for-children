@@ -104,7 +104,36 @@
   ) {
   gap: 18px;
 }
+.worksheetGamePreview .higher-lower-question .comparison-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(8px, 2vw, 18px);
+  width: min(480px, 100%);
+  margin: 20px auto;
+  font-size: clamp(1.5rem, 7vw, 3.5rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  color: var(--child-ink);
+  text-shadow: none;
+}
+.worksheetGamePreview .comparison-tile {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: clamp(64px, 10vw, 108px);
+  padding: clamp(4px, 1vw, 8px);
+  border: 3px solid var(--child-ink);
+  border-radius: 16px;
+  background: #efeaff;
+}
+.worksheetGamePreview .comparison-tile:nth-child(2) {
+  background: #fff3be;
+}
+.worksheetGamePreview .comparison-tile:nth-child(3) {
+  background: #dff3ff;
+}
 .worksheetGamePreview
+  .worksheetGameContent
   :is(
     .math-answers,
     .sequence-answers,
@@ -113,16 +142,20 @@
   )
   button {
   min-height: 60px;
+  box-shadow: none;
 }
 .worksheetGamePreview
+  .worksheetGameContent
   :is(
     .math-answers,
     .sequence-answers,
     .higher-lower-answers,
     .odd-even-answers
   )
-  button:hover {
-  transform: translateY(-2px);
+  button:is(:hover, :active):not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }
 .worksheetGamePreview .matching-game-card.ant-card,
 .worksheetGamePreview .matching-column-card.ant-card {

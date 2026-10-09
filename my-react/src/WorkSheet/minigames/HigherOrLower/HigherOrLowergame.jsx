@@ -1,38 +1,23 @@
 import { usePlatform } from "../../../platform/PlatformState.js";
-import { useState } from "react";
 import { InputNumber, Button } from "antd";
-import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
+import { useNumberGame } from "../../../lib/useNumberGame.js";
+import { answerState } from "../../../lib/game-feedback.js";
 import "./HigherOrLowerMinigame.css";
 
 function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
   const { t } = usePlatform();
-  const [question, setQuestion] = useState(() =>
-    generateQuestion(game.maxNumber),
+  const {
+    question,
+    selectedAnswer,
+    score,
+    exerciseNumber,
+    finished,
+    checkAnswer,
+  } = useNumberGame(
+    () => generateQuestion(game.maxNumber),
+    game.exerciseCount,
+    onComplete,
   );
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [score, setScore] = useState(0);
-  const [exerciseNumber, setExerciseNumber] = useState(1);
-  const [finished, setFinished] = useState(false);
-
-  function getNewQuestion() {
-    if (exerciseNumber >= (game.exerciseCount || 10)) {
-      setFinished(true);
-      onComplete?.({ score, maxScore: game.exerciseCount || 10 });
-      return;
-    }
-    setExerciseNumber((currentNumber) => currentNumber + 1);
-    setQuestion(generateQuestion(game.maxNumber));
-    setSelectedAnswer(null);
-  }
-
-  function checkAnswer(answer) {
-    if (selectedAnswer !== null) return;
-    setSelectedAnswer(answer);
-    if (answer === question.correctAnswer) {
-      celebrateCorrectAnswer();
-      setScore((currentScore) => currentScore + 1);
-    }
-  }
 
   function changeMaxNumber(value) {
     onGameChange({
@@ -107,10 +92,16 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
       </div>
 
       <div className="higher-lower-question">
-        <p>{t("Is the first number greater or smaller than the second?")} </p>
-
-        <strong>
-          {question.firstNumber} &nbsp; ? &nbsp; {question.secondNumber}
+        <strong className="comparison-row">
+          <span className="comparison-tile">{question.firstNumber}</span>
+          <span className="comparison-tile">
+            {selectedAnswer === null
+              ? "?"
+              : selectedAnswer === "bigger"
+                ? ">"
+                : "<"}
+          </span>
+          <span className="comparison-tile">{question.secondNumber}</span>
         </strong>
       </div>
 
@@ -119,42 +110,36 @@ function HigherOrLowerMinigame({ isTeacher, game, onGameChange, onComplete }) {
           type="primary"
           size="large"
           onClick={() => checkAnswer("bigger")}
+          data-answer-state={answerState(
+            selectedAnswer,
+            "bigger",
+            question.correctAnswer,
+          )}
           disabled={selectedAnswer !== null}
         >
-          {t("Greater")}{" "}
+          <span className="comparison-symbol" aria-hidden="true">
+            &gt;
+          </span>
+          <span>{t("Greater")}</span>
         </Button>
 
         <Button
           type="primary"
           size="large"
           onClick={() => checkAnswer("smaller")}
+          data-answer-state={answerState(
+            selectedAnswer,
+            "smaller",
+            question.correctAnswer,
+          )}
           disabled={selectedAnswer !== null}
         >
-          {t("Smaller")}{" "}
+          <span className="comparison-symbol" aria-hidden="true">
+            &lt;
+          </span>
+          <span>{t("Smaller")}</span>
         </Button>
       </div>
-
-      {selectedAnswer !== null && (
-        <div className="higher-lower-feedback">
-          {selectedAnswer === question.correctAnswer ? (
-            <>
-              <p>{t("Correct!")}</p>
-              <Button type="primary" onClick={getNewQuestion}>
-                {exerciseNumber >= (game.exerciseCount || 10)
-                  ? t("Finish")
-                  : t("Next exercise")}
-              </Button>
-            </>
-          ) : (
-            <>
-              <p>{t("Try again!")}</p>
-              <Button onClick={() => setSelectedAnswer(null)}>
-                {t("Try again")}{" "}
-              </Button>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }

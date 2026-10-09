@@ -25,17 +25,17 @@ public class WorksheetItemController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public WorksheetItemResponse create(@PathVariable Long worksheetId, @RequestBody CreateWorksheetItemRequest body, HttpServletRequest request) {
-        return service.create(worksheetId, authSessionService.requireUserId(request), body);
+        return service.create(worksheetId, authSessionService.requireWorksheetEditor(request).getId(), body);
     }
 
     @PutMapping("/{itemId}")
     public WorksheetItemResponse update(@PathVariable Long worksheetId, @PathVariable Long itemId, @RequestBody CreateWorksheetItemRequest body, HttpServletRequest request) {
-        return service.update(worksheetId, itemId, authSessionService.requireUserId(request), body);
+        return service.update(worksheetId, itemId, authSessionService.requireWorksheetEditor(request).getId(), body);
     }
 
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long worksheetId, @PathVariable Long itemId, HttpServletRequest request) {
-        service.delete(worksheetId, itemId, authSessionService.requireUserId(request));
+        service.delete(worksheetId, itemId, authSessionService.requireWorksheetEditor(request).getId());
     }
 }

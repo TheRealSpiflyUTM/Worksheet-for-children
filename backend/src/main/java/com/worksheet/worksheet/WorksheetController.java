@@ -43,19 +43,19 @@ public class WorksheetController {
     @ResponseStatus(HttpStatus.CREATED)
     public WorksheetResponse create(@RequestBody CreateWorksheetRequest input,
                                     HttpServletRequest request) {
-        return worksheets.create(sessions.requireUserId(request), input);
+        return worksheets.create(sessions.requireWorksheetEditor(request).getId(), input);
     }
 
     @PutMapping("/{id}")
     public WorksheetResponse update(@PathVariable Long id, @RequestBody CreateWorksheetRequest input,
                                     HttpServletRequest request) {
-        return worksheets.update(id, sessions.requireUserId(request), input);
+        return worksheets.update(id, sessions.requireWorksheetEditor(request).getId(), input);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, HttpServletRequest request) {
-        worksheets.delete(id, sessions.requireUserId(request));
+        worksheets.delete(id, sessions.requireWorksheetEditor(request).getId());
     }
 
     @PostMapping("/{id}/share")

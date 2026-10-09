@@ -43,6 +43,15 @@ public class AuthSessionService {
         return user;
     }
 
+    public User requireWorksheetEditor(HttpServletRequest request) {
+        User user = requireUser(request);
+        if (user.getRole() != UserRole.TEACHER && user.getRole() != UserRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "This account does not have permission for this action.");
+        }
+        return user;
+    }
+
     public void setUserId(HttpServletRequest request, Long userId) {
         request.getSession().setAttribute(USER_ID, userId);
     }
