@@ -1,38 +1,23 @@
 import { usePlatform } from "../../../platform/PlatformState.js";
-import { useState } from "react";
 import { InputNumber, Button } from "antd";
-import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
+import { useNumberGame } from "../../../lib/useNumberGame.js";
+import { answerState } from "../../../lib/game-feedback.js";
 import "./OddOrEvenMinigame.css";
 
 function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
   const { t } = usePlatform();
-  const [question, setQuestion] = useState(() =>
-    generateQuestion(game.maxNumber),
+  const {
+    question,
+    selectedAnswer,
+    score,
+    exerciseNumber,
+    finished,
+    checkAnswer,
+  } = useNumberGame(
+    () => generateQuestion(game.maxNumber),
+    game.exerciseCount,
+    onComplete,
   );
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [score, setScore] = useState(0);
-  const [exerciseNumber, setExerciseNumber] = useState(1);
-  const [finished, setFinished] = useState(false);
-
-  function getNewQuestion() {
-    if (exerciseNumber >= (game.exerciseCount || 10)) {
-      setFinished(true);
-      onComplete?.({ score, maxScore: game.exerciseCount || 10 });
-      return;
-    }
-    setExerciseNumber((currentNumber) => currentNumber + 1);
-    setQuestion(generateQuestion(game.maxNumber));
-    setSelectedAnswer(null);
-  }
-
-  function checkAnswer(answer) {
-    if (selectedAnswer !== null) return;
-    setSelectedAnswer(answer);
-    if (answer === question.correctAnswer) {
-      celebrateCorrectAnswer();
-      setScore((currentScore) => currentScore + 1);
-    }
-  }
 
   function changeMaxNumber(value) {
     onGameChange({
@@ -112,6 +97,11 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
           type="primary"
           size="large"
           onClick={() => checkAnswer("odd")}
+          data-answer-state={answerState(
+            selectedAnswer,
+            "odd",
+            question.correctAnswer,
+          )}
           disabled={selectedAnswer !== null}
         >
           {t("Odd")}{" "}
@@ -121,33 +111,16 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
           type="primary"
           size="large"
           onClick={() => checkAnswer("even")}
+          data-answer-state={answerState(
+            selectedAnswer,
+            "even",
+            question.correctAnswer,
+          )}
           disabled={selectedAnswer !== null}
         >
           {t("Even")}{" "}
         </Button>
       </div>
-
-      {selectedAnswer !== null && (
-        <div className="odd-even-feedback">
-          {selectedAnswer === question.correctAnswer ? (
-            <>
-              <p>{t("Correct!")}</p>
-              <Button type="primary" onClick={getNewQuestion}>
-                {exerciseNumber >= (game.exerciseCount || 10)
-                  ? t("Finish")
-                  : t("Next exercise")}
-              </Button>
-            </>
-          ) : (
-            <>
-              <p>{t("Try again!")}</p>
-              <Button onClick={() => setSelectedAnswer(null)}>
-                {t("Try again")}{" "}
-              </Button>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }

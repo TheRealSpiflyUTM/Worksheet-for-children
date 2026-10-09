@@ -1,4 +1,10 @@
 const romanian = {
+  "Tap a number, then its matching group, or drag it there. Tap a placed number to return it.":
+    "Atinge un număr, apoi grupul potrivit, sau trage-l acolo. Atinge un număr plasat pentru a-l returna.",
+  "Return {number} from group {count} {emoji}":
+    "Returnează {number} din grupul cu {count} {emoji}",
+  "Place number in group {count} {emoji}":
+    "Plasează numărul în grupul cu {count} {emoji}",
   "Worksheet tools": "Instrumente pentru fișă",
   "More actions": "Mai multe acțiuni",
   "Class not found.": "Clasa nu a fost găsită.",
@@ -255,6 +261,7 @@ const romanian = {
   "Next question": "Următoarea întrebare",
   "Next exercise": "Următorul exercițiu",
   "Try again!": "Încearcă din nou!",
+  "Save result": "Salvează rezultatul",
   "Is this number odd or even?": "Acest număr este impar sau par?",
   Odd: "Impar",
   Even: "Par",

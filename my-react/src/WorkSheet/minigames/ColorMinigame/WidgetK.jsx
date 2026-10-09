@@ -2,6 +2,7 @@ import { usePlatform } from "../../../platform/PlatformState.js";
 import { useState } from "react";
 import { Button, Image, Typography } from "antd";
 import { celebrateCorrectAnswer } from "../../../lib/confetti.js";
+import { playAnswerFeedback } from "../../../lib/game-feedback.js";
 import "./WidgetK.css";
 
 const { Title } = Typography;
@@ -14,10 +15,7 @@ function Widget(params) {
     Array.from(params.name).map(() => false),
   );
 
-  function playCorrectSFX() {
-    const sound = new Audio("/sounds/check-mark.mp3");
-    void sound.play().catch(() => {});
-  }
+  const [incorrectIndex, setIncorrectIndex] = useState(null);
   function bubleVerification(index) {
     if (params.disabled || bubles[index]) return;
 
@@ -28,8 +26,9 @@ function Widget(params) {
       currentLetter.toLocaleLowerCase("ro-RO") ===
       String(params.letter ?? "").toLocaleLowerCase("ro-RO");
 
+    setIncorrectIndex(isMatch ? null : index);
+    playAnswerFeedback(isMatch);
     if (isMatch) {
-      playCorrectSFX();
       celebrateCorrectAnswer();
       params.onMatch?.(index);
       // b for bubbles
@@ -59,6 +58,13 @@ function Widget(params) {
                 type={buble ? "primary" : "default"}
                 shape="circle"
                 className={buble ? "bubleActive" : "buble"}
+                data-answer-state={
+                  buble
+                    ? "correct"
+                    : incorrectIndex === index
+                      ? "incorrect"
+                      : undefined
+                }
                 onClick={() => bubleVerification(index)}
                 aria-label={t("Letter {index} in {name}", {
                   index: index + 1,
@@ -70,6 +76,15 @@ function Widget(params) {
             );
           })}
         </div>
+        {incorrectIndex !== null && (
+          <p
+            className="letterFeedback"
+            role="status"
+            data-feedback-state="incorrect"
+          >
+            {t("Try again!")}
+          </p>
+        )}
       </div>
     </>
   );
