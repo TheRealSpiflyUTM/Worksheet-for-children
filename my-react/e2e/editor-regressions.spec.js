@@ -181,7 +181,7 @@ test("activity controls emerge beside the card without moving it and support key
   await expect(add).toHaveCSS("transition-duration", "0s");
 });
 
-test("editor and child preview share card spacing, size and subtle drawings", async ({
+test("editor and child preview share styling and responsive card spacing", async ({
   page,
 }) => {
   await mockPlatform(page);
@@ -214,7 +214,10 @@ test("editor and child preview share card spacing, size and subtle drawings", as
           grid: style.backgroundImage,
           gridSize: style.backgroundSize,
           titleSize: title.fontSize,
-          titleMargin: title.margin,
+          titleMarginTop: title.marginTop,
+          titleMarginBottom: title.marginBottom,
+          titleMarginLeft: parseFloat(title.marginLeft),
+          titleMarginRight: parseFloat(title.marginRight),
           drawings: getComputedStyle(
             card
               .closest(".worksheetGameAppearance")
@@ -223,21 +226,45 @@ test("editor and child preview share card spacing, size and subtle drawings", as
         };
       });
   }
-  for (const width of [2400, 1440, 390, 320]) {
+  for (const width of [2400, 1440, 621, 620, 601, 600, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
     await expect(page.locator(".sidebar + .ant-layout")).toHaveCSS(
       "margin-left",
       width < 768 ? "0px" : "240px",
     );
     const editor = await appearance();
+    const actionSpace = width <= 600 ? 70 : 74;
     expect(editor.drawings).toBe("0.22");
     await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right", width <= 600 ? "70px" : "74px",
+      "padding-right",
+      `${actionSpace}px`,
     );
     await switchView("Preview as child");
-    expect(await appearance()).toEqual(editor);
+    const preview = await appearance();
+    if (width <= 620) {
+      // Phone previews reclaim the editor action space; titles stay centered as they wrap.
+      const {
+        width: editorWidth,
+        titleMarginLeft: editorLeft,
+        titleMarginRight: editorRight,
+        ...editorStyles
+      } = editor;
+      const {
+        width: previewWidth,
+        titleMarginLeft: previewLeft,
+        titleMarginRight: previewRight,
+        ...previewStyles
+      } = preview;
+      expect(previewStyles).toEqual(editorStyles);
+      expect(previewWidth).toBeCloseTo(editorWidth + actionSpace, 1);
+      expect(editorLeft).toBeCloseTo(editorRight, 1);
+      expect(previewLeft).toBeCloseTo(previewRight, 1);
+    } else {
+      expect(preview).toEqual(editor);
+    }
     await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right", width <= 600 ? "70px" : "74px",
+      "padding-right",
+      width <= 620 ? "0px" : `${actionSpace}px`,
     );
     await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
     await expect(
