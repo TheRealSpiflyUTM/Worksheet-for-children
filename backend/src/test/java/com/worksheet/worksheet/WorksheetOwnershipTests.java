@@ -5,6 +5,7 @@ import com.worksheet.auth.UserRepository;
 import com.worksheet.minigame.MiniGameDefinition;
 import com.worksheet.minigame.MiniGameDefinitionRepository;
 import com.worksheet.worksheet.item.WorksheetItemRepository;
+import com.worksheet.worksheet.item.WorksheetItem;
 import com.worksheet.worksheet.result.WorksheetResultRepository;
 import com.worksheet.worksheet.result.minigame.MiniGameResultRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -217,9 +218,58 @@ class WorksheetOwnershipTests {
             .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void childrenCannotCreateOrMutateWorksheetsEvenWhenTheyOwnHistoricalDrafts() throws Exception {
+        MockHttpSession teacher = signup("Teacher", "edit.teacher@example.com");
+        MockHttpSession child = signup("Child", "edit.child@example.com", "USER");
+        Long teacherWorksheet = createWorksheet(teacher, "Teacher worksheet");
+        Long teacherItem = createItem(teacher, teacherWorksheet, 0);
+
+        // Model historical child-owned drafts without opening a new editing API.
+        var childUser = users.findById((Long) child.getAttribute("auth.userId")).orElseThrow();
+        var historical = worksheets.save(new Worksheet("Historical draft", childUser));
+        var historicalItem = worksheetItems.save(new WorksheetItem(historical,
+            miniGames.findById(miniGameId).orElseThrow(), 0, JsonNodeFactory.instance.objectNode()));
+
+        mvc.perform(post("/api/worksheets").session(child)
+                .contentType("application/json").content("{\"name\":\"Child draft\"}"))
+            .andExpect(status().isForbidden());
+        for (Long worksheetId : java.util.List.of(teacherWorksheet, historical.getId())) {
+            Long itemId = worksheetId.equals(teacherWorksheet) ? teacherItem : historicalItem.getId();
+            mvc.perform(put("/api/worksheets/{id}", worksheetId).session(child)
+                    .contentType("application/json").content("{\"name\":\"Changed\"}"))
+                .andExpect(status().isForbidden());
+            mvc.perform(delete("/api/worksheets/{id}", worksheetId).session(child))
+                .andExpect(status().isForbidden());
+            mvc.perform(post("/api/worksheets/{id}/items", worksheetId).session(child)
+                    .contentType("application/json").content(itemBody(1)))
+                .andExpect(status().isForbidden());
+            mvc.perform(put("/api/worksheets/{id}/items/{itemId}", worksheetId, itemId).session(child)
+                    .contentType("application/json").content(itemBody(2)))
+                .andExpect(status().isForbidden());
+            mvc.perform(delete("/api/worksheets/{id}/items/{itemId}", worksheetId, itemId).session(child))
+                .andExpect(status().isForbidden());
+            mvc.perform(post("/api/worksheets/{id}/share", worksheetId).session(child))
+                .andExpect(status().isForbidden());
+            mvc.perform(post("/api/worksheets/{id}/share/rotate", worksheetId).session(child))
+                .andExpect(status().isForbidden());
+        }
+        mvc.perform(get("/api/worksheets/{id}", teacherWorksheet).session(teacher))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Teacher worksheet"))
+            .andExpect(jsonPath("$.items[0].id").value(teacherItem));
+        org.junit.jupiter.api.Assertions.assertEquals("Historical draft",
+            worksheets.findById(historical.getId()).orElseThrow().getName());
+        org.junit.jupiter.api.Assertions.assertEquals(0,
+            worksheetItems.findById(historicalItem.getId()).orElseThrow().getOrderIndex());
+    }
+
     private MockHttpSession signup(String name, String email) throws Exception {
+        return signup(name, email, "TEACHER");
+    }
+
+    private MockHttpSession signup(String name, String email, String role) throws Exception {
         String body = "{\"name\":\"" + name + "\",\"email\":\"" + email
-            + "\",\"password\":\"a long test password\"}";
+            + "\",\"password\":\"a long test password\",\"role\":\"" + role + "\"}";
         var result = mvc.perform(post("/api/auth/signup")
                 .header("X-Auth-Request", "1")
                 .contentType("application/json")

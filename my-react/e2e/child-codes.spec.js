@@ -96,8 +96,9 @@ test("children enter codes, resume unfinished work and finish without signup", a
     page.getByText("Exercițiul 1 / 1", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Impar", exact: true }).click();
-  await page.getByRole("button", { name: "Finalizează" }).click();
-  await page.getByRole("button", { name: "Continuă" }).click();
+  await expect(
+    page.getByRole("button", { name: "Finalizează fișa" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Finalizează fișa" }).click();
   await expect(page.getByRole("heading", { name: "Bravo!" })).toBeVisible();
   await expect(page.getByText("1 / 1", { exact: true }).first()).toBeVisible();

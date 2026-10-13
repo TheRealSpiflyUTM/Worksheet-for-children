@@ -18,6 +18,7 @@ import {
 } from "@ant-design/icons";
 import { EMOJI_CATEGORIES } from "./emojis.js";
 import { photoUrl } from "../../../lib/task-images.js";
+import { playAnswerFeedback } from "../../../lib/game-feedback.js";
 import "./MatchingMinigame.css";
 
 const { Text, Title } = Typography;
@@ -95,6 +96,7 @@ const MatchingMinigame = ({
   const [score, setScore] = useState(0);
   const [draggedNumber, setDraggedNumber] = useState(null);
   const [dragSource, setDragSource] = useState(null);
+  const [selectedNumber, setSelectedNumber] = useState(null);
 
   const updateConfiguration = (newPairs) => {
     const normalizedPairs = clonePairs(newPairs);
@@ -188,6 +190,36 @@ const MatchingMinigame = ({
     return Object.values(matches).includes(number);
   };
 
+  const placeNumber = (number, pair) => {
+    if (
+      !pairs.some((candidate) => candidate.number === number) ||
+      isNumberUsed(number) ||
+      matches[pair.id] !== undefined
+    )
+      return;
+    setMatches((previous) => ({ ...previous, [pair.id]: number }));
+    setChecked(false);
+    onReset?.();
+    setSelectedNumber(null);
+    playAnswerFeedback(number === pair.number);
+  };
+
+  const removeNumber = (number) => {
+    setMatches((previous) =>
+      Object.fromEntries(
+        Object.entries(previous).filter(([, value]) => value !== number),
+      ),
+    );
+    setChecked(false);
+    onReset?.();
+    setSelectedNumber(null);
+  };
+
+  const handleTargetTap = (pair) => {
+    if (matches[pair.id] !== undefined) removeNumber(matches[pair.id]);
+    else if (selectedNumber !== null) placeNumber(selectedNumber, pair);
+  };
+
   const handleNumberDragStart = (event, pair) => {
     if (isNumberUsed(pair.number)) {
       event.preventDefault();
@@ -195,6 +227,7 @@ const MatchingMinigame = ({
     }
 
     setDraggedNumber(pair.number);
+    setSelectedNumber(null);
     setDragSource("left");
 
     event.dataTransfer.effectAllowed = "move";
@@ -206,6 +239,7 @@ const MatchingMinigame = ({
 
   const handlePlacedNumberDragStart = (event, number) => {
     setDraggedNumber(number);
+    setSelectedNumber(null);
     setDragSource("right");
 
     event.dataTransfer.effectAllowed = "move";
@@ -255,13 +289,7 @@ const MatchingMinigame = ({
       return;
     }
 
-    setMatches((previous) => ({
-      ...previous,
-      [targetPair.id]: number,
-    }));
-
-    setChecked(false);
-    onReset?.();
+    placeNumber(number, targetPair);
     setDraggedNumber(null);
     setDragSource(null);
   };
@@ -279,25 +307,13 @@ const MatchingMinigame = ({
 
     const number = Number(rawNumber);
 
-    setMatches((previous) => {
-      const next = { ...previous };
-
-      Object.keys(next).forEach((targetId) => {
-        if (next[targetId] === number) {
-          delete next[targetId];
-        }
-      });
-
-      return next;
-    });
-
-    setChecked(false);
-    onReset?.();
+    removeNumber(number);
     setDraggedNumber(null);
     setDragSource(null);
   };
 
   const checkAnswers = () => {
+    if (checked) return;
     let correct = 0;
 
     pairs.forEach((pair) => {
@@ -312,6 +328,7 @@ const MatchingMinigame = ({
   };
 
   const resetAnswers = () => {
+    setSelectedNumber(null);
     setMatches({});
     setChecked(false);
     onReset?.();
@@ -321,6 +338,7 @@ const MatchingMinigame = ({
   };
 
   const shuffleForNewAttempt = () => {
+    setSelectedNumber(null);
     setShuffledPairs(shuffleArray(pairs));
 
     setMatches({});
@@ -332,10 +350,6 @@ const MatchingMinigame = ({
   };
 
   const getTargetStatus = (pair) => {
-    if (!checked) {
-      return "neutral";
-    }
-
     if (matches[pair.id] === pair.number) {
       return "correct";
     }
@@ -348,10 +362,6 @@ const MatchingMinigame = ({
   };
 
   const getNumberStatus = (number) => {
-    if (!checked) {
-      return "neutral";
-    }
-
     const targetPair = pairs.find((pair) => matches[pair.id] === number);
 
     if (!targetPair) {
@@ -481,7 +491,9 @@ const MatchingMinigame = ({
             </Title>
 
             <Text type="secondary">
-              {t("Drag each number to the group with the same amount.")}{" "}
+              {t(
+                "Tap a number, then its matching group, or drag it there. Tap a placed number to return it.",
+              )}
             </Text>
           </div>
 
@@ -513,6 +525,7 @@ const MatchingMinigame = ({
               icon={<CheckOutlined />}
               onClick={checkAnswers}
               className="matching-check-action"
+              disabled={checked}
             >
               {t("Check answer")}
             </Button>
@@ -522,7 +535,7 @@ const MatchingMinigame = ({
         {checked && (
           <Alert
             className="matching-result-alert"
-            type={score === pairs.length ? "success" : "info"}
+            type={score === pairs.length ? "success" : "error"}
             showIcon
             title={t("You got {score} out of {total} correct.", {
               score,
@@ -547,7 +560,8 @@ const MatchingMinigame = ({
                   const status = getNumberStatus(pair.number);
 
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={pair.id}
                       className={`matching-number-card matching-status-${status} ${
                         used ? "matching-number-used" : ""
@@ -557,6 +571,13 @@ const MatchingMinigame = ({
                           : ""
                       }`}
                       draggable={!used}
+                      disabled={used}
+                      aria-pressed={selectedNumber === pair.number}
+                      onClick={() =>
+                        setSelectedNumber((current) =>
+                          current === pair.number ? null : pair.number,
+                        )
+                      }
                       onDragStart={(event) =>
                         handleNumberDragStart(event, pair)
                       }
@@ -565,7 +586,7 @@ const MatchingMinigame = ({
                       <span className="matching-number-value">
                         {pair.number}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -589,10 +610,33 @@ const MatchingMinigame = ({
                   return (
                     <div
                       key={pair.id}
+                      role="button"
+                      tabIndex={0}
+                      data-pair-id={pair.id}
+                      aria-label={
+                        hasNumber
+                          ? t("Return {number} from group {count} {emoji}", {
+                              number: matches[pair.id],
+                              count: pair.number,
+                              emoji: pair.emoji,
+                            })
+                          : t("Place number in group {count} {emoji}", {
+                              count: pair.number,
+                              emoji: pair.emoji,
+                            })
+                      }
+                      onClick={() => handleTargetTap(pair)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          handleTargetTap(pair);
+                        }
+                      }}
                       className={`matching-target-card matching-status-${status} ${
                         hasNumber ? "matching-target-used" : ""
                       } ${
-                        draggedNumber !== null && !hasNumber
+                        (draggedNumber !== null || selectedNumber !== null) &&
+                        !hasNumber
                           ? "matching-target-drop-active"
                           : ""
                       }`}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Button, Progress } from "antd";
 import { Link, useParams } from "react-router-dom";
 import { platformApi } from "../api/platform.js";
@@ -28,6 +28,7 @@ function AttemptContent({ initial }) {
   const [attempt, setAttempt] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const saving = useRef(false);
   const pending = remainingItems(attempt);
   const item = pending[0];
   const readOnly =
@@ -41,7 +42,8 @@ function AttemptContent({ initial }) {
         : `/kids/${attempt.worksheetId}`;
 
   async function save(result) {
-    if (!item || busy) return;
+    if (!item || busy || saving.current) return false;
+    saving.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -55,9 +57,12 @@ function AttemptContent({ initial }) {
           saved,
         ],
       }));
+      return true;
     } catch (requestError) {
       setError(requestError);
+      return false;
     } finally {
+      saving.current = false;
       setBusy(false);
     }
   }

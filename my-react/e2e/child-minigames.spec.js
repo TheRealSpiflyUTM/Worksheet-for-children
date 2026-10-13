@@ -90,7 +90,8 @@ test("child preview and code-entry gameplay share the illustrated game and save 
     await game.locator(".colorMinigame").evaluate((el) => ({
       background: getComputedStyle(el).backgroundImage,
       border: getComputedStyle(el).border,
-      sideSpace: getComputedStyle(el.closest(".worksheetGameFrame")).paddingRight,
+      sideSpace: getComputedStyle(el.closest(".worksheetGameFrame"))
+        .paddingRight,
     })),
   ).toEqual(previewStyle);
   await game.screenshot({ path: testInfo.outputPath("actual-child-game.png") });
@@ -117,7 +118,10 @@ test("child preview and code-entry gameplay share the illustrated game and save 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await expect(game.locator(".widget")).toHaveCount(3);
-  await expect(page.locator(".worksheetGameFrame")).toHaveCSS("padding-right", "70px");
+  await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
+    "padding-right",
+    "0px",
+  );
   expect(
     await page.evaluate(
       () =>
@@ -178,7 +182,10 @@ for (const type of [
     await page.goto("/attempts/40");
     const game = page.locator(`[data-game-type="${type}"]`);
     await expect(game.getByRole("heading").first()).not.toBeEmpty();
-    await expect(page.locator(".worksheetGameFrame")).toHaveCSS("padding-right", "74px");
+    await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
+      "padding-right",
+      "74px",
+    );
     await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
     if (type === "matching-game") {
       await game
@@ -215,11 +222,9 @@ for (const type of [
         answer = numbers[0] > numbers[1] ? "Mai mare" : "Mai mic";
       }
       await game.getByRole("button", { name: answer, exact: true }).click();
-      await game
-        .getByRole("button", { name: "Finalizează", exact: true })
-        .click();
     }
-    await game.getByRole("button", { name: "Continuă", exact: true }).click();
+    if (type === "matching-game")
+      await game.getByRole("button", { name: "Continuă", exact: true }).click();
     await expect(
       page.getByRole("button", { name: "Finalizează fișa" }),
     ).toBeVisible();
