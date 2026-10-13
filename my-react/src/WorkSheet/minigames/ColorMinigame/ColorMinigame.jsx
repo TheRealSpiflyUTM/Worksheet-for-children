@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button, Input, Typography } from "antd";
 import WidgetT from "./WidgetT.jsx";
 import WidgetK from "./WidgetK.jsx";
+import { photoUrl } from "../../../lib/task-images.js";
 import "./ColorMinigame.css";
 
 const { Title } = Typography;
@@ -89,7 +90,7 @@ function ColorMinigame(params) {
             {animals.map((animal) => (
               <WidgetT
                 key={`${animal.id}-${letter}`}
-                img={animal.img}
+                img={photoUrl(animal.imageAssetId, animal.img)}
                 name={animal.name}
                 letter={letter}
                 onNameChange={(newName) => changeAnimalName(animal.id, newName)}
@@ -120,7 +121,7 @@ function ColorMinigame(params) {
             {animals.map((animal, animalIndex) => (
               <WidgetK
                 key={`${animal.id}-${letter}`}
-                img={animal.img}
+                img={photoUrl(animal.imageAssetId, animal.img)}
                 name={animal.name}
                 letter={letter}
                 onMatch={(index) => recordMatch(animalIndex, index)}

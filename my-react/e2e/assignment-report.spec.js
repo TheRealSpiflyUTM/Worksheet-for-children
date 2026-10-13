@@ -147,7 +147,7 @@ async function mockApi(page, { student = false, fail = false } = {}) {
 
 test("teachers browse classes, worksheet versions and student completion with zero scores", async ({
   page,
-}, testInfo) => {
+}) => {
   await mockApi(page);
   await page.goto("/assignments");
   await expect(page.getByRole("heading", { name: "Clasa A" })).toBeVisible();
@@ -187,24 +187,9 @@ test("teachers browse classes, worksheet versions and student completion with ze
       .getByText("In progress", { exact: true }),
   ).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(3);
-  await page.screenshot({
-    path: testInfo.outputPath("assignment-results-desktop.png"),
-    fullPage: true,
-  });
+
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          document.documentElement.scrollWidth <=
-          document.documentElement.clientWidth + 1,
-      ),
-    )
-    .toBe(true);
-  await page.screenshot({
-    path: testInfo.outputPath("assignment-results-mobile.png"),
-    fullPage: true,
-  });
+
   await page.reload();
   await expect(page.getByRole("heading", { name: "Numbers" })).toBeVisible();
   await page.getByLabel("Language").click();

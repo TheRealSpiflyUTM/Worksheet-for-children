@@ -9,6 +9,7 @@ import OddOrEvenMinigame from "./minigames/OddOrEven/OddOrEvengame.jsx";
 import MatchingMinigame from "./minigames/MatchingGame/MatchingMinigame.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
 import WorksheetGameFrame from "./WorksheetGameFrame.jsx";
+import { ActivityPhoto } from "./ActivityPhotos.jsx";
 import { resultPayload } from "../platform/game-model.js";
 import { playTaskComplete, stopGameFeedback } from "../lib/game-feedback.js";
 import "./MainMinigamePage.css";
@@ -115,6 +116,7 @@ export default function ChildMinigame({ game, onComplete, busy = false }) {
         <WorksheetSprinkles seed={game.decorationSeed} />
         <div className="worksheetGameContent">
           <div inert={busy}>
+            <ActivityPhoto assetId={game.imageAssetId} />
             <Game
               isTeacher={false}
               game={configuration}

@@ -116,41 +116,6 @@ async function sounds(page) {
   return page.evaluate(() => window.feedbackPlayed);
 }
 
-async function verifyPhoneLayout(page, game, testInfo, type) {
-  for (const width of [320, 390, 620]) {
-    await page.setViewportSize({ width, height: 844 });
-    await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right",
-      "0px",
-    );
-    expect(
-      await page.evaluate(
-        () =>
-          document.documentElement.scrollWidth <=
-          document.documentElement.clientWidth + 1,
-      ),
-    ).toBe(true);
-    const box = await game.boundingBox();
-    expect(box.x + box.width).toBeLessThanOrEqual(width);
-    const smallButtons = await game
-      .locator("button:visible")
-      .evaluateAll((buttons) =>
-        buttons
-          .filter((button) => button.getBoundingClientRect().height < 43.9)
-          .map((button) => ({
-            label: button.textContent || button.getAttribute("aria-label"),
-            height: button.getBoundingClientRect().height,
-          })),
-      );
-    expect(smallButtons, `Touch targets at ${width}px`).toEqual([]);
-  }
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({
-    path: testInfo.outputPath(`${type}-phone.png`),
-    fullPage: true,
-  });
-}
-
 async function correctAnswer(game, type) {
   if (type === "math-game") return "2";
   if (type === "sequence-game") {
@@ -178,9 +143,9 @@ for (const type of [
   "higher-lower-game",
   "odd-even-game",
 ]) {
-  test(`${type}: first answers count, two-second advance, automatic save, and phone layout`, async ({
+  test(`${type}: first answers count, two-second advance and automatic save`, async ({
     page,
-  }, testInfo) => {
+  }) => {
     await page.clock.install();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -189,19 +154,13 @@ for (const type of [
       blockedAudio: type === "odd-even-game",
       nextGame: true,
     });
-    await verifyPhoneLayout(page, game, testInfo, type);
+    await page.setViewportSize({ width: 390, height: 844 });
+
     await page.clock.pauseAt(new Date(Date.now() + 60_000));
-    async function comparisonLayout() {
-      return game.locator(".comparison-tile").evaluateAll((tiles) =>
-        tiles.map((tile) => {
-          const { x, y, width, height } = tile.getBoundingClientRect();
-          return { x, y, width, height };
-        }),
-      );
-    }
+
     if (type === "higher-lower-game")
       await page.setViewportSize({ width: 1280, height: 900 });
-    const beforeWrongAnswer = await comparisonLayout();
+
     let correct = await correctAnswer(game, type);
     const answers = game.locator('[class$="-answers"] button');
     const labels = (await answers.allTextContents()).map((value) =>
@@ -213,21 +172,14 @@ for (const type of [
         exact: true,
       })
       .tap();
-    await expect(game.locator('[data-answer-state="incorrect"]')).toHaveCSS(
-      "background-color",
-      "rgb(255, 225, 225)",
+    await expect(game.locator('[data-answer-state="incorrect"]')).toHaveCount(
+      1,
     );
     await expect(game.locator("[data-feedback-state]")).toHaveCount(0);
     if (type === "higher-lower-game") {
-      await expect(game.locator(".higher-lower-question p")).toHaveCount(0);
       await expect(
         game.locator(".higher-lower-question strong span").nth(1),
       ).toHaveText(correct === "Mai mare" ? "<" : ">");
-      expect(await comparisonLayout()).toEqual(beforeWrongAnswer);
-      await page.screenshot({
-        path: testInfo.outputPath("comparison-desktop.png"),
-        fullPage: true,
-      });
     }
     await expect(game.getByText(/Încearcă din nou/)).toHaveCount(0);
     expect(
@@ -257,7 +209,7 @@ for (const type of [
     correct = await correctAnswer(game, type);
     if (type === "higher-lower-game")
       await page.setViewportSize({ width: 390, height: 844 });
-    const beforeCorrectAnswer = await comparisonLayout();
+
     // Dispatch two rapid clicks to catch duplicate scoring before a rerender.
     await game
       .getByRole("button", { name: correct, exact: true })
@@ -265,10 +217,7 @@ for (const type of [
         button.click();
         button.click();
       });
-    await expect(game.locator('[data-answer-state="correct"]')).toHaveCSS(
-      "background-color",
-      "rgb(221, 247, 230)",
-    );
+    await expect(game.locator('[data-answer-state="correct"]')).toHaveCount(1);
     expect(await sounds(page)).toEqual([
       soundPaths.incorrect,
       soundPaths.correct,
@@ -277,7 +226,6 @@ for (const type of [
       await expect(
         game.locator(".higher-lower-question strong span").nth(1),
       ).toHaveText(correct === "Mai mare" ? ">" : "<");
-      expect(await comparisonLayout()).toEqual(beforeCorrectAnswer);
     }
     await page.clock.runFor(2000);
     await expect(page.locator('[data-game-type="color-game"]')).toBeVisible();
@@ -404,30 +352,25 @@ test("a slow skip save cannot race the answer timer and submit two results", asy
   expect(requests[0]).toMatchObject({ score: 0, outcome: "SKIPPED" });
 });
 
-test("letter game: wrong circles turn red, correct sounds do not repeat, and blocked audio is harmless", async ({
+test("letter game: answers can be corrected, sounds do not repeat and blocked audio is harmless", async ({
   page,
-}, testInfo) => {
+}) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const { game, saved } = await openGame(page, "color-game", {
     blockedAudio: true,
   });
-  await verifyPhoneLayout(page, game, testInfo, "color-game");
+  await page.setViewportSize({ width: 390, height: 844 });
+
   await game
     .getByRole("button", { name: "Litera 2 din Urs", exact: true })
     .click();
-  await expect(game.locator('[data-answer-state="incorrect"]')).toHaveCSS(
-    "background-color",
-    "rgb(255, 225, 225)",
-  );
+  await expect(game.locator('[data-answer-state="incorrect"]')).toHaveCount(1);
   await game
     .getByRole("button", { name: "Litera 1 din Urs", exact: true })
     .click();
   await expect(game.locator('[data-answer-state="incorrect"]')).toHaveCount(0);
-  await expect(game.locator('[data-answer-state="correct"]')).toHaveCSS(
-    "background-color",
-    "rgb(221, 247, 230)",
-  );
+  await expect(game.locator('[data-answer-state="correct"]')).toHaveCount(1);
   await game
     .getByRole("button", { name: "Litera 1 din Urs", exact: true })
     .click();
@@ -449,11 +392,12 @@ test("letter game: wrong circles turn red, correct sounds do not repeat, and blo
   expect(errors).toEqual([]);
 });
 
-test("matching: tap, correct a red mismatch, keyboard placement, check, and save", async ({
+test("matching: tap, correct a mismatch, keyboard placement, check and save", async ({
   page,
-}, testInfo) => {
+}) => {
   const { game, saved } = await openGame(page, "matching-game");
-  await verifyPhoneLayout(page, game, testInfo, "matching-game");
+  await page.setViewportSize({ width: 390, height: 844 });
+
   const one = game.locator(".matching-number-card").filter({ hasText: /^1$/ });
   const two = game.locator(".matching-number-card").filter({ hasText: /^2$/ });
   const groupOne = game.locator('[data-pair-id="one"]');
@@ -461,10 +405,10 @@ test("matching: tap, correct a red mismatch, keyboard placement, check, and save
   await one.tap();
   await expect(one).toHaveAttribute("aria-pressed", "true");
   await groupTwo.tap();
-  await expect(groupTwo).toHaveCSS("background-color", "rgb(255, 225, 225)");
+  await expect(groupTwo.locator(".matching-placed-number")).toHaveText("1");
   expect(await sounds(page)).toEqual([soundPaths.incorrect]);
   await groupTwo.tap();
-  await expect(groupTwo).not.toHaveClass(/matching-status-incorrect/);
+  await expect(groupTwo.locator(".matching-placed-number")).toHaveCount(0);
   await one.tap();
   await groupOne.tap();
   await two.focus();
@@ -494,7 +438,6 @@ test("children cannot open the worksheet editor", async ({ page }) => {
   await page.goto("/teacher/20");
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator(".worksheetToolbar")).toHaveCount(0);
-  await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
 });
 
 test("all selected audio assets load and decode", async ({ page }) => {

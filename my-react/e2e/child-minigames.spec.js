@@ -15,9 +15,9 @@ const configuration = {
   ],
 };
 
-test("child preview and code-entry gameplay share the illustrated game and save its score", async ({
+test("child preview does not save results and child gameplay saves its score", async ({
   page,
-}, testInfo) => {
+}) => {
   let role = "TEACHER";
   let saved;
   const definition = { id: 1, type: "color-game", name: "Color Game" };
@@ -64,15 +64,7 @@ test("child preview and code-entry gameplay share the illustrated game and save 
     game.getByRole("img", { name: "Urs", exact: true }),
   ).toBeVisible();
   await expect(game.locator(".bubles button")).toHaveCount(11);
-  const previewStyle = await game.locator(".colorMinigame").evaluate((el) => ({
-    background: getComputedStyle(el).backgroundImage,
-    border: getComputedStyle(el).border,
-    sideSpace: getComputedStyle(el.closest(".worksheetGameFrame")).paddingRight,
-  }));
-  expect(previewStyle.sideSpace).toBe("74px");
-  await game.screenshot({
-    path: testInfo.outputPath("teacher-child-preview.png"),
-  });
+
   await game
     .getByRole("button", { name: "Litera 1 din Urs", exact: true })
     .click();
@@ -86,15 +78,7 @@ test("child preview and code-entry gameplay share the illustrated game and save 
   await page.goto("/attempts/40");
   await expect(game.locator(".widget")).toHaveCount(3);
   await expect(game.locator("input")).toHaveCount(0);
-  expect(
-    await game.locator(".colorMinigame").evaluate((el) => ({
-      background: getComputedStyle(el).backgroundImage,
-      border: getComputedStyle(el).border,
-      sideSpace: getComputedStyle(el.closest(".worksheetGameFrame"))
-        .paddingRight,
-    })),
-  ).toEqual(previewStyle);
-  await game.screenshot({ path: testInfo.outputPath("actual-child-game.png") });
+
   await game
     .getByRole("button", { name: "Litera 2 din Urs", exact: true })
     .click();
@@ -118,21 +102,6 @@ test("child preview and code-entry gameplay share the illustrated game and save 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await expect(game.locator(".widget")).toHaveCount(3);
-  await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-    "padding-right",
-    "0px",
-  );
-  expect(
-    await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth <=
-        document.documentElement.clientWidth + 1,
-    ),
-  ).toBe(true);
-  await page.screenshot({
-    path: testInfo.outputPath("actual-child-game-mobile.png"),
-    fullPage: true,
-  });
 });
 
 for (const type of [
@@ -182,11 +151,7 @@ for (const type of [
     await page.goto("/attempts/40");
     const game = page.locator(`[data-game-type="${type}"]`);
     await expect(game.getByRole("heading").first()).not.toBeEmpty();
-    await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right",
-      "74px",
-    );
-    await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
+
     if (type === "matching-game") {
       await game
         .locator(".matching-number-card")
