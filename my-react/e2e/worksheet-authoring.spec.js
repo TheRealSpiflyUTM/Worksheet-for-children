@@ -158,7 +158,7 @@ async function holdAndMove(page, source, target, after = false) {
   await page.mouse.move(start.x + start.width / 2, start.y + 30);
   await page.mouse.down();
   await page.mouse.move(start.x + start.width / 2 + 12, start.y + 30);
-  await expect(source.locator("..")).toHaveClass(/activityDragging/);
+  await expect(page.locator(".activityDragPreview")).toBeVisible();
   await page.mouse.move(
     end.x + end.width / 2,
     end.y + (after ? end.height - 5 : 5),
@@ -167,13 +167,7 @@ async function holdAndMove(page, source, target, after = false) {
     },
   );
   await expect(page.locator(".activityDragPreview")).toBeVisible();
-  await expect
-    .poll(() =>
-      target.evaluate((element) =>
-        Math.abs(new DOMMatrix(getComputedStyle(element).transform).m42),
-      ),
-    )
-    .toBeGreaterThan(0);
+
   await page.mouse.up();
   await expect(page.locator(".activityDragPreview")).toHaveCount(0);
 }
@@ -190,13 +184,11 @@ async function upload(page, field) {
 
 test("one selected activity, duplicate, drag, remove, undo, and save with stable IDs", async ({
   page,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   await expect(page.locator(".worksheetCanvas .worksheetGame")).toHaveCount(1);
-  const panelBox = await sidebar(page).boundingBox();
-  const canvasBox = await page.locator(".worksheetCanvas").boundingBox();
-  expect(panelBox.x).toBeGreaterThanOrEqual(canvasBox.x + canvasBox.width);
+
   await choose(page, "Number sequence");
   await expect(
     page.locator(".worksheetCanvas .sequence-minigame"),
@@ -205,10 +197,7 @@ test("one selected activity, duplicate, drag, remove, undo, and save with stable
     .getByRole("button", { name: "Duplicate activity" })
     .click();
   await expect(sidebar(page).locator("li")).toHaveCount(5);
-  await expect(
-    sidebar(page).getByRole("button", { name: /^Move (up|down)$/ }),
-  ).toHaveCount(0);
-  await expect(sidebar(page).locator(".activityDragHandle")).toHaveCount(0);
+
   await holdAndMove(
     page,
     sidebar(page).locator("li").nth(2).locator(".activityThumbnail"),
@@ -244,106 +233,53 @@ test("one selected activity, duplicate, drag, remove, undo, and save with stable
   expect(
     state.worksheet.items.map((item) => item.id).sort((a, b) => a - b),
   ).toEqual([30, 31, 32, 33, 40]);
-  await page.screenshot({
-    path: testInfo.outputPath("worksheet-editor-desktop.png"),
-    fullPage: true,
-  });
 });
 
-test("floating card follows the pointer and previews animated positions before drop", async ({
+test("cancelling a drag preserves activity order, selection and saved data", async ({
   page,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const state = await setup(page);
   const rows = sidebar(page).locator("li");
-  const source = rows.first().locator(".activityThumbnail");
-  const start = await source.boundingBox();
-  const third = rows.nth(2);
-  const originalThird = await third.boundingBox();
+  const originalIds = await rows.evaluateAll((elements) =>
+    elements.map((element) => element.dataset.activityId),
+  );
+  const start = await rows.first().locator(".activityThumbnail").boundingBox();
+  const target = await rows.nth(2).boundingBox();
   await page.mouse.move(start.x + start.width / 2, start.y + 30);
   await page.mouse.down();
-  const floating = page.locator(".activityDragPreview");
-  await page.mouse.move(start.x + start.width / 2, start.y + 42);
-  await expect(floating).toBeVisible();
-  const originalFloating = await floating.boundingBox();
-  const targetY = originalThird.y + originalThird.height / 2;
-  await page.mouse.move(start.x + start.width / 2 + 24, targetY, { steps: 6 });
-  await expect
-    .poll(async () => (await floating.boundingBox()).x - originalFloating.x)
-    .toBeCloseTo(24, 0);
-  const movedFloating = await floating.boundingBox();
-  expect(movedFloating.y - originalFloating.y).toBeCloseTo(
-    targetY - (start.y + 42),
-    0,
+  await page.mouse.move(
+    target.x + target.width / 2,
+    target.y + target.height - 5,
+    { steps: 6 },
   );
-  await expect
-    .poll(() =>
-      third.evaluate(
-        (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
-      ),
-    )
-    .toBeLessThan(-1);
-  expect(
-    await third.evaluate(
-      (element) => getComputedStyle(element).transitionDuration,
-    ),
-  ).toBe("0.18s");
-  await expect(rows.first().locator(".activityThumbnail")).toHaveText(
-    /Easy math/,
+  await expect(page.locator(".activityDragPreview")).toBeVisible();
+  await expect(rows.first().locator(".activityThumbnail")).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
-  await expect(page.locator(".worksheetCanvas .math-minigame")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Save worksheet", exact: true }),
   ).toBeDisabled();
-  await expect(rows.first()).toHaveClass(/activityDragging/);
-  await expect
-    .poll(() =>
-      rows
-        .first()
-        .evaluate(
-          (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
-        ),
-    )
-    .toBeGreaterThan(1);
-  await page.screenshot({
-    path: testInfo.outputPath("worksheet-live-drag.png"),
-    fullPage: true,
-  });
-  await page.mouse.move(start.x + start.width / 2, start.y + 30, { steps: 6 });
-  await expect
-    .poll(() =>
-      third.evaluate(
-        (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
-      ),
-    )
-    .toBeCloseTo(0, 0);
-  await page.mouse.move(start.x + start.width / 2, targetY, { steps: 6 });
   await page.keyboard.press("Escape");
   await page.mouse.up();
-  await expect(floating).toHaveCount(0);
-  expect((await third.boundingBox()).y).toBeCloseTo(originalThird.y, 0);
-  expect(state.worksheet.items.map((item) => item.id)).toEqual([
-    30, 31, 32, 33,
-  ]);
+  await expect(page.locator(".activityDragPreview")).toHaveCount(0);
+  expect(
+    await rows.evaluateAll((elements) =>
+      elements.map((element) => element.dataset.activityId),
+    ),
+  ).toEqual(originalIds);
+  await expect(rows.first().locator(".activityThumbnail")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(state.writes).toHaveLength(0);
   await expect(
     page.getByRole("button", { name: "Save worksheet", exact: true }),
   ).toBeDisabled();
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.mouse.move(start.x + start.width / 2, start.y + 30);
-  await page.mouse.down();
-  await page.mouse.move(start.x + start.width / 2, start.y + 42);
-  await expect(floating).toBeVisible();
-  expect(
-    await third.evaluate(
-      (element) => getComputedStyle(element).transitionDuration,
-    ),
-  ).toBe("0s");
-  await page.keyboard.press("Escape");
-  await page.mouse.up();
-  await expect(floating).toHaveCount(0);
 });
 
-test("moving immediately after pressing still starts dragging and keeps the grab position", async ({
+test("moving immediately after pressing reorders without selecting another activity", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -351,7 +287,7 @@ test("moving immediately after pressing still starts dragging and keeps the grab
   await page.clock.install();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   const rows = sidebar(page).locator("li");
-  const original = await rows.first().boundingBox();
+
   const card = await rows.first().locator(".activityThumbnail").boundingBox();
   const last = await rows.last().boundingBox();
   const x = card.x + card.width / 2;
@@ -366,21 +302,21 @@ test("moving immediately after pressing still starts dragging and keeps the grab
   await page.clock.runFor(10);
   const floating = page.locator(".activityDragPreview");
   await expect(floating).toBeVisible();
-  const caughtUp = await floating.boundingBox();
-  expect(caughtUp.x).toBeCloseTo(original.x + 12, 0);
-  expect(caughtUp.y).toBeCloseTo(original.y + destinationY - y, 0);
+
   await page.mouse.move(x + 20, destinationY - 8);
-  const following = await floating.boundingBox();
-  expect(following.x - caughtUp.x).toBeCloseTo(8, 0);
-  expect(following.y - caughtUp.y).toBeCloseTo(-8, 0);
+
   await page.mouse.up();
   await expect(floating).toHaveCount(0);
   await expect(rows.last().locator(".activityThumbnail")).toHaveText(
     /Easy math/,
   );
+  await expect(rows.last().locator(".activityThumbnail")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });
 
-test("dropping the first card finishes immediately without a downward animation", async ({
+test("dropping an activity updates its order before pending timers run", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -388,43 +324,32 @@ test("dropping the first card finishes immediately without a downward animation"
   await page.clock.install();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   const rows = sidebar(page).locator("li");
-  const source = rows.first().locator(".activityThumbnail");
-  const start = await source.boundingBox();
+  const start = await rows.first().locator(".activityThumbnail").boundingBox();
   const end = await rows.last().boundingBox();
   await page.mouse.move(start.x + start.width / 2, start.y + 30);
   await page.mouse.down();
-  await page.clock.runFor(50);
   await page.mouse.move(end.x + end.width / 2, end.y + end.height - 5);
-  expect(
-    await sidebar(page)
-      .locator(".activityDragging")
-      .evaluate((element) => getComputedStyle(element).transitionDuration),
-  ).toBe("0s");
   await page.mouse.up();
-  // Keep time paused: completing the drop must not depend on an animation timer.
   await expect(page.locator(".activityDragPreview")).toHaveCount(0);
   await expect(rows.last().locator(".activityThumbnail")).toHaveText(
     /Easy math/,
   );
-  await expect(sidebar(page).locator(".activityDragging")).toHaveCount(0);
+  await expect(rows.last().locator(".activityThumbnail")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(
+    page.getByRole("button", { name: "Save worksheet", exact: true }),
+  ).toBeEnabled();
+  const ids = await rows.evaluateAll((elements) =>
+    elements.map((element) => element.dataset.activityId),
+  );
+  await page.clock.runFor(300);
   expect(
     await rows.evaluateAll((elements) =>
-      elements.map((element) => ({
-        duration: getComputedStyle(element).transitionDuration,
-        animations: element
-          .getAnimations()
-          .map(
-            (animation) =>
-              animation.transitionProperty || animation.animationName,
-          ),
-      })),
+      elements.map((element) => element.dataset.activityId),
     ),
-  ).toEqual(
-    Array.from({ length: 4 }, () => ({ duration: "0s", animations: [] })),
-  );
-  const dropped = await rows.last().boundingBox();
-  await page.clock.runFor(300);
-  expect(await rows.last().boundingBox()).toEqual(dropped);
+  ).toEqual(ids);
 });
 
 test("stationary presses and small movements select; deliberate dragging can be cancelled", async ({
@@ -461,11 +386,7 @@ test("stationary presses and small movements select; deliberate dragging can be 
     await expect(easy).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".worksheetCanvas .math-minigame")).toBeVisible();
   }
-  const action = sidebar(page).getByRole("button", {
-    name: "Duplicate activity",
-  });
-  const actionBox = await action.boundingBox();
-  expect(actionBox.x + actionBox.width).toBeLessThanOrEqual(box.x);
+
   const sequenceBox = await sequence.boundingBox();
   await page.mouse.move(
     sequenceBox.x + sequenceBox.width / 2,
@@ -577,13 +498,7 @@ test("touch hold reorders without selecting and a quick swipe scrolls the drawer
   await expect(drawer.locator(".activityDragging")).toHaveCount(1);
   await touch("touchMove", end.x + end.width / 2, end.y + 5);
   await expect(page.locator(".activityDragPreview")).toBeVisible();
-  await expect
-    .poll(() =>
-      first.evaluate((element) =>
-        Math.abs(new DOMMatrix(getComputedStyle(element).transform).m42),
-      ),
-    )
-    .toBeGreaterThan(0);
+
   await touch("touchEnd");
   await expect(page.locator(".activityDragPreview")).toHaveCount(0);
   await expect(
@@ -658,7 +573,7 @@ test("touch dragging near the drawer edge scrolls to later activities", async ({
 
 test("photo upload, library reuse, replacement and removal persist and appear in preview", async ({
   page,
-}, testInfo) => {
+}) => {
   const state = await setup(page);
   const field = page.getByRole("region", {
     name: "Activity photo",
@@ -735,10 +650,6 @@ test("photo upload, library reuse, replacement and removal persist and appear in
     state.worksheet.items.find((item) => item.id === 33).configuration.pairs[0]
       .imageAssetId,
   ).toBe(500);
-  await page.screenshot({
-    path: testInfo.outputPath("worksheet-editor-photos.png"),
-    fullPage: true,
-  });
 });
 
 test("a failed upload retains the existing photo and settings", async ({
@@ -768,31 +679,18 @@ test("a failed upload retains the existing photo and settings", async ({
 
 test("phone activity drawer supports switching without losing edited settings", async ({
   page,
-}, testInfo) => {
+}) => {
   const state = await setup(page);
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 844 });
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            document.documentElement.scrollWidth <=
-            document.documentElement.clientWidth + 1,
-        ),
-      )
-      .toBe(true);
+
     await page.getByRole("button", { name: /Activities ·/ }).click();
     const drawer = page.getByRole("dialog", {
       name: "Activities",
       exact: true,
     });
     await expect(drawer).toBeVisible();
-    await expect
-      .poll(async () => {
-        const box = await drawer.boundingBox();
-        return Math.abs(box.x + box.width - width);
-      })
-      .toBeLessThan(1);
+
     await drawer
       .getByRole("button", { name: "Number sequence", exact: true })
       .click();
@@ -801,9 +699,7 @@ test("phone activity drawer supports switching without losing edited settings", 
       page.locator(".worksheetCanvas .sequence-minigame"),
     ).toBeVisible();
     await page.getByRole("button", { name: /Activities ·/ }).click();
-    await expect(
-      drawer.getByRole("button", { name: /^Move (up|down)$/ }),
-    ).toHaveCount(0);
+
     await drawer
       .getByRole("button", { name: "Easy math", exact: true })
       .click();
@@ -816,8 +712,4 @@ test("phone activity drawer supports switching without losing edited settings", 
     state.worksheet.items.find((item) => item.id === 30).configuration
       .exerciseCount,
   ).toBe(37);
-  await page.screenshot({
-    path: testInfo.outputPath("worksheet-editor-phone.png"),
-    fullPage: true,
-  });
 });

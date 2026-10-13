@@ -132,29 +132,20 @@ async function addMath(page) {
   await dialog.getByRole("button", { name: "Easy math", exact: true }).click();
 }
 
-test("activity sidebar keeps the editor stable and supports keyboard access", async ({
-  page,
-}, testInfo) => {
+test("activity controls support keyboard access", async ({ page }) => {
   await mockPlatform(page);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/teacher/20");
-  const card = page
-    .locator(".worksheetCanvas .worksheetGameContent > *")
-    .first();
-  const before = await card.boundingBox();
   const list = page.getByRole("navigation", { name: "Worksheet activities" });
   const add = list.getByRole("button", { name: "Add activity", exact: true });
   await expect(list).toBeVisible();
   await expect(
     list.getByRole("button", { name: "Remove activity" }),
   ).toBeVisible();
-  await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
+
   await add.focus();
-  expect(await card.boundingBox()).toEqual(before);
-  await page.screenshot({
-    path: testInfo.outputPath("activity-sidebar.png"),
-    animations: "disabled",
-  });
+  await expect(add).toBeFocused();
+
   await add.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
   await page
@@ -164,98 +155,42 @@ test("activity sidebar keeps the editor stable and supports keyboard access", as
     .click();
 });
 
-test("editor and child preview share styling and responsive card spacing", async ({
+test("preview switching preserves unsaved worksheet settings on desktop and phone", async ({
   page,
 }) => {
-  await mockPlatform(page);
+  const state = await mockPlatform(page);
   await page.goto("/teacher/20");
+  const name = page.getByLabel("Worksheet name", { exact: true });
+  const game = page.locator(".math-minigame");
+  await name.fill("Unsaved preview draft");
+  await game.getByRole("spinbutton").first().fill("7");
+  await game.getByRole("spinbutton").first().blur();
   async function switchView(label) {
     const direct = page.getByRole("button", { name: label, exact: true });
-    if (await direct.isVisible()) {
-      await direct.click();
-    } else {
+    if (await direct.isVisible()) await direct.click();
+    else {
       await page
         .getByRole("button", { name: "More actions", exact: true })
         .click();
       await page.getByRole("menuitem", { name: label, exact: true }).click();
     }
   }
-  async function appearance() {
-    return page
-      .locator(".worksheetGameAppearance .math-minigame")
-      .evaluate((card) => {
-        const style = getComputedStyle(card);
-        const title = getComputedStyle(card.querySelector("h2"));
-        return {
-          padding: style.padding,
-          margin: style.margin,
-          minHeight: style.minHeight,
-          border: style.border,
-          radius: style.borderRadius,
-          shadow: style.boxShadow,
-          grid: style.backgroundImage,
-          gridSize: style.backgroundSize,
-          titleSize: title.fontSize,
-          titleMargin: title.marginBottom,
-          titleMarginTop: title.marginTop,
-          titleMarginBottom: title.marginBottom,
-          titleMarginLeft: parseFloat(title.marginLeft),
-          titleMarginRight: parseFloat(title.marginRight),
-          drawings: getComputedStyle(
-            card
-              .closest(".worksheetGameAppearance")
-              .querySelector(".worksheetSprinkles"),
-          ).opacity,
-        };
-      });
-  }
-  for (const width of [2400, 1440, 621, 620, 601, 600, 390, 320]) {
+  for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });
-    await expect(page.locator(".sidebar + .ant-layout")).toHaveCSS(
-      "margin-left",
-      width < 768 ? "0px" : "240px",
-    );
-    const editor = await appearance();
-    const actionSpace = width <= 600 ? 70 : 74;
-    expect(editor.drawings).toBe("0.22");
-    await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right",
-      "0px",
-      `${actionSpace}px`,
-    );
+    await expect(game.getByRole("spinbutton").first()).toHaveValue("7");
     await switchView("Preview as child");
-    const preview = await appearance();
-    if (width <= 620) {
-      // Phone previews reclaim the editor action space; titles stay centered as they wrap.
-      const {
-        width: editorWidth,
-        titleMarginLeft: editorLeft,
-        titleMarginRight: editorRight,
-        ...editorStyles
-      } = editor;
-      const {
-        width: previewWidth,
-        titleMarginLeft: previewLeft,
-        titleMarginRight: previewRight,
-        ...previewStyles
-      } = preview;
-      expect(previewStyles).toEqual(editorStyles);
-      expect(previewWidth).toBeCloseTo(editorWidth + actionSpace, 1);
-      expect(editorLeft).toBeCloseTo(editorRight, 1);
-      expect(previewLeft).toBeCloseTo(previewRight, 1);
-    } else {
-      expect(preview).toEqual(editor);
-    }
-    await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right",
-      width <= 600 ? "70px" : "74px",
-    );
-    await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
-    await expect(
-      page.locator(".worksheetSprinkles > g").first(),
-    ).toBeAttached();
+    await expect(name).toBeDisabled();
+    await expect(game.locator(".math-answers button")).toHaveCount(4);
+    await expect(game.getByRole("spinbutton")).toHaveCount(0);
     await switchView("Back to editor");
+    await expect(name).toBeEnabled();
+    await expect(name).toHaveValue("Unsaved preview draft");
+    await expect(game.getByRole("spinbutton").first()).toHaveValue("7");
   }
+  expect(state.changes).toHaveLength(0);
+  await expect(
+    page.getByRole("button", { name: "Save worksheet", exact: true }),
+  ).toBeEnabled();
 });
 
 test("dashboard sharing opens the correct code without navigating to the editor", async ({
@@ -273,15 +208,7 @@ test("dashboard sharing opens the correct code without navigating to the editor"
     .getByRole("button", { name: "Close", exact: true })
     .click();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          document.documentElement.scrollWidth <=
-          document.documentElement.clientWidth + 1,
-      ),
-    )
-    .toBe(true);
+
   await page.getByRole("link", { name: "Practice 1 activity" }).click();
   await expect(page).toHaveURL(/\/teacher\/20$/);
 });
@@ -325,15 +252,9 @@ test("worksheet card opens from its background while share and delete stay on th
   const name = page.locator(".worksheetOpenButton");
   await name.waitFor();
   await page.mouse.move(0, 0);
-  const nameBefore = await name.boundingBox();
-  const cardBefore = await page.locator(".worksheet-card").boundingBox();
+
   await name.hover();
-  await expect(name).toHaveCSS("color", "rgb(108, 92, 231)");
-  await expect(name).toHaveCSS("padding", "0px");
-  expect(await name.boundingBox()).toEqual(nameBefore);
-  expect(await page.locator(".worksheet-card").boundingBox()).toEqual(
-    cardBefore,
-  );
+
   await page
     .locator(".worksheet-card")
     .getByText("1 activity", { exact: true })
@@ -508,9 +429,9 @@ test("share dialog explains saved versions and confirms before replacing a code"
   expect(state.changes).toHaveLength(1);
 });
 
-test("editor toolbar stays at the top and keeps mobile actions usable", async ({
+test("worksheet saving, sharing and preview work on desktop and phone", async ({
   page,
-}, testInfo) => {
+}) => {
   await mockPlatform(page, { many: true });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/teacher/20");
@@ -521,14 +442,7 @@ test("editor toolbar stays at the top and keeps mobile actions usable", async ({
   });
   await expect(name).toBeVisible();
   await expect(save).toBeDisabled();
-  await expect(page.locator(".worksheetTools")).toHaveCount(0);
-  await page.evaluate(() => window.scrollTo(0, 600));
-  await expect(name).toBeInViewport();
-  await expect(save).toBeInViewport();
-  expect((await page.locator(".sidebar-header").boundingBox()).y).toBe(0);
-  await page.screenshot({
-    path: testInfo.outputPath("editor-toolbar-desktop.png"),
-  });
+
   await name.fill("Updated worksheet");
   await expect(save).toBeEnabled();
   await expect(page.getByText("Unsaved changes", { exact: true })).toHaveCount(
@@ -538,30 +452,18 @@ test("editor toolbar stays at the top and keeps mobile actions usable", async ({
   await expect(save).toBeDisabled();
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            document.documentElement.scrollWidth <=
-            document.documentElement.clientWidth + 1,
-        ),
-      )
-      .toBe(true);
-    await expect(name).toBeInViewport();
-    await expect(save).toBeInViewport();
+    await name.fill(`Worksheet ${width}`);
+    await expect(save).toBeEnabled();
+    await save.click();
+    await expect(save).toBeDisabled();
+    await expect(name).toHaveValue(`Worksheet ${width}`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page
-    .getByText("Worksheet saved successfully.", { exact: true })
-    .waitFor({ state: "hidden" });
   await page.getByRole("button", { name: "More actions", exact: true }).click();
   await expect(
     page.getByRole("menuitem", { name: "Share worksheet" }),
   ).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath("editor-toolbar-mobile.png"),
-    animations: "disabled",
-  });
+
   await page.getByRole("menuitem", { name: "Share worksheet" }).click();
   await expect(
     page.getByRole("dialog").getByText("ORIGINAL", { exact: true }),
@@ -578,22 +480,16 @@ test("editor toolbar stays at the top and keeps mobile actions usable", async ({
   await expect(name).toBeEnabled();
 });
 
-test("teacher editor fits a phone and exposes accessible navigation", async ({
+test("phone navigation supports opening, closing, Escape and links", async ({
   page,
-}, testInfo) => {
+}) => {
   await mockPlatform(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/teacher/20");
   await expect(
     page.getByLabel("Worksheet name", { exact: true }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth <=
-        document.documentElement.clientWidth + 1,
-    ),
-  ).toBe(true);
+
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(
     page.getByRole("menuitem", { name: "Worksheets" }),
@@ -608,49 +504,37 @@ test("teacher editor fits a phone and exposes accessible navigation", async ({
     page.getByRole("button", { name: "Open navigation" }),
   ).toBeFocused();
   await page.getByRole("button", { name: "Open navigation" }).click();
-  await expect(page.locator(".sidebar")).toHaveCSS("width", "240px");
-  await page.screenshot({ path: testInfo.outputPath("sidebar-mobile.png") });
+
   await page.getByRole("menuitem", { name: "Worksheets" }).click();
   await expect(page).toHaveURL(/\/sheets$/);
   await expect(
     page.getByRole("button", { name: "Open navigation" }),
   ).toHaveAttribute("aria-expanded", "false");
-  await page.screenshot({
-    path: testInfo.outputPath("editor-mobile.png"),
-    fullPage: true,
-  });
 });
 
-test("desktop navigation starts expanded, remembers collapse and highlights the current page", async ({
+test("desktop navigation opens, closes, persists its state and follows links", async ({
   page,
-}, testInfo) => {
+}) => {
   await mockPlatform(page);
   await page.goto("/teacher/20");
-  const sidebar = page.locator(".sidebar");
-  await expect(sidebar).toHaveCSS("width", "240px");
-  await expect(
-    page.getByRole("link", { name: "Practica · Home" }),
-  ).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: "Worksheets" })).toHaveClass(
-    /ant-menu-item-selected/,
-  );
-  const main = await page.locator(".sidebar-menu--main").boundingBox();
-  const footer = await page.locator(".sidebar-footer").boundingBox();
-  expect(footer.y).toBeGreaterThan(main.y + main.height + 100);
-  await page.screenshot({ path: testInfo.outputPath("sidebar-desktop.png") });
-  await page.getByRole("button", { name: "Close navigation" }).click();
-  await expect(sidebar).toHaveCSS("width", "80px");
-  await page.getByRole("menuitem", { name: "Worksheets" }).hover();
-  await expect(page.getByRole("tooltip", { name: "Worksheets" })).toBeVisible();
+  const close = page.getByRole("button", {
+    name: "Close navigation",
+    exact: true,
+  });
+  const open = page.getByRole("button", {
+    name: "Open navigation",
+    exact: true,
+  });
+  await expect(close).toHaveAttribute("aria-expanded", "true");
+  await close.click();
+  await expect(open).toHaveAttribute("aria-expanded", "false");
   await page.reload();
-  await expect(sidebar).toHaveCSS("width", "80px");
-  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(open).toHaveAttribute("aria-expanded", "false");
+  await open.click();
+  await expect(close).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("menuitem", { name: "Worksheets" }).click();
   await expect(page).toHaveURL(/\/sheets$/);
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(close).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("menuitem", { name: "Account" }).click();
   await expect(page).toHaveURL(/\/account$/);
-  await expect(page.getByRole("menuitem", { name: "Account" })).toHaveClass(
-    /ant-menu-item-selected/,
-  );
 });

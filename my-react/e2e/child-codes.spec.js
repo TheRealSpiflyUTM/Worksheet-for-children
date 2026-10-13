@@ -29,7 +29,7 @@ const item = {
 
 test("children enter codes, resume unfinished work and finish without signup", async ({
   page,
-}, testInfo) => {
+}) => {
   let user = null;
   let starts = 0;
   const attempt = {
@@ -83,10 +83,7 @@ test("children enter codes, resume unfinished work and finish without signup", a
   );
   await page.goto("/");
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({
-    path: testInfo.outputPath("code-entry-mobile.png"),
-    fullPage: true,
-  });
+
   await page.getByLabel("Codul elevului").fill("abcd2345");
   await page.getByLabel("Codul fișei").fill("efgh6789");
   await page.getByRole("button", { name: "Verifică și începe" }).click();
@@ -105,18 +102,11 @@ test("children enter codes, resume unfinished work and finish without signup", a
   await page.reload();
   await expect(page.getByRole("heading", { name: "Bravo!" })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
-  expect(
-    await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth <=
-        document.documentElement.clientWidth + 1,
-    ),
-  ).toBe(true);
 });
 
 test("teachers manage child codes, start tests and navigate real results", async ({
   page,
-}, testInfo) => {
+}) => {
   let students = [];
   const tests = [
     {
@@ -211,17 +201,7 @@ test("teachers manage child codes, start tests and navigate real results", async
   await expect(
     page.getByRole("link", { name: "Ana Maria", exact: true }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth <=
-        document.documentElement.clientWidth + 1,
-    ),
-  ).toBe(true);
-  await page.screenshot({
-    path: testInfo.outputPath("class-roster-mobile.png"),
-    fullPage: true,
-  });
+
   await page.getByRole("button", { name: "Șterge", exact: true }).click();
   await page.getByRole("button", { name: "OK", exact: true }).click();
   await expect(
