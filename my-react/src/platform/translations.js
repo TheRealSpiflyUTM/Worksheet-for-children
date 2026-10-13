@@ -1,4 +1,28 @@
 const romanian = {
+  "Worksheet activities": "Activitățile fișei",
+  Activities: "Activități",
+  "Move up": "Mută mai sus",
+  "Move down": "Mută mai jos",
+  "Hold to reorder": "Ține apăsat pentru a schimba ordinea",
+  "Duplicate activity": "Duplică activitatea",
+  "Selected activity": "Activitatea selectată",
+  "Start your worksheet": "Începe fișa ta",
+  "Activity moved to position {position}":
+    "Activitatea a fost mutată pe poziția {position}",
+  "Activity photo": "Fotografia activității",
+  "Object photo": "Fotografia obiectului",
+  "Upload photo": "Încarcă o fotografie",
+  "Replace photo": "Înlocuiește fotografia",
+  "Remove photo": "Elimină fotografia",
+  "My photos": "Fotografiile mele",
+  "Pair {number}": "Perechea {number}",
+  "Choose a JPG, PNG, WebP or GIF image up to 10 MB.":
+    "Alege o imagine JPG, PNG, WebP sau GIF de cel mult 10 MB.",
+  "Drop a photo here · JPG, PNG, WebP, GIF · Up to 10 MB":
+    "Trage o fotografie aici · JPG, PNG, WebP, GIF · Cel mult 10 MB",
+  "Upload your first photo to use it again here.":
+    "Încarcă prima fotografie pentru a o putea reutiliza aici.",
+
   "Worksheet tools": "Instrumente pentru fișă",
   "More actions": "Mai multe acțiuni",
   "Class not found.": "Clasa nu a fost găsită.",

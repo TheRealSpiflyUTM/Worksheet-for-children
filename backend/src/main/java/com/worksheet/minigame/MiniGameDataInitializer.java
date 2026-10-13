@@ -74,6 +74,18 @@ private void createIfMissing(
     JsonNode configurationSchema,
     JsonNode defaultConfiguration
 ) {
+    createLegacyIfMissing(name, type, configurationSchema, defaultConfiguration);
+    if (repository.existsByTypeIgnoreCaseAndVersion(type, BuiltinPhotoConfiguration.VERSION)) return;
+    var schema = BuiltinPhotoConfiguration.schema(type, configurationSchema);
+    var defaults = BuiltinPhotoConfiguration.defaults(defaultConfiguration);
+    schemaValidator.validateSchema(schema, name + " photo schema");
+    schemaValidator.validate(schema, defaults, name + " photo defaults");
+    repository.save(new MiniGameDefinition(name, type, BuiltinPhotoConfiguration.VERSION,
+        schema, emptyObject(), defaults, null, true));
+}
+
+private void createLegacyIfMissing(String name, String type, JsonNode configurationSchema,
+                                 JsonNode defaultConfiguration) {
     if (repository.existsByTypeIgnoreCaseAndVersion(type, CORRECTED_SCHEMA_VERSION)) {
         return;
     }

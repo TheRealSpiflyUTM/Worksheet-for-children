@@ -132,44 +132,29 @@ async function addMath(page) {
   await dialog.getByRole("button", { name: "Easy math", exact: true }).click();
 }
 
-test("activity controls emerge beside the card without moving it and support keyboard access", async ({
+test("activity sidebar keeps the editor stable and supports keyboard access", async ({
   page,
 }, testInfo) => {
   await mockPlatform(page);
-  await page.setViewportSize({ width: 2400, height: 1000 });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/teacher/20");
-  const card = page.locator(".worksheetGameContent > *").first();
-  const add = page.getByRole("button", { name: "Add activity", exact: true });
-  const remove = page.getByRole("button", {
-    name: "Remove activity",
-    exact: true,
-  });
-  await expect(add).toHaveCSS("opacity", "0");
-  await expect(add).toHaveCSS("transition-duration", "0.3s, 0.3s");
-  await expect(add).toHaveCSS(
-    "transition-timing-function",
-    "ease-in-out, ease-in-out",
-  );
+  const card = page
+    .locator(".worksheetCanvas .worksheetGameContent > *")
+    .first();
   const before = await card.boundingBox();
-  await card.hover();
-  await expect(add).toHaveCSS("opacity", "1");
-  await expect(remove).toHaveCSS("opacity", "1");
-  const addBox = await add.boundingBox();
-  const removeBox = await remove.boundingBox();
-  expect(addBox.x).toBeGreaterThanOrEqual(before.x + before.width);
-  expect(removeBox.x).toBeGreaterThanOrEqual(before.x + before.width);
-  expect(removeBox.y).toBeGreaterThan(addBox.y + addBox.height);
-  expect(addBox.x - (before.x + before.width)).toBeCloseTo(20, 1);
-  expect(removeBox.x - (before.x + before.width)).toBeCloseTo(20, 1);
+  const list = page.getByRole("navigation", { name: "Worksheet activities" });
+  const add = list.getByRole("button", { name: "Add activity", exact: true });
+  await expect(list).toBeVisible();
+  await expect(
+    list.getByRole("button", { name: "Remove activity" }),
+  ).toBeVisible();
+  await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
+  await add.focus();
   expect(await card.boundingBox()).toEqual(before);
   await page.screenshot({
-    path: testInfo.outputPath("activity-hover.png"),
+    path: testInfo.outputPath("activity-sidebar.png"),
     animations: "disabled",
   });
-  await page.mouse.move(0, 0);
-  await expect(add).toHaveCSS("opacity", "0");
-  await add.focus();
-  await expect(add).toHaveCSS("opacity", "1");
   await add.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
   await page
@@ -177,8 +162,6 @@ test("activity controls emerge beside the card without moving it and support key
     .getByRole("button", { name: "Close", exact: true })
     .first()
     .click();
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(add).toHaveCSS("transition-duration", "0s");
 });
 
 test("editor and child preview share card spacing, size and subtle drawings", async ({
@@ -204,7 +187,6 @@ test("editor and child preview share card spacing, size and subtle drawings", as
         const style = getComputedStyle(card);
         const title = getComputedStyle(card.querySelector("h2"));
         return {
-          width: card.getBoundingClientRect().width,
           padding: style.padding,
           margin: style.margin,
           minHeight: style.minHeight,
@@ -214,7 +196,7 @@ test("editor and child preview share card spacing, size and subtle drawings", as
           grid: style.backgroundImage,
           gridSize: style.backgroundSize,
           titleSize: title.fontSize,
-          titleMargin: title.margin,
+          titleMargin: title.marginBottom,
           drawings: getComputedStyle(
             card
               .closest(".worksheetGameAppearance")
@@ -232,12 +214,14 @@ test("editor and child preview share card spacing, size and subtle drawings", as
     const editor = await appearance();
     expect(editor.drawings).toBe("0.22");
     await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right", width <= 600 ? "70px" : "74px",
+      "padding-right",
+      "0px",
     );
     await switchView("Preview as child");
     expect(await appearance()).toEqual(editor);
     await expect(page.locator(".worksheetGameFrame")).toHaveCSS(
-      "padding-right", width <= 600 ? "70px" : "74px",
+      "padding-right",
+      width <= 600 ? "70px" : "74px",
     );
     await expect(page.locator(".worksheetCardAction")).toHaveCount(0);
     await expect(
@@ -372,7 +356,7 @@ test("removal stays in the draft, supports undo and can save an empty worksheet"
   ).toHaveLength(1);
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Add activity", exact: true }),
+    page.getByRole("button", { name: "Add activity", exact: true }).last(),
   ).toBeVisible();
 });
 

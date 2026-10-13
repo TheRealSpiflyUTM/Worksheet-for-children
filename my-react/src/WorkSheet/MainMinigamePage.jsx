@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Alert, Button, Progress, message } from "antd";
-import { CloseOutlined, PlusOutlined } from "@ant-design/icons";
+import { Alert, Button, Drawer, Progress, message } from "antd";
+import { PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { useBlocker, useParams } from "react-router-dom";
 import {
   getWorksheet,
@@ -27,8 +27,11 @@ import AddMinigameWindow from "./AddMinigameWindow.jsx";
 import WorksheetSprinkles from "./WorksheetSprinkles.jsx";
 import WorksheetGameFrame from "./WorksheetGameFrame.jsx";
 import WorksheetToolbar from "./WorksheetToolbar.jsx";
+import WorksheetActivityList from "./WorksheetActivityList.jsx";
+import ActivityPhotos from "./ActivityPhotos.jsx";
 import "./MainMinigamePage.css";
 import "./PlayfulMinigames.css";
+import "./WorksheetEditor.css";
 
 const gameComponents = {
   "color-game": ColorMinigame,
@@ -115,16 +118,19 @@ function WorksheetEditor({ worksheetId, initial }) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(
+    initial.games[0]?.instanceId || null,
+  );
+  const [listOpen, setListOpen] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
   const [adding, setAdding] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const saveLock = useRef(false);
   const shortcut = useRef(null);
-  const pendingScroll = useRef(null);
-  const gameElements = useRef(new Map());
-  const blocker = useBlocker(dirty || saving);
+  const blocker = useBlocker(dirty || saving || photoBusy);
 
   const available = Object.keys(gameComponents).flatMap((type) => {
     const definition = initial.definitions
@@ -144,18 +150,18 @@ function WorksheetEditor({ worksheetId, initial }) {
   });
 
   useEffect(() => {
-    if (!dirty && !saving) return;
+    if (!dirty && !saving && !photoBusy) return;
     const warn = (event) => {
       event.preventDefault();
       event.returnValue = true;
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, saving]);
+  }, [dirty, saving, photoBusy]);
 
   useEffect(() => {
     if (blocker.state !== "blocked") return;
-    if (saving) {
+    if (saving || photoBusy) {
       message.info(t("Please wait until saving finishes."));
       blocker.reset();
     } else if (
@@ -167,19 +173,7 @@ function WorksheetEditor({ worksheetId, initial }) {
     } else {
       blocker.reset();
     }
-  }, [blocker, saving, t]);
-
-  useEffect(() => {
-    const id = pendingScroll.current;
-    if (!id || !gameElements.current.has(id)) return;
-    pendingScroll.current = null;
-    gameElements.current.get(id).scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-      block: "center",
-    });
-  }, [games]);
+  }, [blocker, saving, photoBusy, t]);
 
   function addGame(definition) {
     const id = crypto.randomUUID();
@@ -198,9 +192,9 @@ function WorksheetEditor({ worksheetId, initial }) {
       next.splice(index < 0 ? next.length : index + 1, 0, game);
       return next;
     });
-    pendingScroll.current = id;
     setSelected(id);
     setAdding(false);
+    setListOpen(false);
     setDirty(true);
   }
 
@@ -210,7 +204,12 @@ function WorksheetEditor({ worksheetId, initial }) {
     setGames((current) =>
       current.filter((entry) => entry.instanceId !== game.instanceId),
     );
-    setSelected(null);
+    const remaining = games.filter(
+      (entry) => entry.instanceId !== game.instanceId,
+    );
+    setSelected(
+      remaining[Math.min(index, remaining.length - 1)]?.instanceId || null,
+    );
     setDirty(true);
   }
 
@@ -228,8 +227,56 @@ function WorksheetEditor({ worksheetId, initial }) {
     setDirty(true);
   }
 
+  function duplicateGame(game) {
+    const id = crypto.randomUUID();
+    const copy = {
+      ...structuredClone(game),
+      instanceId: id,
+      decorationSeed: id,
+      itemId: null,
+      orderIndex: undefined,
+    };
+    const index = games.findIndex(
+      (entry) => entry.instanceId === game.instanceId,
+    );
+    setGames((current) => [
+      ...current.slice(0, index + 1),
+      copy,
+      ...current.slice(index + 1),
+    ]);
+    setSelected(id);
+    setDirty(true);
+  }
+
+  function moveGame(id, position) {
+    const index = games.findIndex((game) => game.instanceId === id);
+    if (
+      index < 0 ||
+      index === position ||
+      position < 0 ||
+      position >= games.length
+    )
+      return;
+    const next = [...games];
+    next.splice(position, 0, next.splice(index, 1)[0]);
+    setGames(next);
+    setAnnouncement(
+      t("Activity moved to position {position}", { position: position + 1 }),
+    );
+    setDirty(true);
+  }
+
+  function dropGame(source, target, after) {
+    if (source === target) return;
+    const from = games.findIndex((game) => game.instanceId === source);
+    const to = games.findIndex((game) => game.instanceId === target);
+    if (from < 0 || to < 0) return;
+    const insertion = to + (after ? 1 : 0);
+    moveGame(source, insertion - (from < insertion ? 1 : 0));
+  }
+
   async function saveWorksheet() {
-    if (saveLock.current || !dirty) return;
+    if (saveLock.current || photoBusy || !dirty) return;
     if (!name.trim()) {
       setError(new Error(t("Enter a worksheet name.")));
       return;
@@ -279,7 +326,10 @@ function WorksheetEditor({ worksheetId, initial }) {
       );
       setName(name.trim());
       setDirty(false);
-      message.success(t("Worksheet saved successfully."));
+      message.success({
+        content: t("Worksheet saved successfully."),
+        className: "worksheetSaveNotice",
+      });
     } catch (requestError) {
       setError(requestError);
     } finally {
@@ -306,6 +356,47 @@ function WorksheetEditor({ worksheetId, initial }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const activeIndex = games.findIndex((game) => game.instanceId === selected);
+  const activeGame = games[activeIndex];
+  const ActiveGame = activeGame ? gameComponents[activeGame.id] : null;
+  const currentDefinition = initial.definitions.find(
+    (entry) => entry.id === activeGame?.miniGameId,
+  );
+  const photoDefinition = currentDefinition?.configurationSchema?.[
+    "x-image-slots"
+  ]?.["activity-photo"]
+    ? currentDefinition
+    : initial.definitions.find(
+        (entry) =>
+          entry.type === activeGame?.id &&
+          entry.version === 3 &&
+          entry.active !== false &&
+          entry.configurationSchema?.["x-image-slots"]?.["activity-photo"],
+      );
+  function updateActiveGame(updated) {
+    setGames((current) =>
+      current.map((entry) =>
+        entry.instanceId === updated.instanceId ? updated : entry,
+      ),
+    );
+    setDirty(true);
+  }
+  const activityList = (
+    <WorksheetActivityList
+      games={games}
+      selected={selected}
+      disabled={saving || photoBusy}
+      onSelect={(id) => {
+        setSelected(id);
+        setListOpen(false);
+      }}
+      onAdd={() => setAdding(true)}
+      onDuplicate={duplicateGame}
+      onRemove={removeGame}
+      onDrop={dropGame}
+    />
+  );
+
   const toolbar = (
     <WorksheetToolbar
       name={name}
@@ -314,7 +405,7 @@ function WorksheetEditor({ worksheetId, initial }) {
         setDirty(true);
       }}
       dirty={dirty}
-      saving={saving}
+      saving={saving || photoBusy}
       hasGames={games.length > 0}
       canUndo={undo.length > 0}
       onSave={saveWorksheet}
@@ -385,74 +476,83 @@ function WorksheetEditor({ worksheetId, initial }) {
           }
         />
       )}
+      <div className="worksheetMobileActivityBar">
+        <Button
+          icon={<UnorderedListOutlined aria-hidden="true" />}
+          disabled={saving || photoBusy}
+          onClick={() => setListOpen(true)}
+        >
+          {t("Activities")} · {games.length}
+        </Button>
+      </div>
+      {announcement && (
+        <p className="editorAnnouncement" role="status">
+          {announcement}
+        </p>
+      )}
       <div className="worksheetEditorLayout">
-        <section className="worksheetCanvas" inert={saving}>
-          {!games.length ? (
-            <Button
-              className="firstAddMinigameButton"
-              type="primary"
-              size="large"
-              icon={<PlusOutlined aria-hidden="true" />}
-              onClick={() => setAdding(true)}
-            >
-              {t("Add activity")}
-            </Button>
-          ) : (
-            <div className="addedGames">
-              {games.map((game, index) => {
-                const Game = gameComponents[game.id];
-                return (
-                  <WorksheetGameFrame key={game.instanceId}>
-                    <div
-                      className={`worksheetGame worksheetGameAppearance ${selected === game.instanceId ? "selectedGame" : ""}`}
-                      ref={(element) => {
-                        if (element)
-                          gameElements.current.set(game.instanceId, element);
-                        else gameElements.current.delete(game.instanceId);
-                      }}
-                      onClick={() => setSelected(game.instanceId)}
-                    >
-                      <WorksheetSprinkles seed={game.decorationSeed} />
-                      <div className="worksheetGameContent">
-                        <Game
-                          isTeacher
-                          game={game}
-                          onGameChange={(updated) => {
-                            setGames((current) =>
-                              current.map((entry) =>
-                                entry.instanceId === game.instanceId
-                                  ? updated
-                                  : entry,
-                              ),
-                            );
-                            setDirty(true);
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      className="worksheetCardAction worksheetCardAction--add"
-                      aria-label={t("Add activity")}
-                      disabled={saving}
-                      icon={<PlusOutlined aria-hidden="true" />}
-                      onClick={() => {
-                        setSelected(game.instanceId);
-                        setAdding(true);
-                      }}
-                    />
-                    <Button
-                      className="worksheetCardAction worksheetCardAction--remove"
-                      aria-label={t("Remove activity")}
-                      disabled={saving}
-                      icon={<CloseOutlined aria-hidden="true" />}
-                      onClick={() => removeGame(game, index)}
-                    />
-                  </WorksheetGameFrame>
-                );
-              })}
+        <Drawer
+          title={t("Activities")}
+          placement="right"
+          size={300}
+          open={listOpen}
+          onClose={() => setListOpen(false)}
+        >
+          {activityList}
+        </Drawer>
+        <section
+          className="worksheetCanvas"
+          aria-label={t("Selected activity")}
+          inert={saving || photoBusy}
+        >
+          {!activeGame ? (
+            <div className="worksheetEmptyState">
+              <h2>{t("Start your worksheet")}</h2>
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined aria-hidden="true" />}
+                onClick={() => setAdding(true)}
+              >
+                {t("Add activity")}
+              </Button>
             </div>
+          ) : (
+            <>
+              <p className="worksheetActivityProgress">
+                {t("Activity {current} of {total}", {
+                  current: activeIndex + 1,
+                  total: games.length,
+                })}
+              </p>
+              <WorksheetGameFrame key={activeGame.instanceId}>
+                <div className="worksheetGame worksheetGameAppearance selectedGame">
+                  <WorksheetSprinkles seed={activeGame.decorationSeed} />
+                  <div className="worksheetGameContent">
+                    <ActiveGame
+                      isTeacher
+                      game={activeGame}
+                      onGameChange={updateActiveGame}
+                    />
+                  </div>
+                </div>
+              </WorksheetGameFrame>
+              <ActivityPhotos
+                key={`photos-${activeGame.instanceId}`}
+                game={activeGame}
+                definition={photoDefinition}
+                onChange={(updated) =>
+                  updateActiveGame({
+                    ...updated,
+                    miniGameId: photoDefinition.id,
+                  })
+                }
+                onBusyChange={setPhotoBusy}
+              />
+            </>
           )}
         </section>
+        <aside className="worksheetActivitySidebar">{activityList}</aside>
       </div>
       <AddMinigameWindow
         open={adding && !saving}

@@ -17,6 +17,7 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import { EMOJI_CATEGORIES } from "./emojis.js";
+import { photoUrl } from "../../../lib/task-images.js";
 import "./MatchingMinigame.css";
 
 const { Text, Title } = Typography;
@@ -49,6 +50,7 @@ const createPairId = () => {
 
 const clonePairs = (source) => {
   return source.map((pair) => ({
+    ...pair,
     id: pair.id || createPairId(),
     number: Number(pair.number) || 1,
     emoji: pair.emoji || "🍎",
@@ -490,11 +492,19 @@ const MatchingMinigame = ({
               </Tag>
             )}
 
-            <Button className="matching-secondary-action" icon={<ReloadOutlined />} onClick={resetAnswers}>
+            <Button
+              className="matching-secondary-action"
+              icon={<ReloadOutlined />}
+              onClick={resetAnswers}
+            >
               {t("Reset")}{" "}
             </Button>
 
-            <Button className="matching-secondary-action" icon={<ReloadOutlined />} onClick={shuffleForNewAttempt}>
+            <Button
+              className="matching-secondary-action"
+              icon={<ReloadOutlined />}
+              onClick={shuffleForNewAttempt}
+            >
               {t("Shuffle")}{" "}
             </Button>
 
@@ -596,7 +606,14 @@ const MatchingMinigame = ({
                       <div className="matching-objects">
                         {pair.objects.map((objectId) => (
                           <span className="matching-object" key={objectId}>
-                            {pair.emoji}
+                            {pair.imageAssetId ? (
+                              <img
+                                src={photoUrl(pair.imageAssetId)}
+                                alt={t("Object photo")}
+                              />
+                            ) : (
+                              pair.emoji
+                            )}
                           </span>
                         ))}
                       </div>

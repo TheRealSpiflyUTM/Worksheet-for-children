@@ -188,6 +188,19 @@ definition. Test bounds and legacy configurations too. Permissive mocked catalog
 verify backend validation. Test database upgrades with existing draft and revision data;
 changing startup seeds alone does not update definitions already stored in PostgreSQL.
 
+The single-activity worksheet editor uses the existing draft save API for selection, duplication,
+deletion/Undo and reordering. Photo-enabled built-ins use definition version 3 and optional nullable
+`imageAssetId` fields (at the activity root and on letter-game animals/matching-game pairs).
+V23 creates the additive catalog versions for populated databases; startup seeds cover fresh or
+historically malformed catalogs. Neither process changes old draft item IDs/configurations,
+published definition references, immutable revisions or saved results. A draft moves to the photo
+contract only when its author chooses a photo; replacing a photo creates a new asset reference.
+Old `img` paths and emoji values remain the fallback when an object photo is removed. Root photos
+do not affect scoring. Children can view photos through authenticated content routes but cannot upload.
+`DynamicMiniGameTests.builtInPhotosAndEditedSettingsSurviveSaveUpdateReloadAndPublishedHistory`
+exercises uploads plus non-default settings on all six real seeded contracts. `PopulatedV22PhotoUpgradeIT`
+checks the PostgreSQL upgrade with an existing draft and frozen revision.
+
 V22 is a targeted additive repair for the missing optional exercise-count field in built-in
 versions 1 and 2. It keeps definition IDs, required fields, draft/revision configurations and
 saved results intact, and excludes user-owned definitions and later contracts. Other contract

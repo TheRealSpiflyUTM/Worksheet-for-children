@@ -154,6 +154,55 @@ class DynamicMiniGameTests {
             .andExpect(status().isOk());
     }
 
+    @ParameterizedTest
+    @CsvSource({"math-game", "sequence-game", "higher-lower-game", "odd-even-game", "color-game", "matching-game"})
+    void builtInPhotosAndEditedSettingsSurviveSaveUpdateReloadAndPublishedHistory(String type) throws Exception {
+        initializer.run();
+        var definition = definitions.findByTypeIgnoreCaseAndVersion(type, 3).orElseThrow();
+        Account teacher = signup("Teacher", "photos@example.com", "TEACHER");
+        long worksheet = createWorksheet(teacher);
+        byte[] png = java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jP1sAAAAASUVORK5CYII=");
+        long first = idFrom(mvc.perform(multipart("/api/minigames/{id}/image-slots/activity-photo/uploads", definition.getId())
+            .session(teacher.session()).file(new MockMultipartFile("file", "original.png", "image/png", png)))
+            .andExpect(status().isCreated()).andReturn());
+        long second = idFrom(mvc.perform(multipart("/api/minigames/{id}/image-slots/activity-photo/uploads", definition.getId())
+            .session(teacher.session()).file(new MockMultipartFile("file", "replacement.png", "image/png", png)))
+            .andExpect(status().isCreated()).andReturn());
+        var configuration = (tools.jackson.databind.node.ObjectNode) definition.getDefaultConfiguration().deepCopy();
+        configuration.put("imageAssetId", first);
+        if (configuration.has("maxNumber")) {
+            configuration.put("maxNumber", 73);
+            configuration.put("exerciseCount", 37);
+        }
+        if (configuration.has("operations")) configuration.putArray("operations").add("*").add("/");
+        if (configuration.has("animals")) {
+            configuration.put("letter", "a");
+            ((tools.jackson.databind.node.ObjectNode) configuration.get("animals").get(0)).put("name", "Ana").put("imageAssetId", first);
+        }
+        if (configuration.has("pairs"))
+            ((tools.jackson.databind.node.ObjectNode) configuration.get("pairs").get(0)).put("number", 17).put("imageAssetId", first);
+        String prefix = "{\"miniGameId\":" + definition.getId() + ",\"orderIndex\":0,\"configuration\":";
+        long item = idFrom(mvc.perform(post("/api/worksheets/{id}/items", worksheet).session(teacher.session())
+            .contentType("application/json").content(prefix + configuration + "}"))
+            .andExpect(status().isCreated()).andReturn());
+        long attempt = idFrom(mvc.perform(post("/api/worksheets/{id}/attempts", worksheet).session(teacher.session()))
+            .andExpect(status().isCreated()).andReturn());
+        configuration.put("imageAssetId", second);
+        for (String collection : new String[] {"animals", "pairs"})
+            if (configuration.has(collection))
+                ((tools.jackson.databind.node.ObjectNode) configuration.get(collection).get(0)).putNull("imageAssetId");
+        mvc.perform(put("/api/worksheets/{id}/items/{item}", worksheet, item).session(teacher.session())
+            .contentType("application/json").content(prefix + configuration + "}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(item));
+        mvc.perform(get("/api/worksheets/{id}", worksheet).session(teacher.session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].configuration").value((Object) JsonPath.read(configuration.toString(), "$")));
+        mvc.perform(get("/api/attempts/{id}", attempt).session(teacher.session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.items[0].configuration.imageAssetId").value(first));
+        mvc.perform(delete("/api/minigame-assets/{id}", first).session(teacher.session())).andExpect(status().isConflict());
+        mvc.perform(get("/api/minigame-assets/{id}/content", first).session(teacher.session()))
+            .andExpect(status().isOk()).andExpect(content().bytes(png));
+    }
+
     @Test
     void teachersCreateVersionedDefinitionsAndOwnershipIsolated() throws Exception {
         Account teacher = signupAdmin("Teacher", "dynamic.teacher@example.com");

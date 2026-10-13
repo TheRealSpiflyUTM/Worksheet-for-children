@@ -79,7 +79,7 @@ class PopulatedV21UpgradeIT {
                 WHERE id = 200
                 """);
             Flyway latest = Flyway.configure()
-                .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()).load();
+                .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()).target("22").load();
             assertEquals(1, latest.migrate().migrationsExecuted);
             latest.validate();
             assertEquals(0, latest.migrate().migrationsExecuted);
