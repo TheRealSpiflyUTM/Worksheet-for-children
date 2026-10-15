@@ -169,14 +169,20 @@ body {
   text-align: center;
   font-weight: 700;
 }
-.gameCatalogSymbol {
+.addMinigameWindow .game .gameCatalogSymbol {
   display: grid;
   place-items: center;
   min-height: 130px;
   background: #f0ebff;
   color: #6c5ce7;
-  font-size: 3.5rem;
+  font-size: 7rem;
   font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+.addMinigameWindow .game .gameCatalogSymbol svg {
+  width: 1em;
+  height: 1em;
 }
 .mainMinigamePage > .ant-alert {
   margin-bottom: 20px;

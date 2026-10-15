@@ -46,7 +46,7 @@ class PopulatedV22PhotoUpgradeIT {
                   VALUES (900, 'Owned', 'owned-game', 1, '{}'::jsonb, '{}'::jsonb, TRUE, 100)
                 """);
             var latest = Flyway.configure().dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword()).load();
-            assertEquals(1, latest.migrate().migrationsExecuted);
+            assertEquals(2, latest.migrate().migrationsExecuted);
             assertEquals(0, latest.migrate().migrationsExecuted);
             latest.validate();
             var json = new ObjectMapper();

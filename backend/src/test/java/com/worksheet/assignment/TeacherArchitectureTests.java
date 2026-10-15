@@ -363,6 +363,153 @@ class TeacherArchitectureTests {
             .andExpect(status().isForbidden());
     }
 
+    @Test
+    void removingHomeworkPersistsRevokesEveryRecipientAndPreservesHistoryAndOtherClasses() throws Exception {
+        var f = removalFixture();
+        String route = "/api/assignments/classes/" + f.classroomId() + "/revisions/" + f.revisionId();
+        mvc.perform(delete(route).session(f.other().session())).andExpect(status().isNotFound());
+        mvc.perform(delete(route).session(f.student().session())).andExpect(status().isForbidden());
+        mvc.perform(delete(route)).andExpect(status().isUnauthorized());
+        mvc.perform(delete(route).session(f.teacher().session())).andExpect(status().isNoContent());
+        mvc.perform(delete(route).session(f.teacher().session())).andExpect(status().isNoContent());
+        mvc.perform(get("/api/assignments/report").session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)))
+            .andExpect(jsonPath("$[0].classroomId").value(f.otherClassId()));
+        mvc.perform(get("/api/assignments/report?includeRemoved=true").session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(6)));
+        mvc.perform(get("/api/assignments/{id}/attempts", f.completedAssignment()).session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[0].totalScore").value(3));
+        mvc.perform(get("/api/attempts/{id}", f.completedAttempt()).session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"))
+            .andExpect(jsonPath("$.results[0].score").value(3));
+        mvc.perform(get("/api/attempts/{id}", f.activeAttempt()).session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ABANDONED"));
+        mvc.perform(post("/api/assignments/{id}/attempts", f.completedAssignment()).session(f.student().session()))
+            .andExpect(status().isNotFound());
+        mvc.perform(post("/api/attempts/{id}/complete", f.activeAttempt()).session(f.second().session()))
+            .andExpect(status().isNotFound());
+        mvc.perform(post("/api/play/join").contentType("application/json")
+                .content(entryBody(f.studentCode(), f.worksheetCode()))).andExpect(status().isNotFound());
+        mvc.perform(post("/api/worksheets/join").session(f.student().session()).contentType("application/json")
+                .content("{\"code\":\"" + f.worksheetCode() + "\"}")).andExpect(status().isNotFound());
+        // A new member must not resurrect removed homework by entering its old worksheet code.
+        var child = mvc.perform(post("/api/classes/{id}/members", f.classroomId()).session(f.teacher().session())
+                .contentType("application/json").content("{\"name\":\"New child\"}"))
+            .andExpect(status().isCreated()).andReturn();
+        String newCode = JsonPath.read(body(child), "$.studentCode");
+        mvc.perform(post("/api/play/join").contentType("application/json")
+                .content(entryBody(newCode, f.worksheetCode()))).andExpect(status().isNotFound());
+        mvc.perform(get("/api/worksheets/{id}", f.worksheetId()).session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.items", hasSize(1)));
+        // Explicitly assigning the same revision again is permitted; old history stays frozen.
+        mvc.perform(post("/api/classes/{id}/tests", f.classroomId()).session(f.teacher().session())
+                .contentType("application/json").content("{\"worksheetId\":" + f.worksheetId() + "}"))
+            .andExpect(status().isCreated());
+        mvc.perform(post("/api/play/join").contentType("application/json")
+                .content(entryBody(f.studentCode(), f.worksheetCode()))).andExpect(status().isOk());
+    }
+
+    @Test
+    void archivingClassPersistsDisablesCodesAndKeepsCompletedScoresReadable() throws Exception {
+        var f = removalFixture();
+        String oldCode = JsonPath.read(body(mvc.perform(get("/api/classes/{id}", f.classroomId())
+            .session(f.teacher().session())).andReturn()), "$.joinCode");
+        String route = "/api/classes/" + f.classroomId();
+        mvc.perform(delete(route).session(f.other().session())).andExpect(status().isNotFound());
+        mvc.perform(delete(route).session(f.student().session())).andExpect(status().isForbidden());
+        mvc.perform(delete(route)).andExpect(status().isUnauthorized());
+        mvc.perform(delete(route).session(f.teacher().session())).andExpect(status().isNoContent());
+        mvc.perform(delete(route).session(f.teacher().session())).andExpect(status().isNoContent());
+        mvc.perform(get("/api/classes").session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].id").value(f.otherClassId()));
+        mvc.perform(get(route).session(f.teacher().session())).andExpect(status().isNotFound());
+        mvc.perform(post("/api/classes/join").session(f.student().session()).contentType("application/json")
+                .content("{\"joinCode\":\"" + oldCode + "\"}")).andExpect(status().isNotFound());
+        mvc.perform(post("/api/play/join").contentType("application/json")
+                .content(entryBody(f.studentCode(), f.worksheetCode()))).andExpect(status().isNotFound());
+        mvc.perform(post("/api/classes/{id}/tests", f.classroomId()).session(f.teacher().session())
+                .contentType("application/json").content("{\"worksheetId\":" + f.worksheetId() + "}"))
+            .andExpect(status().isNotFound());
+        mvc.perform(get("/api/assignments/report").session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)));
+        mvc.perform(get("/api/assignments/report?includeRemoved=true").session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(6)));
+        mvc.perform(get("/api/attempts/{id}", f.completedAttempt()).session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.totalScore").value(3));
+        mvc.perform(get("/api/attempts/{id}", f.activeAttempt()).session(f.teacher().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ABANDONED"));
+        mvc.perform(get("/api/attempts/{id}", f.completedAttempt()).session(f.student().session()))
+            .andExpect(status().isNotFound());
+        mvc.perform(get("/api/assignments/report?includeRemoved=true").session(f.other().session()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void removedDirectHomeworkCannotBeRedeemedAgain() throws Exception {
+        var teacher = signup("Teacher", "direct.teacher@example.com", "TEACHER");
+        var other = signup("Other", "direct.other@example.com", "TEACHER");
+        var student = signup("Student", "direct.student@example.com", "USER");
+        Long worksheet = createWorksheet(teacher, "Direct homework");
+        createItem(teacher, worksheet);
+        String code = JsonPath.read(body(mvc.perform(post("/api/worksheets/{id}/share", worksheet)
+            .session(teacher.session())).andReturn()), "$.code");
+        var joined = mvc.perform(post("/api/worksheets/join").session(student.session()).contentType("application/json")
+            .content("{\"code\":\"" + code + "\"}")).andExpect(status().isOk()).andReturn();
+        Long assignment = ((Number) JsonPath.read(body(joined), "$.assignmentId")).longValue();
+        Long revision = assignments.findById(assignment).orElseThrow().getWorksheetRevision().getId();
+        String route = "/api/assignments/direct/revisions/" + revision;
+        mvc.perform(delete(route).session(other.session())).andExpect(status().isNotFound());
+        mvc.perform(delete(route).session(teacher.session())).andExpect(status().isNoContent());
+        mvc.perform(post("/api/worksheets/join").session(student.session()).contentType("application/json")
+            .content("{\"code\":\"" + code + "\"}")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/assignments").session(student.session())).andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    private RemovalFixture removalFixture() throws Exception {
+        var teacher = signup("Teacher", "remove.teacher@example.com", "TEACHER");
+        var other = signup("Other", "remove.other@example.com", "TEACHER");
+        var student = signup("Ana", "remove.ana@example.com", "USER");
+        var second = signup("Dan", "remove.dan@example.com", "USER");
+        Long classroom = idFrom(joinClass(teacher, student, "Class A"));
+        joinExistingClass(teacher, second, classroom);
+        Long otherClass = idFrom(joinClass(teacher, student, "Class B"));
+        joinExistingClass(teacher, second, otherClass);
+        String studentCode = JsonPath.read(body(mvc.perform(post("/api/classes/{id}/members/{user}/code", classroom, student.id())
+            .session(teacher.session())).andExpect(status().isOk()).andReturn()), "$.studentCode");
+        Long worksheet = createWorksheet(teacher, "Removal test");
+        createItem(teacher, worksheet);
+        String code = JsonPath.read(body(mvc.perform(post("/api/classes/{id}/tests", classroom).session(teacher.session())
+            .contentType("application/json").content("{\"worksheetId\":" + worksheet + "}"))
+            .andExpect(status().isCreated()).andReturn()), "$.code");
+        var assigned = mvc.perform(post("/api/worksheets/{id}/assignments", worksheet).session(teacher.session())
+            .contentType("application/json").content("{\"classroomId\":" + classroom + "}"))
+            .andExpect(status().isCreated()).andReturn();
+        Long completedAssignment = assignmentIdFor(assigned, student.id());
+        Long activeAssignment = assignmentIdFor(assigned, second.id());
+        var attempt = mvc.perform(post("/api/assignments/{id}/attempts", completedAssignment).session(student.session()))
+            .andExpect(status().isCreated()).andReturn();
+        Long completedAttempt = idFrom(attempt);
+        Long item = ((Number) JsonPath.read(body(attempt), "$.items[0].id")).longValue();
+        Long revision = ((Number) JsonPath.read(body(attempt), "$.revisionId")).longValue();
+        mvc.perform(put("/api/attempts/{id}/items/{item}/result", completedAttempt, item).session(student.session())
+            .contentType("application/json").content("{\"outcome\":\"COMPLETED\",\"score\":3,\"maxScore\":5,\"timeSeconds\":10,\"details\":{}}"))
+            .andExpect(status().isOk());
+        mvc.perform(post("/api/attempts/{id}/complete", completedAttempt).session(student.session())).andExpect(status().isOk());
+        Long activeAttempt = idFrom(mvc.perform(post("/api/assignments/{id}/attempts", activeAssignment).session(second.session()))
+            .andExpect(status().isCreated()).andReturn());
+        mvc.perform(post("/api/worksheets/{id}/assignments", worksheet).session(teacher.session())
+            .contentType("application/json").content("{\"classroomId\":" + otherClass + "}"))
+            .andExpect(status().isCreated());
+        return new RemovalFixture(teacher, other, student, second, classroom, otherClass, worksheet,
+            revision, completedAssignment, completedAttempt, activeAttempt, studentCode, code);
+    }
+
+    private record RemovalFixture(Account teacher, Account other, Account student, Account second,
+        Long classroomId, Long otherClassId, Long worksheetId, Long revisionId, Long completedAssignment,
+        Long completedAttempt, Long activeAttempt, String studentCode, String worksheetCode) {}
+
     private String entryBody(String studentCode, String worksheetCode) {
         return "{\"studentCode\":\"" + studentCode + "\",\"worksheetCode\":\"" + worksheetCode + "\"}";
     }

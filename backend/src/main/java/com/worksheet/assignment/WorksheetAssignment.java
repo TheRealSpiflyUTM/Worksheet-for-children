@@ -35,6 +35,9 @@ public class WorksheetAssignment {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
+    @Column(name = "removed_at")
+    private Instant removedAt;
+
     protected WorksheetAssignment() {}
 
     public WorksheetAssignment(UUID batchId, WorksheetRevision worksheetRevision,
@@ -54,5 +57,10 @@ public class WorksheetAssignment {
     public User getUser() { return user; }
     public Instant getAssignedAt() { return assignedAt; }
     public Instant getRevokedAt() { return revokedAt; }
+    public Instant getRemovedAt() { return removedAt; }
+    public void remove() {
+        revoke();
+        if (removedAt == null) removedAt = Instant.now();
+    }
     public void revoke() { if(revokedAt == null) revokedAt = Instant.now(); }
 }

@@ -131,6 +131,7 @@ export default function ChildMinigame({ game, onComplete, busy = false }) {
                   size="large"
                   type="primary"
                   loading={busy}
+                  aria-label={t(autoAdvance ? "Save result" : "Continue")}
                   onClick={() => submitResult(result)}
                 >
                   {t(autoAdvance ? "Save result" : "Continue")}{" "}

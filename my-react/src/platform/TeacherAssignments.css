@@ -161,11 +161,20 @@
 }
 @media (max-width: 650px) {
   .assignmentResultsTable thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+    display: block;
+  }
+  .assignmentResultsTable thead tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 12px;
+    padding: 6px;
+  }
+  .assignmentResultsTable thead th {
+    padding: 0;
+    border: 0;
+  }
+  .assignmentResultsTable thead th:not(:has(.sortHeading)) {
+    display: none;
   }
   .assignmentResultsTable tbody,
   .assignmentResultsTable tr {

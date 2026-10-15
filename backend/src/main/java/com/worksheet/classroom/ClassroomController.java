@@ -41,6 +41,12 @@ public class ClassroomController {
         return service.join(sessions.requireRole(request, UserRole.USER), body);
     }
 
+    @DeleteMapping("/{classroomId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void archive(@PathVariable Long classroomId, HttpServletRequest request) {
+        service.archive(classroomId, sessions.requireRole(request, UserRole.TEACHER));
+    }
+
     @GetMapping("/{classroomId}/members")
     public List<ClassroomMemberResponse> getMembers(@PathVariable Long classroomId, HttpServletRequest request) {
         return service.getMembers(classroomId, sessions.requireRole(request, UserRole.TEACHER));

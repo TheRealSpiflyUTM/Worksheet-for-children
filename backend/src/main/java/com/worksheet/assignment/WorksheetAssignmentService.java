@@ -66,6 +66,7 @@ public class WorksheetAssignmentService {
         List<WorksheetAssignment> created;
         if(request.classroomId() != null) {
             Classroom classroom = classrooms.findByIdAndTeacher_Id(request.classroomId(), teacher.getId())
+                .filter(value -> value.getArchivedAt() == null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
             List<ClassroomMember> recipients = members.findByClassroom_IdAndLeftAtIsNullOrderByJoinedAt(classroom.getId());
             if(recipients.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Class has no active users.");
@@ -74,6 +75,7 @@ public class WorksheetAssignmentService {
                 .toList();
         } else {
             ClassroomMember membership = members.findFirstByClassroom_Teacher_IdAndUser_IdAndLeftAtIsNullOrderByJoinedAt(teacher.getId(), request.userId())
+                .filter(value -> value.getClassroom().getArchivedAt() == null)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not an active member of this teacher's classes."));
             if(membership.getUser().getRole() != UserRole.USER) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only USER accounts can receive assignments.");
@@ -87,7 +89,25 @@ public class WorksheetAssignmentService {
         List<WorksheetAssignment> found = actor.getRole() == UserRole.TEACHER
             ? assignments.findByWorksheetRevision_Worksheet_User_IdOrderByAssignedAtDesc(actor.getId())
             : assignments.findByUser_IdAndRevokedAtIsNullOrderByAssignedAtDesc(actor.getId());
-        return found.stream().map(this::toResponse).toList();
+        return found.stream().filter(value -> value.getRemovedAt() == null)
+            .map(this::toResponse).toList();
+    }
+
+    public void removeGroup(Long classroomId, Long revisionId, User teacher) {
+        requireRole(teacher, UserRole.TEACHER);
+        if (classroomId != null) classrooms.findByIdAndTeacher_Id(classroomId, teacher.getId())
+            .filter(value -> value.getArchivedAt() == null)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found."));
+        var group = classroomId == null
+            ? assignments.findByClassroomIsNullAndWorksheetRevision_Id(revisionId)
+            : assignments.findByClassroom_IdAndWorksheetRevision_Id(classroomId, revisionId);
+        var owned = group.stream().filter(value -> value.getTeacher().getId().equals(teacher.getId())).toList();
+        if (owned.isEmpty()) throw assignmentNotFound();
+        owned.forEach(WorksheetAssignment::remove);
+        for (var assignment : owned) {
+            attempts.findByAssignment_IdAndStatus(assignment.getId(), AttemptStatus.IN_PROGRESS)
+                .forEach(com.worksheet.attempt.WorksheetAttempt::abandon);
+        }
     }
 
     public WorksheetAssignmentResponse getById(Long assignmentId, User actor) {

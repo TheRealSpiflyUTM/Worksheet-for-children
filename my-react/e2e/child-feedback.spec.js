@@ -406,7 +406,7 @@ test("matching: tap, correct a mismatch, keyboard placement, check and save", as
   await expect(one).toHaveAttribute("aria-pressed", "true");
   await groupTwo.tap();
   await expect(groupTwo.locator(".matching-placed-number")).toHaveText("1");
-  expect(await sounds(page)).toEqual([soundPaths.incorrect]);
+  expect(await sounds(page)).toEqual([]);
   await groupTwo.tap();
   await expect(groupTwo.locator(".matching-placed-number")).toHaveCount(0);
   await one.tap();
@@ -415,22 +415,74 @@ test("matching: tap, correct a mismatch, keyboard placement, check and save", as
   await two.press("Enter");
   await groupTwo.focus();
   await groupTwo.press("Space");
-  expect(await sounds(page)).toEqual([
-    soundPaths.incorrect,
-    soundPaths.correct,
-    soundPaths.correct,
-  ]);
+  expect(await sounds(page)).toEqual([]);
+  await expect(
+    game.locator(".matching-status-correct, .matching-status-incorrect"),
+  ).toHaveCount(0);
+  await expect(game.getByRole("button", { name: /Reia|Amestecă/ })).toHaveCount(
+    0,
+  );
   await game.getByRole("button", { name: /Verifică răspunsul/ }).click();
   await expect(
     game.getByRole("button", { name: /Verifică răspunsul/ }),
   ).toBeDisabled();
-  expect(await sounds(page)).toHaveLength(4);
+  expect(await sounds(page)).toHaveLength(1);
   expect((await sounds(page)).at(-1)).toBe(soundPaths.complete);
+  await groupTwo.tap({ force: true });
+  await expect(groupTwo.locator(".matching-placed-number")).toHaveText("2");
   await game.getByRole("button", { name: "Continuă", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Finalizează fișa" }),
   ).toBeVisible();
   expect(saved()).toMatchObject({ score: 2, maxScore: 2 });
+});
+
+test("matching locks an incorrect submission and a failed save retries the same score", async ({
+  page,
+}) => {
+  const { game, saved, requests } = await openGame(page, "matching-game", {
+    failFirstSave: true,
+  });
+  const groupOne = game.locator('[data-pair-id="one"]');
+  const groupTwo = game.locator('[data-pair-id="two"]');
+  await game
+    .locator(".matching-number-card")
+    .filter({ hasText: /^1$/ })
+    .click();
+  await groupTwo.click();
+  await game
+    .locator(".matching-number-card")
+    .filter({ hasText: /^2$/ })
+    .click();
+  await groupOne.click();
+  expect(await sounds(page)).toEqual([]);
+  await expect(game.locator(".matching-status-incorrect")).toHaveCount(0);
+  await game
+    .getByRole("button", { name: /Verifică răspunsul/ })
+    .evaluate((button) => {
+      button.click();
+      button.click();
+    });
+  await expect(groupOne).toHaveAttribute("aria-disabled", "true");
+  await groupOne.dispatchEvent("click");
+  await groupTwo.dispatchEvent("keydown", { key: "Enter" });
+  await expect(groupOne.locator(".matching-placed-number")).toHaveText("2");
+  await expect(groupTwo.locator(".matching-placed-number")).toHaveText("1");
+  await game.getByRole("button", { name: "Continuă", exact: true }).click();
+  await expect(
+    page.getByText("Connection lost", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    game.getByRole("button", { name: /Verifică răspunsul/ }),
+  ).toBeDisabled();
+  await game.getByRole("button", { name: "Continuă", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Finalizează fișa" }),
+  ).toBeVisible();
+  expect(saved()).toMatchObject({ score: 0, maxScore: 2 });
+  expect(requests).toHaveLength(2);
+  expect(requests[1]).toEqual(requests[0]);
+  expect(await sounds(page)).toEqual([soundPaths.complete]);
 });
 
 test("children cannot open the worksheet editor", async ({ page }) => {

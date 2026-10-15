@@ -9,9 +9,21 @@ import StatusBadge from "../../platform/StatusBadge.jsx";
 import "../Menu.css";
 import "../Classpage.css";
 import "./KidPage.css";
+import SortHeading from "../../platform/SortHeading.jsx";
+import { useSorting } from "../../platform/useSorting.js";
+import { dateValue, scorePercent, sortRows } from "../../platform/sorting.js";
 
 export default function KidPage() {
   const { t, language } = usePlatform();
+  const sorting = useSorting("date", "desc");
+  const sortValues = {
+    name: (row) => row.name,
+    result: (row) =>
+      row.status === "COMPLETED"
+        ? scorePercent(row.totalScore, row.maxScore)
+        : null,
+    date: (row) => dateValue(row.completedAt || row.startedAt),
+  };
   const { id, userId } = useParams();
   const resource = useResource(async () => {
     const [classroom, students, tests] = await Promise.all([
@@ -42,12 +54,30 @@ export default function KidPage() {
             {tests.length ? (
               <>
                 <div className="test-grid student-head">
-                  <span>{t("Test")}</span>
-                  <span>{t("Result")}</span>
-                  <span>{t("Date")}</span>
+                  <SortHeading
+                    label={t("Test")}
+                    column="name"
+                    sorting={sorting}
+                  />
+                  <SortHeading
+                    label={t("Result")}
+                    column="result"
+                    sorting={sorting}
+                  />
+                  <SortHeading
+                    label={t("Date")}
+                    column="date"
+                    sorting={sorting}
+                  />
                   <span>{t("Status")}</span>
                 </div>
-                {tests.map((test) => (
+                {sortRows(
+                  tests,
+                  sortValues[sorting.key],
+                  sorting.direction,
+                  language,
+                  (row) => row.attemptId,
+                ).map((test) => (
                   <Card
                     className="student-block"
                     size="small"

@@ -27,7 +27,13 @@ public class AssignmentReportService {
     }
 
     public List<AssignmentReportResponse> getReport(User teacher) {
-        var owned = assignments.findByWorksheetRevision_Worksheet_User_IdOrderByAssignedAtDesc(teacher.getId());
+        return getReport(teacher, false);
+    }
+
+    public List<AssignmentReportResponse> getReport(User teacher, boolean includeRemoved) {
+        var owned = assignments.findByWorksheetRevision_Worksheet_User_IdOrderByAssignedAtDesc(teacher.getId()).stream()
+            .filter(value -> includeRemoved || (value.getRemovedAt() == null
+                && (value.getClassroom() == null || value.getClassroom().getArchivedAt() == null))).toList();
         if (owned.isEmpty()) return List.of();
         var ids = owned.stream().map(WorksheetAssignment::getId).toList();
         Map<Long, List<WorksheetAttempt>> histories = attempts.findByAssignment_IdInOrderByStartedAtDesc(ids)
@@ -60,14 +66,16 @@ public class AssignmentReportService {
             : completedAt != null ? "COMPLETED"
             : history.stream().anyMatch(attempt -> attempt.getStatus() == AttemptStatus.IN_PROGRESS) ? "IN_PROGRESS"
             : history.isEmpty() ? "NOT_STARTED" : "ABANDONED";
-        boolean codeMatches = worksheet.getShareCode() != null && worksheet.getShareRevision() != null
+        boolean codeMatches = assignment.getRemovedAt() == null
+            && (classroom == null || classroom.getArchivedAt() == null)
+            && worksheet.getShareCode() != null && worksheet.getShareRevision() != null
             && worksheet.getShareRevision().getId().equals(revision.getId());
         return new AssignmentReportResponse(assignment.getId(), classroom == null ? null : classroom.getId(),
             classroom == null ? null : classroom.getName(), worksheet.getId(), revision.getId(),
             revision.getRevisionNumber(), revision.getNameSnapshot(), codeMatches ? worksheet.getShareCode() : null,
-            codeMatches ? "ACTIVE" : worksheet.getShareCode() == null ? "NOT_SHARED" : "VERSION_CHANGED",
+            assignment.getRemovedAt() != null ? "REMOVED" : codeMatches ? "ACTIVE" : worksheet.getShareCode() == null ? "NOT_SHARED" : "VERSION_CHANGED",
             assignment.getUser().getId(), assignment.getUser().getName(), assignment.getAssignedAt(),
-            assignment.getRevokedAt(), status, useLegacy || completed == null ? null : completed.getId(),
+            assignment.getRevokedAt(), assignment.getRemovedAt(), status, useLegacy || completed == null ? null : completed.getId(),
             score, maxScore, completedAt);
     }
 }

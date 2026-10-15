@@ -88,7 +88,6 @@ function OddOrEvenMinigame({ isTeacher, game, onGameChange, onComplete }) {
       </div>
 
       <div className="odd-even-question">
-        <p>{t("Is this number odd or even?")}</p>
         <strong>{question.number}</strong>
       </div>
 

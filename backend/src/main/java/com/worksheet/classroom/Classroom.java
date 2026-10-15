@@ -24,6 +24,9 @@ public class Classroom {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "archived_at")
+    private Instant archivedAt;
+
     @Version
     @Column(name = "row_version", nullable = false)
     private long rowVersion;
@@ -42,6 +45,8 @@ public class Classroom {
     public String getName() { return name; }
     public String getJoinCode() { return joinCode; }
     public Instant getCreatedAt() { return createdAt; }
+    public Instant getArchivedAt() { return archivedAt; }
+    public void archive() { if (archivedAt == null) archivedAt = Instant.now(); }
     public long getRowVersion() { return rowVersion; }
     public void rotateJoinCode(String joinCode) { this.joinCode = joinCode; }
 }

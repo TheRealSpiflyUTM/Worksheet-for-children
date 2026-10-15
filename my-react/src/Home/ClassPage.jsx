@@ -17,11 +17,21 @@ import { EmptyPanel, ErrorNotice, Resource } from "../platform/PlatformUI.jsx";
 import PathBreadcrumb from "./PathBreadcrumb.jsx";
 import "./Menu.css";
 import "./Classpage.css";
+import SortHeading from "../platform/SortHeading.jsx";
+import { useSorting } from "../platform/useSorting.js";
+import { sortRows } from "../platform/sorting.js";
 
 const percent = (value) => (value == null ? "—" : `${value}%`);
 
 export default function ClassPage() {
-  const { t } = usePlatform();
+  const { t, language } = usePlatform();
+  const sorting = useSorting("name");
+  const sortValues = {
+    name: (row) => row.name,
+    test: (row) => row.lastTestPercent,
+    average: (row) => row.averagePercent,
+    worst: (row) => row.worstTest,
+  };
   const { id } = useParams();
   const resource = useResource(async () => {
     const [classroom, students, worksheets] = await Promise.all([
@@ -163,93 +173,110 @@ export default function ClassPage() {
               {students.length ? (
                 <>
                   <div className="student-grid student-head">
-                    <span>{t("Name / code")}</span>
-                    <span>{t("Last test")}</span>
-                    <span>{t("Average")}</span>
-                    <span>{t("Lowest scoring test")}</span>
+                    <SortHeading
+                      label={t("Name / code")}
+                      column="name"
+                      sorting={sorting}
+                    />
+                    <SortHeading
+                      label={t("Last test")}
+                      column="test"
+                      sorting={sorting}
+                    />
+                    <SortHeading
+                      label={t("Average")}
+                      column="average"
+                      sorting={sorting}
+                    />
+                    <SortHeading
+                      label={t("Lowest scoring test")}
+                      column="worst"
+                      sorting={sorting}
+                    />
                     <span>{t("Actions")}</span>
                   </div>
-                  {[...students]
-                    .sort((a, b) => a.name.localeCompare(b.name, "ro"))
-                    .map((student) => (
-                      <Card
-                        className="student-block"
-                        size="small"
-                        key={student.userId}
-                      >
-                        <div className="student-grid">
-                          <div>
-                            <Link
-                              className="student-name-button"
-                              to={`/classes/${id}/children/${student.userId}`}
-                            >
-                              {student.name}
-                            </Link>
-                            {student.studentCode && (
-                              <div className="student-access-code">
-                                <code>{student.studentCode}</code>
-                                <Button
-                                  size="small"
-                                  onClick={() => copy(student.studentCode)}
-                                  aria-label={t("Copy {name}'s code", {
-                                    name: student.name,
-                                  })}
-                                >
-                                  {t("Copy")}{" "}
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          <span
-                            className="student-metric"
-                            data-label={t("Last test")}
+                  {sortRows(
+                    students,
+                    sortValues[sorting.key],
+                    sorting.direction,
+                    language,
+                    (row) => row.userId,
+                  ).map((student) => (
+                    <Card
+                      className="student-block"
+                      size="small"
+                      key={student.userId}
+                    >
+                      <div className="student-grid">
+                        <div>
+                          <Link
+                            className="student-name-button"
+                            to={`/classes/${id}/children/${student.userId}`}
                           >
-                            {percent(student.lastTestPercent)}
-                          </span>
-                          <span
-                            className="student-metric"
-                            data-label={t("Average")}
-                          >
-                            {percent(student.averagePercent)}
-                          </span>
-                          <span
-                            className="student-metric"
-                            data-label={t("Lowest scoring test")}
-                          >
-                            {student.worstTest || "—"}
-                          </span>
-                          <Flex gap="small" wrap>
-                            {student.email == null && (
+                            {student.name}
+                          </Link>
+                          {student.studentCode && (
+                            <div className="student-access-code">
+                              <code>{student.studentCode}</code>
                               <Button
                                 size="small"
-                                onClick={() => edit(student)}
+                                onClick={() => copy(student.studentCode)}
+                                aria-label={t("Copy {name}'s code", {
+                                  name: student.name,
+                                })}
                               >
-                                {t("Rename")}{" "}
+                                {t("Copy")}{" "}
                               </Button>
-                            )}
-                            {!student.studentCode && (
-                              <Button
-                                size="small"
-                                onClick={() => issueCode(student)}
-                              >
-                                {t("Generate code")}{" "}
-                              </Button>
-                            )}
-                            <Popconfirm
-                              title={t("Remove the student from this class?")}
-                              description={t(
-                                "Test access will be revoked. Results remain saved.",
-                              )}
-                              onConfirm={() => removeStudent(student)}
-                            >
-                              <Button size="small" danger>
-                                {t("Delete")}{" "}
-                              </Button>
-                            </Popconfirm>
-                          </Flex>
+                            </div>
+                          )}
                         </div>
-                      </Card>
-                    ))}
+                        <span
+                          className="student-metric"
+                          data-label={t("Last test")}
+                        >
+                          {percent(student.lastTestPercent)}
+                        </span>
+                        <span
+                          className="student-metric"
+                          data-label={t("Average")}
+                        >
+                          {percent(student.averagePercent)}
+                        </span>
+                        <span
+                          className="student-metric"
+                          data-label={t("Lowest scoring test")}
+                        >
+                          {student.worstTest || "—"}
+                        </span>
+                        <Flex gap="small" wrap>
+                          {student.email == null && (
+                            <Button size="small" onClick={() => edit(student)}>
+                              {t("Rename")}{" "}
+                            </Button>
+                          )}
+                          {!student.studentCode && (
+                            <Button
+                              size="small"
+                              onClick={() => issueCode(student)}
+                            >
+                              {t("Generate code")}{" "}
+                            </Button>
+                          )}
+                          <Popconfirm
+                            title={t("Remove the student from this class?")}
+                            description={t(
+                              "Test access will be revoked. Results remain saved.",
+                            )}
+                            onConfirm={() => removeStudent(student)}
+                          >
+                            <Button size="small" danger>
+                              {t("Delete")}{" "}
+                            </Button>
+                          </Popconfirm>
+                        </Flex>
+                      </div>
+                    </Card>
+                  ))}
                 </>
               ) : (
                 <EmptyPanel

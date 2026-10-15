@@ -492,6 +492,10 @@
   .class-menu .student-head {
     display: none;
   }
+  .class-menu .student-head:has(.sortHeading) {
+    display: flex;
+    flex-wrap: wrap;
+  }
   .class-menu .student-metric::before {
     display: block;
     content: attr(data-label);
@@ -537,4 +541,28 @@
   .platformPage .ant-btn {
     transition: none;
   }
+}
+.sortHeading {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sortHeading:focus-visible {
+  outline: 2px solid #6c5ce7;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.classListCard > a {
+  display: block;
+  color: inherit;
+  margin-bottom: 16px;
 }
