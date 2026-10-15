@@ -69,9 +69,12 @@ A worksheet draft is editable. Sharing, assigning, or playing it creates or reus
 immutable revision: a frozen copy of the worksheet and its items. Attempts and results
 reference that copy, so later worksheet edits cannot change historical scores.
 
-For API routes, authorization, security, dynamic mini-games, and the complete database
-model, read [backend/README.md](backend/README.md). For task-image integration, read
-[backend/TASK_IMAGES.md](backend/TASK_IMAGES.md).
+Continue with the [system overview](docs/SYSTEM_OVERVIEW.md), then open the focused
+[frontend](docs/FRONTEND_ARCHITECTURE.md),
+[backend](docs/BACKEND_ARCHITECTURE.md),
+[database](docs/DATABASE_ARCHITECTURE.md), or
+[Docker](docs/DOCKER_ARCHITECTURE.md) document relevant to your work. The detailed API
+and security reference remains in [backend/README.md](backend/README.md).
 
 ## Daily development
 

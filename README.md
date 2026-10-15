@@ -185,10 +185,12 @@ reconciliation; do not delete the database or its migration history to bypass th
 
 - `backend/`: Spring Boot source, Flyway migrations, tests, and Maven wrapper.
 - `my-react/`: React source and Vite build configuration.
+- `docs/`: system, frontend, backend, database, and Docker architecture.
 - `docker-compose.yml`: frontend, backend, and PostgreSQL development services.
 - `database/postgres-data/`: local database files managed by PostgreSQL.
 - `Project/`: legacy build artifacts; use `backend` and `my-react` for current development.
 
-See the [new teammate onboarding guide](ONBOARDING.md) for the complete development
-workflow, [backend documentation](backend/README.md) for architecture, API configuration,
-and migration details, and [task image documentation](backend/TASK_IMAGES.md) for image APIs.
+See the [new teammate onboarding guide](ONBOARDING.md) for the development workflow,
+the [architecture index](ARCHITECTURE.md) for focused system documentation,
+[backend documentation](backend/README.md) for API and migration details, and
+[task image documentation](backend/TASK_IMAGES.md) for image APIs.
