@@ -4,6 +4,10 @@ A React frontend and Spring Boot backend for worksheets, mini-games, classrooms,
 assignments, and saved attempts. The backend requires PostgreSQL and applies Flyway
 migrations at startup.
 
+**New teammate?** Start with the complete [onboarding guide](ONBOARDING.md). It covers
+installation, first startup, architecture, local data, tests, Git/PR workflow, CI, and
+troubleshooting.
+
 ## Run all three services with Docker (recommended for development)
 
 Install Docker Desktop and start it in **Linux containers** mode. Colleagues on
@@ -20,11 +24,11 @@ docker compose ps
 The first run downloads images, builds Java, and installs frontend dependencies;
 allow a few minutes. Open **http://localhost:5173** once all three services are healthy.
 
-| Service | Local address | Purpose |
-| --- | --- | --- |
-| Frontend | http://localhost:5173 | React/Vite with live updates |
-| Backend | http://localhost:8080 | Spring Boot API |
-| PostgreSQL | localhost:5432 | Database `worksheets`, user/password `postgres` |
+| Service    | Local address         | Purpose                                         |
+| ---------- | --------------------- | ----------------------------------------------- |
+| Frontend   | http://localhost:5173 | React/Vite with live updates                    |
+| Backend    | http://localhost:8080 | Spring Boot API                                 |
+| PostgreSQL | localhost:5433        | Database `worksheets`, user/password `postgres` |
 
 The frontend forwards `/api` requests to the backend inside Docker. Keep using
 `localhost:5173` in the browser; the internal Docker service names are not browser URLs.
@@ -97,6 +101,7 @@ cd my-react
 npm ci
 npm run build
 cd ../backend
+$env:DB_URL = "jdbc:postgresql://localhost:5433/worksheets"
 .\mvnw.cmd clean spring-boot:run
 ```
 
@@ -104,9 +109,11 @@ Open http://localhost:8080. Stop the backend with Ctrl+C.
 The frontend build writes to `backend/src/main/resources/static`, which Spring Boot serves.
 Rebuild the frontend and restart the backend after changing frontend code in this mode.
 
-PostgreSQL uses `localhost:5432`, database `worksheets`, username `postgres`, and
-password `postgres` by default. Its data persists in `database/postgres-data`.
-Use `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` to connect to a different database.
+The Docker PostgreSQL service is exposed at `localhost:5433`, database `worksheets`,
+username `postgres`, and password `postgres` by default. Its data persists in
+`database/postgres-data`. The `DB_URL` assignment above is required because Spring's
+non-Docker development default is port `5432`. Use `DB_URL`, `DB_USERNAME`, and
+`DB_PASSWORD` to connect to a different database.
 
 ## Develop with automatic frontend updates
 
@@ -115,6 +122,7 @@ From the repository root, start PostgreSQL and the backend:
 ```powershell
 docker compose up -d postgres
 cd backend
+$env:DB_URL = "jdbc:postgresql://localhost:5433/worksheets"
 .\mvnw.cmd clean spring-boot:run
 ```
 
@@ -177,9 +185,12 @@ reconciliation; do not delete the database or its migration history to bypass th
 
 - `backend/`: Spring Boot source, Flyway migrations, tests, and Maven wrapper.
 - `my-react/`: React source and Vite build configuration.
+- `docs/`: system, frontend, backend, database, and Docker architecture.
 - `docker-compose.yml`: frontend, backend, and PostgreSQL development services.
 - `database/postgres-data/`: local database files managed by PostgreSQL.
 - `Project/`: legacy build artifacts; use `backend` and `my-react` for current development.
 
-See [backend documentation](backend/README.md) for architecture, API configuration,
-and migration details, and [task image documentation](backend/TASK_IMAGES.md) for image APIs.
+See the [new teammate onboarding guide](ONBOARDING.md) for the development workflow,
+the [architecture index](ARCHITECTURE.md) for focused system documentation,
+[backend documentation](backend/README.md) for API and migration details, and
+[task image documentation](backend/TASK_IMAGES.md) for image APIs.
