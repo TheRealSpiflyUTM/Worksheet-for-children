@@ -62,14 +62,17 @@ public class ClassroomService {
     public List<ClassroomResponse> getAll(User actor) {
         if(actor.getRole() == UserRole.TEACHER) {
             return classrooms.findByTeacher_IdOrderByCreatedAtDesc(actor.getId()).stream()
+                .filter(classroom -> classroom.getArchivedAt() == null)
                 .map(classroom -> toResponse(classroom, true)).toList();
         }
         return members.findByUser_IdAndLeftAtIsNullOrderByJoinedAtDesc(actor.getId()).stream()
+            .filter(member -> member.getClassroom().getArchivedAt() == null)
             .map(member -> toResponse(member.getClassroom(), false)).toList();
     }
 
     public ClassroomResponse getById(Long classroomId, User actor) {
         Classroom classroom = classrooms.findById(classroomId)
+            .filter(value -> value.getArchivedAt() == null)
             .orElseThrow(() -> notFound());
         boolean teacher = classroom.getTeacher().getId().equals(actor.getId());
         boolean member = members.existsByClassroom_IdAndUser_IdAndLeftAtIsNull(classroomId, actor.getId());
@@ -84,7 +87,8 @@ public class ClassroomService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Children are added to classes by their teacher.");
         }
         String code = normalizeCode(request.joinCode());
-        Classroom classroom = classrooms.findByJoinCode(code).orElseThrow(() -> notFound());
+        Classroom classroom = classrooms.findByJoinCode(code)
+            .filter(value -> value.getArchivedAt() == null).orElseThrow(() -> notFound());
         ClassroomMember membership = members.findByClassroom_IdAndUser_Id(classroom.getId(), user.getId()).orElse(null);
         if(membership != null && membership.getLeftAt() == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This user is already an active class member.");
@@ -208,9 +212,22 @@ public class ClassroomService {
         return toResponse(classrooms.save(classroom), true);
     }
 
+    public void archive(Long classroomId, User teacher) {
+        requireRole(teacher, UserRole.TEACHER);
+        Classroom classroom = classrooms.findByIdAndTeacher_Id(classroomId, teacher.getId())
+            .orElseThrow(this::notFound);
+        classroom.archive();
+        members.findByClassroom_IdAndLeftAtIsNullOrderByJoinedAt(classroomId)
+            .forEach(ClassroomMember::leave);
+        var affected = assignments.findByClassroom_Id(classroomId);
+        affected.forEach(WorksheetAssignment::remove);
+        attempts.abandonActiveForAssignments(affected);
+    }
+
     public Classroom requireOwnedClassroom(Long classroomId, User teacher) {
         requireRole(teacher, UserRole.TEACHER);
         return classrooms.findByIdAndTeacher_Id(classroomId, teacher.getId())
+            .filter(value -> value.getArchivedAt() == null)
             .orElseThrow(() -> notFound());
     }
 

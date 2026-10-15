@@ -1,25 +1,99 @@
-import { Button, message } from "antd";
-import { ReadOutlined, TeamOutlined } from "@ant-design/icons";
-import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
+import { Button, Popconfirm, message } from "antd";
+import { DeleteOutlined, ReadOutlined, TeamOutlined } from "@ant-design/icons";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { platformApi } from "../api/platform.js";
 import PathBreadcrumb from "../Home/PathBreadcrumb.jsx";
 import { usePlatform } from "./PlatformState.js";
-import { EmptyPanel, PlatformPage, Resource } from "./PlatformUI.jsx";
+import {
+  EmptyPanel,
+  ErrorNotice,
+  PlatformPage,
+  Resource,
+} from "./PlatformUI.jsx";
 import StatusBadge from "./StatusBadge.jsx";
 import { useResource } from "./useResource.js";
 import { groupAssignmentReport } from "./assignmentReport.js";
 import "./TeacherAssignments.css";
+import SortHeading from "./SortHeading.jsx";
+import { useSorting } from "./useSorting.js";
+import { dateValue, scorePercent, sortRows } from "./sorting.js";
 
 export default function TeacherAssignments() {
   const { t, language } = usePlatform();
   const { classId, revisionId } = useParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const includeRemoved = searchParams.get("history") === "1";
+  const historyQuery = includeRemoved ? "?history=1" : "";
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const sorting = useSorting("name");
+  const sortValues = {
+    name: (row) => row.userName,
+    assigned: (row) => dateValue(row.assignedAt),
+    completed: (row) => dateValue(row.completedAt),
+    score: (row) => scorePercent(row.totalScore, row.maxScore),
+  };
   const resource = useResource(async () => {
     const [classes, rows] = await Promise.all([
       platformApi.classes(),
-      platformApi.assignmentReport(),
+      platformApi.assignmentReport(includeRemoved),
     ]);
-    return groupAssignmentReport(classes, rows);
-  });
+    return groupAssignmentReport(
+      includeRemoved ? [] : classes,
+      includeRemoved ? rows.filter((row) => row.removedAt != null) : rows,
+    );
+  }, [includeRemoved]);
+
+  async function removeHomework(worksheet) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await platformApi.deleteAssignmentGroup(classId, worksheet.id);
+      resource.reload();
+      if (revisionId) navigate(`/assignments/classes/${classId}`);
+      message.success(t("Homework deleted."));
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function deleteButton(worksheet) {
+    if (worksheet.removed)
+      return <span className="platformMuted">{t("Deleted")}</span>;
+    return (
+      <Popconfirm
+        title={t("Delete this homework?")}
+        description={t(
+          "Student access will stop. Saved results remain available in history.",
+        )}
+        onConfirm={() => removeHomework(worksheet)}
+        okText={t("Delete")}
+        okButtonProps={{ "aria-label": t("Delete") }}
+        cancelText={t("Cancel")}
+      >
+        <Button
+          danger
+          type="text"
+          icon={<DeleteOutlined />}
+          disabled={busy}
+          aria-label={t("Delete homework {name}, version {version}", {
+            name: worksheet.worksheetName,
+            version: worksheet.revisionNumber,
+          })}
+        />
+      </Popconfirm>
+    );
+  }
 
   async function copy(code) {
     try {
@@ -56,22 +130,42 @@ export default function TeacherAssignments() {
         );
         const classUrl = `/assignments/classes/${classId}`;
         const breadcrumbs = [
-          { label: t("Assignments"), to: classId ? "/assignments" : undefined },
+          {
+            label: t("Assignments"),
+            to: classId ? `/assignments${historyQuery}` : undefined,
+          },
         ];
         if (classroom)
           breadcrumbs.push({
             label: name(classroom),
-            to: revisionId ? classUrl : undefined,
+            to: revisionId ? `${classUrl}${historyQuery}` : undefined,
           });
         if (worksheet) breadcrumbs.push({ label: worksheet.worksheetName });
 
         return (
           <PlatformPage
+            actions={
+              <Button
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams);
+                  if (includeRemoved) next.delete("history");
+                  else next.set("history", "1");
+                  setSearchParams(next);
+                }}
+              >
+                {t(
+                  includeRemoved
+                    ? "Hide deleted homework"
+                    : "Show deleted homework",
+                )}
+              </Button>
+            }
             title={
               worksheet?.worksheetName ||
               (classroom ? name(classroom) : t("Assignments"))
             }
           >
+            <ErrorNotice error={error} />
             {classId && <PathBreadcrumb items={breadcrumbs} />}
             {classId && !classroom ? (
               <EmptyPanel description={t("Class not found.")} />
@@ -102,68 +196,91 @@ export default function TeacherAssignments() {
                       total: worksheet.recipients.length,
                     })}
                   </strong>
+                  {deleteButton(worksheet)}
                 </div>
                 <div className="assignmentTableScroll">
                   <table className="assignmentResultsTable">
                     <caption>{t("Latest completed score")}</caption>
                     <thead>
                       <tr>
-                        <th scope="col">{t("Student")}</th>
-                        <th scope="col">{t("Assigned")}</th>
+                        <SortHeading
+                          table
+                          label={t("Student")}
+                          column="name"
+                          sorting={sorting}
+                        />
+                        <SortHeading
+                          table
+                          label={t("Assigned")}
+                          column="assigned"
+                          sorting={sorting}
+                        />
                         <th scope="col">{t("Status")}</th>
-                        <th scope="col">{t("Score")}</th>
-                        <th scope="col">{t("Completed on")}</th>
+                        <SortHeading
+                          table
+                          label={t("Score")}
+                          column="score"
+                          sorting={sorting}
+                        />
+                        <SortHeading
+                          table
+                          label={t("Completed on")}
+                          column="completed"
+                          sorting={sorting}
+                        />
                         <th scope="col">{t("History")}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {[...worksheet.recipients]
-                        .sort((a, b) =>
-                          a.userName.localeCompare(b.userName, language),
-                        )
-                        .map((student) => (
-                          <tr key={student.userId}>
-                            <th scope="row">{student.userName}</th>
-                            <td data-label={t("Assigned")}>
-                              {date(student.assignedAt)}
-                            </td>
-                            <td data-label={t("Status")}>
-                              <StatusBadge value={student.status} />
-                            </td>
-                            <td
-                              className="assignmentScore"
-                              data-label={t("Score")}
-                            >
-                              {student.totalScore == null ? (
-                                "—"
-                              ) : student.attemptId ? (
-                                <Link
-                                  aria-label={t("View {name}'s result", {
-                                    name: student.userName,
-                                  })}
-                                  to={`/attempts/${student.attemptId}`}
-                                >
-                                  {student.totalScore} / {student.maxScore}
-                                </Link>
-                              ) : (
-                                `${student.totalScore} / ${student.maxScore}`
-                              )}
-                            </td>
-                            <td data-label={t("Completed on")}>
-                              {date(student.completedAt)}
-                            </td>
-                            <td className="assignmentHistory">
+                      {sortRows(
+                        worksheet.recipients,
+                        sortValues[sorting.key],
+                        sorting.direction,
+                        language,
+                        (row) => row.userId,
+                      ).map((student) => (
+                        <tr key={student.userId}>
+                          <th scope="row">{student.userName}</th>
+                          <td data-label={t("Assigned")}>
+                            {date(student.assignedAt)}
+                          </td>
+                          <td data-label={t("Status")}>
+                            <StatusBadge value={student.status} />
+                          </td>
+                          <td
+                            className="assignmentScore"
+                            data-label={t("Score")}
+                          >
+                            {student.totalScore == null ? (
+                              "—"
+                            ) : student.attemptId ? (
                               <Link
-                                to={`/assignments/${student.assignmentId}`}
-                                aria-label={t("View {name}'s history", {
+                                aria-label={t("View {name}'s result", {
                                   name: student.userName,
                                 })}
+                                to={`/attempts/${student.attemptId}`}
                               >
-                                {t("History")}
+                                {student.totalScore} / {student.maxScore}
                               </Link>
-                            </td>
-                          </tr>
-                        ))}
+                            ) : (
+                              `${student.totalScore} / ${student.maxScore}`
+                            )}
+                          </td>
+                          <td data-label={t("Completed on")}>
+                            {date(student.completedAt)}
+                          </td>
+                          <td className="assignmentHistory">
+                            <Link
+                              to={`/assignments/${student.assignmentId}`}
+                              aria-label={t("View {name}'s history", {
+                                name: student.userName,
+                              })}
+                            >
+                              {t("History")}
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -173,9 +290,10 @@ export default function TeacherAssignments() {
                 <section className="platformPanel assignmentWorksheets">
                   {classroom.worksheets.map((entry) => (
                     <div className="assignmentWorksheetRow" key={entry.id}>
+                      {deleteButton(entry)}
                       <Link
                         className="assignmentWorksheetLink"
-                        to={`${classUrl}/worksheets/${entry.id}`}
+                        to={`${classUrl}/worksheets/${entry.id}${historyQuery}`}
                       >
                         <ReadOutlined aria-hidden="true" />
                         <div>
@@ -223,7 +341,7 @@ export default function TeacherAssignments() {
                 {classes.map((entry) => (
                   <Link
                     className="platformCard assignmentClassCard"
-                    to={`/assignments/classes/${entry.id}`}
+                    to={`/assignments/classes/${entry.id}${historyQuery}`}
                     key={entry.id}
                   >
                     <span className="assignmentClassIcon">
@@ -242,7 +360,11 @@ export default function TeacherAssignments() {
                 ))}
               </div>
             ) : (
-              <EmptyPanel description={t("No classes yet.")} />
+              <EmptyPanel
+                description={t(
+                  includeRemoved ? "No deleted homework." : "No classes yet.",
+                )}
+              />
             )}
           </PlatformPage>
         );

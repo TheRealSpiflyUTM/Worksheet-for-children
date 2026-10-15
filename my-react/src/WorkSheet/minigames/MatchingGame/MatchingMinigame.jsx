@@ -1,5 +1,5 @@
 import { usePlatform } from "../../../platform/PlatformState.js";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Alert,
   Button,
@@ -10,15 +10,9 @@ import {
   Tag,
   Typography,
 } from "antd";
-import {
-  CheckOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-} from "@ant-design/icons";
+import { CheckOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { EMOJI_CATEGORIES } from "./emojis.js";
 import { photoUrl } from "../../../lib/task-images.js";
-import { playAnswerFeedback } from "../../../lib/game-feedback.js";
 import "./MatchingMinigame.css";
 
 const { Text, Title } = Typography;
@@ -90,9 +84,10 @@ const MatchingMinigame = ({
       ),
     [game.pairs],
   );
-  const [shuffledPairs, setShuffledPairs] = useState(() => shuffleArray(pairs));
+  const [shuffledPairs] = useState(() => shuffleArray(pairs));
   const [matches, setMatches] = useState({});
   const [checked, setChecked] = useState(false);
+  const submitted = useRef(false);
   const [score, setScore] = useState(0);
   const [draggedNumber, setDraggedNumber] = useState(null);
   const [dragSource, setDragSource] = useState(null);
@@ -192,6 +187,7 @@ const MatchingMinigame = ({
 
   const placeNumber = (number, pair) => {
     if (
+      submitted.current ||
       !pairs.some((candidate) => candidate.number === number) ||
       isNumberUsed(number) ||
       matches[pair.id] !== undefined
@@ -201,10 +197,10 @@ const MatchingMinigame = ({
     setChecked(false);
     onReset?.();
     setSelectedNumber(null);
-    playAnswerFeedback(number === pair.number);
   };
 
   const removeNumber = (number) => {
+    if (submitted.current) return;
     setMatches((previous) =>
       Object.fromEntries(
         Object.entries(previous).filter(([, value]) => value !== number),
@@ -216,12 +212,13 @@ const MatchingMinigame = ({
   };
 
   const handleTargetTap = (pair) => {
+    if (submitted.current) return;
     if (matches[pair.id] !== undefined) removeNumber(matches[pair.id]);
     else if (selectedNumber !== null) placeNumber(selectedNumber, pair);
   };
 
   const handleNumberDragStart = (event, pair) => {
-    if (isNumberUsed(pair.number)) {
+    if (submitted.current || isNumberUsed(pair.number)) {
       event.preventDefault();
       return;
     }
@@ -238,6 +235,10 @@ const MatchingMinigame = ({
   };
 
   const handlePlacedNumberDragStart = (event, number) => {
+    if (submitted.current) {
+      event.preventDefault();
+      return;
+    }
     setDraggedNumber(number);
     setSelectedNumber(null);
     setDragSource("right");
@@ -313,7 +314,11 @@ const MatchingMinigame = ({
   };
 
   const checkAnswers = () => {
-    if (checked) return;
+    if (submitted.current) return;
+    submitted.current = true;
+    setSelectedNumber(null);
+    setDraggedNumber(null);
+    setDragSource(null);
     let correct = 0;
 
     pairs.forEach((pair) => {
@@ -327,29 +332,8 @@ const MatchingMinigame = ({
     setChecked(true);
   };
 
-  const resetAnswers = () => {
-    setSelectedNumber(null);
-    setMatches({});
-    setChecked(false);
-    onReset?.();
-    setScore(0);
-    setDraggedNumber(null);
-    setDragSource(null);
-  };
-
-  const shuffleForNewAttempt = () => {
-    setSelectedNumber(null);
-    setShuffledPairs(shuffleArray(pairs));
-
-    setMatches({});
-    setChecked(false);
-    onReset?.();
-    setScore(0);
-    setDraggedNumber(null);
-    setDragSource(null);
-  };
-
   const getTargetStatus = (pair) => {
+    if (!checked) return "neutral";
     if (matches[pair.id] === pair.number) {
       return "correct";
     }
@@ -362,6 +346,7 @@ const MatchingMinigame = ({
   };
 
   const getNumberStatus = (number) => {
+    if (!checked) return "neutral";
     const targetPair = pairs.find((pair) => matches[pair.id] === number);
 
     if (!targetPair) {
@@ -505,22 +490,6 @@ const MatchingMinigame = ({
             )}
 
             <Button
-              className="matching-secondary-action"
-              icon={<ReloadOutlined />}
-              onClick={resetAnswers}
-            >
-              {t("Reset")}{" "}
-            </Button>
-
-            <Button
-              className="matching-secondary-action"
-              icon={<ReloadOutlined />}
-              onClick={shuffleForNewAttempt}
-            >
-              {t("Shuffle")}{" "}
-            </Button>
-
-            <Button
               type="primary"
               icon={<CheckOutlined />}
               onClick={checkAnswers}
@@ -570,8 +539,8 @@ const MatchingMinigame = ({
                           ? "matching-number-dragging"
                           : ""
                       }`}
-                      draggable={!used}
-                      disabled={used}
+                      draggable={!checked && !used}
+                      disabled={checked || used}
                       aria-pressed={selectedNumber === pair.number}
                       onClick={() =>
                         setSelectedNumber((current) =>
@@ -611,7 +580,8 @@ const MatchingMinigame = ({
                     <div
                       key={pair.id}
                       role="button"
-                      tabIndex={0}
+                      tabIndex={checked ? -1 : 0}
+                      aria-disabled={checked}
                       data-pair-id={pair.id}
                       aria-label={
                         hasNumber
@@ -669,7 +639,7 @@ const MatchingMinigame = ({
                               ? "matching-placed-number-dragging"
                               : ""
                           }`}
-                          draggable
+                          draggable={!checked}
                           onDragStart={(event) =>
                             handlePlacedNumberDragStart(event, matches[pair.id])
                           }

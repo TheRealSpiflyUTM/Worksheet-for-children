@@ -6,6 +6,10 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorksheetAssignmentRepository extends JpaRepository<WorksheetAssignment, Long> {
+    List<WorksheetAssignment> findByClassroom_Id(Long classroomId);
+    List<WorksheetAssignment> findByClassroom_IdAndWorksheetRevision_Id(Long classroomId, Long revisionId);
+    List<WorksheetAssignment> findByClassroomIsNullAndWorksheetRevision_Id(Long revisionId);
+    boolean existsByWorksheetRevision_IdAndUser_IdAndRemovedAtIsNotNull(Long revisionId, Long userId);
     @EntityGraph(attributePaths = {"worksheetRevision", "worksheetRevision.worksheet",
         "worksheetRevision.worksheet.user", "worksheetRevision.worksheet.shareRevision", "user", "classroom"})
     List<WorksheetAssignment> findByWorksheetRevision_Worksheet_User_IdOrderByAssignedAtDesc(Long teacherId);

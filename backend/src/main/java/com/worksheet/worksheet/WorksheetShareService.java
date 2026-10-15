@@ -93,7 +93,7 @@ public class WorksheetShareService {
             member = members.findFirstByUser_IdAndClassroom_Teacher_IdAndStudentCodeIsNotNullAndLeftAtIsNull(
                 user.getId(), worksheet.getUser().getId()).orElseThrow(this::codeNotFound);
         }
-        if (member != null && (member.getLeftAt() != null
+        if (member != null && (member.getLeftAt() != null || member.getClassroom().getArchivedAt() != null
             || !worksheet.getUser().getId().equals(member.getClassroom().getTeacher().getId()))) {
             throw codeNotFound();
         }
@@ -113,6 +113,15 @@ public class WorksheetShareService {
                 pinnedRevision.getId(), user.getId())
             : assignments.findFirstByWorksheetRevision_IdAndUser_IdAndClassroom_IdAndRevokedAtIsNullOrderByAssignedAtDesc(
                 pinnedRevision.getId(), user.getId(), recipient.getClassroom().getId());
+        if (existing.isEmpty()) {
+            if (assignments.existsByWorksheetRevision_IdAndUser_IdAndRemovedAtIsNotNull(pinnedRevision.getId(), user.getId())) {
+                throw codeNotFound();
+            }
+            if (recipient != null) {
+                var group = assignments.findByClassroom_IdAndWorksheetRevision_Id(recipient.getClassroom().getId(), pinnedRevision.getId());
+                if (!group.isEmpty() && group.stream().allMatch(value -> value.getRemovedAt() != null)) throw codeNotFound();
+            }
+        }
         WorksheetAssignment assignment = existing
             .orElseGet(() -> assignments.save(
                 new WorksheetAssignment(UUID.randomUUID(), pinnedRevision,

@@ -23,8 +23,20 @@ public class WorksheetAssignmentController {
     }
 
     @GetMapping("/assignments/report")
-    public List<AssignmentReportResponse> report(HttpServletRequest request) {
-        return reports.getReport(sessions.requireRole(request, UserRole.TEACHER));
+    public List<AssignmentReportResponse> report(@RequestParam(defaultValue = "false") boolean includeRemoved, HttpServletRequest request) {
+        return reports.getReport(sessions.requireRole(request, UserRole.TEACHER), includeRemoved);
+    }
+
+    @DeleteMapping("/assignments/classes/{classroomId}/revisions/{revisionId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeGroup(@PathVariable Long classroomId, @PathVariable Long revisionId, HttpServletRequest request) {
+        service.removeGroup(classroomId, revisionId, sessions.requireRole(request, UserRole.TEACHER));
+    }
+
+    @DeleteMapping("/assignments/direct/revisions/{revisionId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeDirectGroup(@PathVariable Long revisionId, HttpServletRequest request) {
+        service.removeGroup(null, revisionId, sessions.requireRole(request, UserRole.TEACHER));
     }
 
     @PostMapping("/worksheets/{worksheetId}/assignments")

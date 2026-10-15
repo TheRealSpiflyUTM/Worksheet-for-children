@@ -67,6 +67,7 @@ export function groupAssignmentReport(classes, rows) {
         });
         return {
           ...worksheet,
+          removed: worksheet.rows.every((row) => row.removedAt != null),
           recipients,
           completedCount: recipients.filter((entry) => entry.completedAt)
             .length,

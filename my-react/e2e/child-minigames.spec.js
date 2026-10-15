@@ -160,14 +160,10 @@ for (const type of [
       await expect(
         game.getByRole("button", { name: "Continuă", exact: true }),
       ).toBeVisible();
-      await game.getByRole("button", { name: /Reia/ }).click();
+      await expect(game.getByRole("button", { name: /Reia/ })).toHaveCount(0);
       await expect(
-        game.getByRole("button", { name: "Continuă", exact: true }),
-      ).toHaveCount(0);
-      await game
-        .locator(".matching-number-card")
-        .dragTo(game.locator(".matching-target-card"));
-      await game.getByRole("button", { name: /Verifică răspunsul/ }).click();
+        game.getByRole("button", { name: /Verifică răspunsul/ }),
+      ).toBeDisabled();
     } else {
       let answer;
       if (type === "math-game") answer = "2";

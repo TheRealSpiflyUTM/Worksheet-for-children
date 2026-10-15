@@ -15,6 +15,7 @@ import Status from "./StatusBadge.jsx";
 import TeacherAssignments from "./TeacherAssignments.jsx";
 import { ShareWorksheetModal } from "./WorksheetActions.jsx";
 import {
+  DeleteOutlined,
   ReadOutlined,
   TeamOutlined,
   PlusOutlined,
@@ -30,6 +31,21 @@ export function ClassesPage() {
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+
+  async function deleteClass(classroom) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await platformApi.deleteClass(classroom.id);
+      classes.reload();
+      message.success(t("Class deleted."));
+    } catch (requestError) {
+      setError(requestError);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit() {
     if (!value.trim()) return;
@@ -58,20 +74,41 @@ export function ClassesPage() {
         </Button>
       }
     >
+      {!open && <ErrorNotice error={error} />}
       <Resource resource={classes}>
         {(items) =>
           items.length ? (
             <div className="platformGrid">
               {items.map((classroom) => (
-                <Link
-                  className="platformCard"
-                  key={classroom.id}
-                  to={`/classes/${classroom.id}`}
-                >
-                  <h2>{classroom.name}</h2>
-                  <p>{classroom.teacherName}</p>
-                  <span className="platformMuted">{t("Open class")} →</span>
-                </Link>
+                <div className="platformCard classListCard" key={classroom.id}>
+                  <Link to={`/classes/${classroom.id}`}>
+                    <h2>{classroom.name}</h2>
+                    <p>{classroom.teacherName}</p>
+                    <span className="platformMuted">{t("Open class")} →</span>
+                  </Link>
+                  {user.role === "TEACHER" && (
+                    <Popconfirm
+                      title={t("Delete this class?")}
+                      description={t(
+                        "Student access will stop. Saved results remain available in history.",
+                      )}
+                      onConfirm={() => deleteClass(classroom)}
+                      okText={t("Delete")}
+                      okButtonProps={{ "aria-label": t("Delete") }}
+                      cancelText={t("Cancel")}
+                    >
+                      <Button
+                        danger
+                        type="text"
+                        icon={<DeleteOutlined />}
+                        disabled={busy}
+                        aria-label={t("Delete class {name}", {
+                          name: classroom.name,
+                        })}
+                      />
+                    </Popconfirm>
+                  )}
+                </div>
               ))}
             </div>
           ) : (

@@ -1,4 +1,19 @@
 const romanian = {
+  "No deleted homework.": "Nu există teme șterse.",
+  "Show deleted homework": "Arată temele șterse",
+  "Hide deleted homework": "Ascunde temele șterse",
+  Deleted: "Ștearsă",
+  "Sort ascending": "Sortează crescător",
+  "Sort descending": "Sortează descrescător",
+  "Delete this class?": "Ștergi această clasă?",
+  "Delete class {name}": "Șterge clasa {name}",
+  "Class deleted.": "Clasa a fost ștearsă.",
+  "Delete this homework?": "Ștergi această temă?",
+  "Delete homework {name}, version {version}":
+    "Șterge tema {name}, versiunea {version}",
+  "Homework deleted.": "Tema a fost ștearsă.",
+  "Student access will stop. Saved results remain available in history.":
+    "Accesul elevilor va fi oprit. Rezultatele salvate rămân disponibile în istoric.",
   "Worksheet activities": "Activitățile fișei",
   Activities: "Activități",
   "Move up": "Mută mai sus",

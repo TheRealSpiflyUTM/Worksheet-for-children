@@ -16,6 +16,7 @@ public record AssignmentReportResponse(
     String userName,
     Instant assignedAt,
     Instant revokedAt,
+    Instant removedAt,
     String status,
     Long attemptId,
     Integer totalScore,

@@ -4,3 +4,4 @@ my-react/playwright-report/
 my-react/test-results/
 .env
 .env.local
+AGENTS

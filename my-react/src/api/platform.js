@@ -12,6 +12,7 @@ export const platformApi = {
   classes: () => apiRequest("/api/classes"),
   classroom: (id) => apiRequest(`/api/classes/${id}`),
   createClass: (name) => send("/api/classes", "POST", { name }),
+  deleteClass: (id) => send(`/api/classes/${id}`, "DELETE"),
   joinClass: (code) =>
     send("/api/classes/join", "POST", { joinCode: code.trim().toUpperCase() }),
   members: (id) => apiRequest(`/api/classes/${id}/members`),
@@ -34,7 +35,15 @@ export const platformApi = {
     send(`/api/classes/${id}/members/${userId}`, "DELETE"),
   rotateClass: (id) => send(`/api/classes/${id}/join-code/rotate`),
   assignments: () => apiRequest("/api/assignments"),
-  assignmentReport: () => apiRequest("/api/assignments/report"),
+  assignmentReport: (includeRemoved = false) =>
+    apiRequest(
+      `/api/assignments/report${includeRemoved ? "?includeRemoved=true" : ""}`,
+    ),
+  deleteAssignmentGroup: (classId, revisionId) =>
+    send(
+      `/api/assignments/${classId === "direct" ? "direct" : `classes/${classId}`}/revisions/${revisionId}`,
+      "DELETE",
+    ),
   assignment: (id) => apiRequest(`/api/assignments/${id}`),
   assign: (worksheetId, body) =>
     send(`/api/worksheets/${worksheetId}/assignments`, "POST", body),

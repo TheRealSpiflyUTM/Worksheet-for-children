@@ -139,6 +139,22 @@ POST /api/worksheets/42/attempts credentials: include + X-XSRF-TOKEN
 
 ## Canonical APIs
 
+Teachers can delete a class using `DELETE /api/classes/{id}`. This archives the class,
+disables its membership codes, removes its assignments from active lists and abandons
+unfinished attempts. Completed attempts, draft IDs and immutable revisions remain intact.
+
+`DELETE /api/assignments/classes/{classId}/revisions/{revisionId}` removes every recipient
+and repeated assignment of that published revision in the selected class. Direct assignments
+use `DELETE /api/assignments/direct/revisions/{revisionId}`. Neither operation deletes the
+source worksheet or assignments in other classes. Old codes cannot recreate the removed
+assignment; an explicit teacher reassignment creates fresh grants.
+
+The teacher report defaults to active homework. `GET /api/assignments/report?includeRemoved=true`
+also includes removed homework and archived classes, with `removedAt` on each removed grant.
+The Assignments page exposes this history through **Show deleted homework**; teachers retain
+access to the existing assignment and attempt history routes. V24 adds the nullable archive
+columns without rewriting existing content or results.
+
 | Route | Purpose |
 | --- | --- |
 | `POST /api/worksheets/{id}/attempts` | Start a personal attempt and publish/reuse a revision |
