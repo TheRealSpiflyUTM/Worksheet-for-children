@@ -1,0 +1,41 @@
+# Allow only production build inputs into the repository-root build context.
+# Subdirectory builds used by Docker Compose keep their existing ignore files.
+**
+!Dockerfile
+!.dockerignore
+!my-react/
+!my-react/**
+!backend/
+backend/**
+!backend/pom.xml
+!backend/mvnw
+!backend/.mvn/
+!backend/.mvn/**
+!backend/src/
+!backend/src/**
+
+# Include bundled game images and the two sample uploads referenced by migrations.
+# Runtime uploads, mini-game assets and database files stay excluded.
+!backend/data/
+backend/data/**
+!backend/data/Count & Mathc (MiniGame)/Images/**
+!backend/data/uploads/754f189b-b7eb-410c-923d-9d3690251b9a.png
+!backend/data/uploads/a17f14db-469c-4bde-9d30-f210d40d4576.png
+
+# Always rebuild the frontend; never copy generated or sensitive local files.
+backend/src/main/resources/static/
+**/node_modules/
+**/target/
+**/dist/
+**/playwright-report/
+**/test-results/
+**/.git/
+**/.idea/
+**/.vscode/
+**/.env
+**/.env.*
+**/*.log
+**/*.dump
+**/*.bak
+**/*.key
+**/*.pem
